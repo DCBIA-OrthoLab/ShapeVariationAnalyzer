@@ -363,7 +363,7 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
 
         # Message for the user
         slicer.util.delayDisplay("Group Added")
-        print self.dictCSVFile
+        # print self.dictCSVFile
 
     # Function to remove a group of the dictionary
     #    - Remove the paths of all the vtk files corresponding to the selected group
@@ -733,7 +733,7 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
 
         # Read CSV File:
         self.logic.table = self.logic.readCSVFile(self.pathLineEdit_selectionClassificationGroups.currentPath)
-        condition3 = self.logic.creationDictShapeModel(self.dictShapeModels)
+        condition3 = self.logic.creationDictVTKFiles(self.dictShapeModels)
 
         #    If the file is not conformed:
         #    Re-initialization of the dictionary containing the Classification Groups
@@ -754,7 +754,8 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
 
     def onComputeMeanGroup(self):
 
-        print " Ici, call CLI computeMean"
+        for key, value in self.dictShapeModels.items():
+            self.logic.computeMean(key, value)
 
         self.pushButton_exportMeanGroups.setEnabled(True)
         self.directoryButton_exportMeanGroups.setEnabled(True)
@@ -1404,8 +1405,9 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
         # print "error: " + str(process.error())
 
     # Function to compute the mean between all the mesh-files contained in one group
-    def computeMean(self, group, h5path):
-        print "--- Compute the mean of the group " + str(group) + " ---"
+    def computeMean(self, numGroup, vtkList):
+        
+        print "--- Compute the mean of all the group ---"
 
         # Call of computeMean used to compute a mean from a shape model
         # Arguments:
@@ -1414,29 +1416,38 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
         #  --shapemodel: Shape model of one group (H5 file path)
 
         #     Creation of the command line
-        scriptedModulesPath = eval('slicer.modules.%s.path' % self.interface.moduleName.lower())
-        scriptedModulesPath = os.path.dirname(scriptedModulesPath)
-        libPath = os.path.join(scriptedModulesPath)
-        sys.path.insert(0, libPath)
-        computeMean = os.path.join(scriptedModulesPath, '../hidden-cli-modules/computeMean')
-        #computeMean = "/Users/lpascal/Desktop/test/ClassificationExtension-build/bin/computeMean"
+        # scriptedModulesPath = eval('slicer.modules.%s.path' % self.interface.moduleName.lower())
+        # scriptedModulesPath = os.path.dirname(scriptedModulesPath)
+        # libPath = os.path.join(scriptedModulesPath)
+        # sys.path.insert(0, libPath)
+        # computeMean = os.path.join(scriptedModulesPath, '../hidden-cli-modules/computeMean')
+        computeMean = "/Users/prisgdd/Documents/Projects/CNN/computeMean-build/src/bin/computemean"
+        # for key, value -> et value te donne la liste du group
         arguments = list()
-        arguments.append("--groupnumber")
-        arguments.append(group)
-        arguments.append("--resultdir")
+        arguments.append("--inputList")
+        vtkfilelist = ""
+        for vtkFiles in vtkList:
+            vtkfilelist = vtkfilelist + vtkFiles + ','
+        arguments.append(vtkfilelist)
+
         resultdir = slicer.app.temporaryPath
-        arguments.append(resultdir)
-        arguments.append("--shapemodel")
-        arguments.append(h5path)
+        arguments.append("--outputSurface")
+        arguments.append(str(resultdir) + "/meanGroup" + str(numGroup) + ".vtk")
 
         #     Call the executable
         process = qt.QProcess()
-        print "Calling " + os.path.basename(computeMean)
+        process.setProcessChannelMode(qt.QProcess.MergedChannels)
+
+        # print "Calling " + os.path.basename(computeMean)
         process.start(computeMean, arguments)
         process.waitForStarted()
         # print "state: " + str(process2.state())
         process.waitForFinished()
-        # print "error: " + str(process2.error())
+        # print "error: " + str(process.error())
+        
+        processOutput = str(process.readAll())
+        # print processOutput
+
 
     # Function to remove in the temporary directory all the data used to create the mean for each group
     def removeDataVTKFiles(self, value):
