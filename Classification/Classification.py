@@ -692,10 +692,10 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
 
 
         # Remove the shape model (GX.h5) of each group
-        self.logic.removeDataAfterNCG(self.dictVTKFiles)
+        # self.logic.removeDataAfterNCG(self.dictVTKFiles)
 
         # Re-Initialization of the dictionary containing the path of the shape model of each group
-        self.dictShapeModels = dict()
+        # self.dictVTKFiles = dict()
 
         # Message for the user
         slicer.util.delayDisplay("Files Saved")
@@ -1378,6 +1378,7 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
             qlabel = table.cellWidget(row, 0)
             vtkFile = qlabel.text
 
+            print group
             # Update the dictionary if the vtk file has not the same group in the combobox than in the dictionary
             value = dictVTKFiles.get(group, None)
             if not any(vtkFile in s for s in value):
