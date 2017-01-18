@@ -546,7 +546,13 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         self.checkableComboBox_ChoiceOfGroup.blockSignals(True)
         allcheck = True
         for key, value in self.dictVTKFiles.items():
-            item = self.checkableComboBox_ChoiceOfGroup.model().item(key - 1, 0)
+
+            print "type de ctkcheckablecombobox.model()  ::  " + str(type(self.checkableComboBox_ChoiceOfGroup.model()))
+            print "type de ctkcheckablecombobox.model().item()  ::  " + str(type(self.checkableComboBox_ChoiceOfGroup.model().item(key, 0)))
+
+            # item = self.checkableComboBox_ChoiceOfGroup.model().item(key - 1, 0)
+            item = self.checkableComboBox_ChoiceOfGroup.model().item(key, 0)
+            print "item : " + str(item)
             if not value == []:
                 for vtkFile in value:
                     filename = os.path.basename(vtkFile)
@@ -803,12 +809,8 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         # else:
         for key in self.dictGroups.keys():
             filename = self.dictGroups.get(key, None)
-            print "filename de la key : " + str(key) + "   :   " + str(self.dictGroups[key])
             loader = slicer.util.loadModel
             loader(filename)
-
-        print "\n\n DICT GROUPS :: "
-        print self.dictGroups
 
     # Change the color and the opacity for each vtk file
         list = slicer.mrmlScene.GetNodesByClass("vtkMRMLModelNode")
@@ -1342,7 +1344,7 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
                 layout = qt.QHBoxLayout(widget)
                 comboBox = qt.QComboBox()
                 comboBox.addItems(dictVTKFiles.keys())          # Baisser de 1
-                comboBox.setCurrentIndex(key - 1)
+                comboBox.setCurrentIndex(key)
                 layout.addWidget(comboBox)
                 layout.setAlignment(0x84)
                 layout.setContentsMargins(0, 0, 0, 0)
