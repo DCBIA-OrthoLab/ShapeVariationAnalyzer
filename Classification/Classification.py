@@ -546,13 +546,7 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         self.checkableComboBox_ChoiceOfGroup.blockSignals(True)
         allcheck = True
         for key, value in self.dictVTKFiles.items():
-
-            print "type de ctkcheckablecombobox.model()  ::  " + str(type(self.checkableComboBox_ChoiceOfGroup.model()))
-            print "type de ctkcheckablecombobox.model().item()  ::  " + str(type(self.checkableComboBox_ChoiceOfGroup.model().item(key, 0)))
-
-            # item = self.checkableComboBox_ChoiceOfGroup.model().item(key - 1, 0)
             item = self.checkableComboBox_ChoiceOfGroup.model().item(key, 0)
-            print "item : " + str(item)
             if not value == []:
                 for vtkFile in value:
                     filename = os.path.basename(vtkFile)
@@ -1379,7 +1373,7 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
             tuple = widget.children()
             comboBox = qt.QComboBox()
             comboBox = tuple[1]
-            group = comboBox.currentIndex + 1
+            group = comboBox.currentIndex
             # Recovery of the filename of vtk file
             qlabel = table.cellWidget(row, 0)
             vtkFile = qlabel.text
