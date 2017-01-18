@@ -663,11 +663,13 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
             filePathExisting.append(CSVfilePath)
 
         #   Check if the shape model exist
-        for key, value in self.dictShapeModels.items():
-            modelFilename = os.path.basename(value)
-            modelFilePath = directory + '/' + modelFilename
-            if os.path.exists(modelFilePath):
-                filePathExisting.append(modelFilePath)
+        # print "dictshapemodels :: " + str(self.dictShapeModels)
+        for key, value in self.dictVTKFiles.items():
+            for shape in value:
+                modelFilename = os.path.basename(shape)
+                modelFilePath = directory + '/' + modelFilename
+                if os.path.exists(modelFilePath):
+                    filePathExisting.append(modelFilePath)
 
         #   Write the message for the user
         if len(filePathExisting) > 0:
@@ -784,7 +786,6 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
     #    - The healthy group is white and the others are red
     def onPreviewGroupMeans(self):
         print "------ Preview of the Group's Mean in Slicer ------"
-        print "\n est-ceque je viens reellement de clique sur Preview pour les mean shapes ?? \n"
 
         # for group, h5path in self.dictShapeModels.items():
         #     # Compute the mean of each group thanks to Statismo
@@ -1378,7 +1379,6 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
             qlabel = table.cellWidget(row, 0)
             vtkFile = qlabel.text
 
-            print group
             # Update the dictionary if the vtk file has not the same group in the combobox than in the dictionary
             value = dictVTKFiles.get(group, None)
             if not any(vtkFile in s for s in value):
