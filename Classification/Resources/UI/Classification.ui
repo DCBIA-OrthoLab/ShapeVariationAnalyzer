@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1416</width>
-    <height>1408</height>
+    <width>1389</width>
+    <height>1446</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -268,7 +268,21 @@
          <string>Preview of Group's Mean</string>
         </property>
         <layout class="QVBoxLayout" name="verticalLayout_4">
-	 <item>
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout_meanGroupCSV">
+        <item>
+         <widget class="QLabel" name="label_meanGroup">
+          <property name="text">
+           <string>CSV File mean shapes:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="ctkPathLineEdit" name="pathLineEdit_meanGroup" native="true"/>
+        </item>
+       </layout>
+      </item>
+         <item>
           <layout class="QHBoxLayout" name="horizontalLayout">
            <item>
             <widget class="QLabel" name="label_healthyGroup">

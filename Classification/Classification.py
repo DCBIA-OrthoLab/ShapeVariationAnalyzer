@@ -114,6 +114,7 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         self.directoryButton_exportMeanGroups = self.logic.get('directoryButton_exportMeanGroups')
         self.pushButton_exportMeanGroups = self.logic.get('pushButton_exportMeanGroups')
         self.pushButton_computeMeanGroup = self.logic.get('pushButton_computeMeanGroup')
+        self.pathLineEdit_meanGroup = self.logic.get('pathLineEdit_meanGroup')
 
         # Widget Configuration
 
@@ -222,12 +223,12 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         slicer.mrmlScene.AddObserver(slicer.mrmlScene.EndCloseEvent, self.onCloseScene)
 
 
-
                  # Tab: Compute Average Groups
         self.pathLineEdit_selectionClassificationGroups.connect('currentPathChanged(const QString)', self.onComputeAverageClassificationGroups)
         self.pushButton_previewGroups.connect('clicked()', self.onPreviewGroupMeans)
         self.pushButton_computeMeanGroup.connect('clicked()', self.onComputeMeanGroup)
         self.pushButton_exportMeanGroups.connect('clicked()', self.onExportMeanGroups)
+        self.pathLineEdit_meanGroup.connect('currentPathChanged(const QString)', self.onMeanGroupCSV)
 
 
     # function called each time that the user "enter" in Diagnostic Index interface
@@ -252,9 +253,6 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         self.patientList = list()
         self.dictResult = dict()
 
-
-
-        print "ALLOOOO"
         # Tab: New Classification Groups
         self.pathLineEdit_previewGroups.setCurrentPath(" ")
         self.checkableComboBox_ChoiceOfGroup.setDisabled(True)
@@ -271,11 +269,9 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         self.tableWidget_VTKFiles.verticalHeader().setVisible(False)
         self.tableWidget_VTKFiles.setDisabled(True)
         self.pushButton_previewVTKFiles.setDisabled(True)
-        self.pushButton_compute.setDisabled(True)
+        # le bt compute
         self.directoryButton_exportUpdatedClassification.setDisabled(True)
         self.pushButton_exportUpdatedClassification.setDisabled(True)
-
-        print "lamaaaa"
 
         # Tab: Selection of Classification Groups
         self.pathLineEdit_selectionClassificationGroups.setCurrentPath(" ")
@@ -289,7 +285,6 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
 
         # Tab: Select Input Data
         self.pathLineEdit_CSVInputData.setCurrentPath(" ")
-        self.checkBox_fileInGroups.setDisabled(True)
 
         # Tab: Result / Analysis
         self.tableWidget_result.clear()
@@ -695,8 +690,9 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         # self.logic.saveNewClassificationGroups('Groups.csv', directory, self.dictShapeModels)
         self.logic.creationCSVFile(directory, "Groups.csv", self.dictVTKFiles, "Groups")
 
+
         # Remove the shape model (GX.h5) of each group
-        self.logic.removeDataAfterNCG(self.dictShapeModels)
+        self.logic.removeDataAfterNCG(self.dictVTKFiles)
 
         # Re-Initialization of the dictionary containing the path of the shape model of each group
         self.dictShapeModels = dict()
@@ -767,7 +763,7 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
             self.logic.storageMean(self.dictGroups, group)
 
             # print "\n " + str(self.dictGroups)
-
+        
         # REMPLIR LE CSV ??
 
         self.pushButton_exportMeanGroups.setEnabled(True)
@@ -779,11 +775,16 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
 
         return 
 
+
+    def onMeanGroupCSV(self):
+        print 'hihi'
+
     # Function to preview the Classification Groups in Slicer
     #    - The opacity of all the vtk files is set to 0.8
     #    - The healthy group is white and the others are red
     def onPreviewGroupMeans(self):
         print "------ Preview of the Group's Mean in Slicer ------"
+        print "\n est-ceque je viens reellement de clique sur Preview pour les mean shapes ?? \n"
 
         # for group, h5path in self.dictShapeModels.items():
         #     # Compute the mean of each group thanks to Statismo
@@ -802,8 +803,12 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         # else:
         for key in self.dictGroups.keys():
             filename = self.dictGroups.get(key, None)
+            print "filename de la key : " + str(key) + "   :   " + str(self.dictGroups[key])
             loader = slicer.util.loadModel
             loader(filename)
+
+        print "\n\n DICT GROUPS :: "
+        print self.dictGroups
 
     # Change the color and the opacity for each vtk file
         list = slicer.mrmlScene.GetNodesByClass("vtkMRMLModelNode")
@@ -847,7 +852,7 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
             filePathExisting.append(CSVfilePath)
 
         #   Check if the shape model exist
-        for key, value in self.dictShapeModels.items():
+        for key, value in self.dictGroups.items():
             modelFilename = os.path.basename(value)
             modelFilePath = directory + '/' + modelFilename
             if os.path.exists(modelFilePath):
@@ -870,32 +875,41 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
             if choice == messageBox.No:
                 return
 
-        # Save the CSV File and the shape model of each group
-        # self.logic.saveNewClassificationGroups('Groups.csv', directory, self.dictShapeModels)
-        self.logic.creationCSVFile(directory, "Groups.csv", self.dictVTKFiles, "Groups")
+        # Save the CSV File and the mean shape of each group
+        dictForCSV = dict()
+        for key, value in self.dictGroups.items():
+            # Save the shape model (h5 file) of each group
+            vtkbasename = os.path.basename(value)
+            oldvtkpath = slicer.app.temporaryPath + "/" + vtkbasename
+            newvtkpath = directory + "/" + vtkbasename
+            shutil.copyfile(oldvtkpath, newvtkpath)
+            dictForCSV[key] = newvtkpath
+
+        # Save the CSV file containing all the data useful in order to compute OAIndex of a patient
+
+        self.logic.creationCSVFile(directory, "MeanGroups.csv", dictForCSV, "MeanGroup")
 
         # Remove the shape model (GX.h5) of each group
-        self.logic.removeDataAfterNCG(self.dictShapeModels)
+        self.logic.removeDataAfterNCG(self.dictGroups)
 
         # Re-Initialization of the dictionary containing the path of the shape model of each group
-        self.dictShapeModels = dict()
+        self.dictGroups = dictForCSV
 
         # Message for the user
         slicer.util.delayDisplay("Files Saved")
 
         # Disable the option to export the new data
-        self.directoryButton_exportUpdatedClassification.setDisabled(True)
-        self.pushButton_exportUpdatedClassification.setDisabled(True)
+        # self.directoryButton_exportUpdatedClassification.setDisabled(True)
+        # self.pushButton_exportUpdatedClassification.setDisabled(True)
 
         # Load automatically the CSV file in the pathline in the next tab "Selection of Classification Groups"
-        if self.pathLineEdit_selectionClassificationGroups.currentPath == CSVfilePath:
-            self.pathLineEdit_selectionClassificationGroups.setCurrentPath(" ")
-        self.pathLineEdit_selectionClassificationGroups.setCurrentPath(CSVfilePath)
-
-
-
+        # if self.pathLineEdit_selectionClassificationGroups.currentPath == CSVfilePath:
+        #     self.pathLineEdit_selectionClassificationGroups.setCurrentPath(" ")
+        # self.pathLineEdit_selectionClassificationGroups.setCurrentPath(CSVfilePath)
 
         return 
+
+
     # ---------------------------------------------------- #
     #               Tab: Select Input Data                 #
     # ---------------------------------------------------- #
@@ -1536,7 +1550,7 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
         filename = "meanGroup" + str(key)
         meanPath = slicer.app.temporaryPath + '/' + filename + '.vtk'
         dictGroups[key] = meanPath
-        print dictGroups
+        # print dictGroups
 
     # Function to storage the shape model of each group in a dictionary
     def storeShapeModel(self, dictShapeModels, key):
@@ -1551,18 +1565,22 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
     #    - If saveH5 is True, this CSV file will contain a New Classification Group, a thrid column is then added
     #          - Thrid column: path of the shape model of each group
     def creationCSVFile(self, directory, CSVbasename, dictForCSV, option):
-        CSVFilePath = directory + "/" + CSVbasename
+        CSVFilePath = str(directory) + "/" + CSVbasename
         file = open(CSVFilePath, 'w')
         cw = csv.writer(file, delimiter=',')
         if option == "Groups":
             cw.writerow(['VTK Files', 'Group'])
-        elif option == "NCG":
-            cw.writerow(['H5 Path', 'Group'])
+        elif option == "MeanGroup":
+            cw.writerow(['Mean shapes VTK Files', 'Group'])
         for key, value in dictForCSV.items():
             if type(value) is ListType:
                 for vtkFile in value:
                     if option == "Groups":
                         cw.writerow([vtkFile, str(key)])
+                
+            elif option == "MeanGroup":
+                cw.writerow([value, str(key)])
+
             elif option == "NCG":
                 cw.writerow([value, str(key)])
         file.close()
@@ -1593,9 +1611,11 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
     def removeDataAfterNCG(self, dict):
         for key in dict.keys():
             # Remove of the shape model of each group
-            h5Path = slicer.app.temporaryPath + "/G" + str(key) + ".h5"
-            if os.path.exists(h5Path):
-                os.remove(h5Path)
+            # h5Path = slicer.app.temporaryPath + "/G" + str(key) + ".h5"
+            path = dict[key]
+            if os.path.exists(path):
+                # print f
+                os.remove(path)
 
     # Function to make some action on a dictionary
     def actionOnDictionary(self, dict, file, listSaveVTKFiles, action):
