@@ -6,91 +6,15 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1391</width>
-    <height>855</height>
+    <width>1416</width>
+    <height>1408</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Form</string>
   </property>
-  <layout class="QGridLayout" name="gridLayout_2">
-   <item row="2" column="0">
-    <widget class="ctkCollapsibleButton" name="CollapsibleButton_computeAverageGroups" native="true">
-     <property name="text" stdset="0">
-      <string>Computation of mean group</string>
-     </property>
-     <layout class="QGridLayout" name="gridLayout">
-      <item row="1" column="0">
-       <widget class="QGroupBox" name="groupBox_3">
-        <property name="title">
-         <string>Selection of Groups</string>
-        </property>
-        <layout class="QVBoxLayout" name="verticalLayout_8">
-         <item>
-          <layout class="QHBoxLayout" name="horizontalLayout_7">
-           <item>
-            <widget class="QLabel" name="label_CSVFileComputeMean">
-             <property name="text">
-              <string>CSV File</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="ctkPathLineEdit" name="PathLineEdit_selectionClassificationGroups" native="true"/>
-           </item>
-          </layout>
-         </item>
-         <item>
-          <widget class="QPushButton" name="pushButton_computeMeanGroup">
-           <property name="text">
-            <string>Compute mean group</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <layout class="QHBoxLayout" name="horizontalLayout_exportMeanGroups">
-           <item>
-            <widget class="ctkDirectoryButton" name="directoryButton_exportMeanGroups" native="true"/>
-           </item>
-           <item>
-            <widget class="QPushButton" name="pushButton_exportMeanGroups">
-             <property name="text">
-              <string>Export</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </item>
-        </layout>
-       </widget>
-      </item>
-      <item row="2" column="0">
-       <widget class="ctkCollapsibleGroupBox" name="CollapsibleGroupBox">
-        <property name="title">
-         <string>Preview of Group's Mean</string>
-        </property>
-        <layout class="QVBoxLayout" name="verticalLayout_4">
-         <item>
-          <widget class="QPushButton" name="pushButton_previewGroups">
-           <property name="text">
-            <string>Preview</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="qMRMLTreeView" name="MRMLTreeView_classificationGroups">
-           <property name="sceneModelType" stdset="0">
-            <string>ModelHierarchy</string>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </widget>
-      </item>
-     </layout>
-    </widget>
-   </item>
-   <item row="0" column="0">
+  <layout class="QVBoxLayout" name="verticalLayout_9">
+   <item>
     <widget class="ctkCollapsibleButton" name="CollapsibleButton_creationCSVFile" native="true">
      <property name="text" stdset="0">
       <string>Creation of CSV File for Classification Groups</string>
@@ -189,122 +113,7 @@
      </layout>
     </widget>
    </item>
-   <item row="5" column="0">
-    <spacer name="verticalSpacer">
-     <property name="orientation">
-      <enum>Qt::Vertical</enum>
-     </property>
-     <property name="sizeHint" stdset="0">
-      <size>
-       <width>20</width>
-       <height>40</height>
-      </size>
-     </property>
-    </spacer>
-   </item>
-   <item row="3" column="0">
-    <widget class="ctkCollapsibleButton" name="CollapsibleButton_selectInputData" native="true">
-     <property name="text" stdset="0">
-      <string>Select Input Data</string>
-     </property>
-     <property name="checked" stdset="0">
-      <bool>false</bool>
-     </property>
-     <layout class="QGridLayout" name="gridLayout_4">
-      <item row="2" column="2">
-       <widget class="ctkPathLineEdit" name="PathLineEdit_CSVInputData" native="true"/>
-      </item>
-      <item row="1" column="2">
-       <widget class="QCheckBox" name="checkBox_fileInGroups">
-        <property name="text">
-         <string>File already in the groups</string>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="0">
-       <widget class="QLabel" name="label_CSVFile">
-        <property name="text">
-         <string>CSV File</string>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="2">
-       <widget class="qMRMLNodeComboBox" name="MRMLNodeComboBox_VTKInputData" native="true">
-        <property name="nodeTypes" stdset="0">
-         <stringlist>
-          <string>vtkMRMLModelNode</string>
-         </stringlist>
-        </property>
-        <property name="showHidden" stdset="0">
-         <bool>false</bool>
-        </property>
-        <property name="noneEnabled" stdset="0">
-         <bool>true</bool>
-        </property>
-        <property name="addEnabled" stdset="0">
-         <bool>false</bool>
-        </property>
-        <property name="removeEnabled" stdset="0">
-         <bool>false</bool>
-        </property>
-        <property name="selectNodeUponCreation" stdset="0">
-         <bool>false</bool>
-        </property>
-       </widget>
-      </item>
-      <item row="4" column="2">
-       <widget class="QPushButton" name="pushButton_applyOAIndex">
-        <property name="text">
-         <string>Apply</string>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="0">
-       <widget class="QLabel" name="label_VTKFile">
-        <property name="text">
-         <string>VTK file</string>
-        </property>
-       </widget>
-      </item>
-     </layout>
-     <zorder>pushButton_applyOAIndex</zorder>
-     <zorder>label_VTKFile</zorder>
-     <zorder>label_CSVFile</zorder>
-     <zorder>PathLineEdit_CSVInputData</zorder>
-     <zorder>checkBox_fileInGroups</zorder>
-     <zorder>MRMLNodeComboBox_VTKInputData</zorder>
-    </widget>
-   </item>
-   <item row="4" column="0">
-    <widget class="ctkCollapsibleButton" name="CollapsibleButton_Result" native="true">
-     <property name="text" stdset="0">
-      <string>Result / Analysis</string>
-     </property>
-     <property name="checked" stdset="0">
-      <bool>false</bool>
-     </property>
-     <layout class="QVBoxLayout" name="verticalLayout_2">
-      <item>
-       <widget class="QTableWidget" name="tableWidget_result"/>
-      </item>
-      <item>
-       <layout class="QHBoxLayout" name="horizontalLayout_exportResult">
-        <item>
-         <widget class="ctkDirectoryButton" name="DirectoryButton_exportResult" native="true"/>
-        </item>
-        <item>
-         <widget class="QPushButton" name="pushButton_exportResult">
-          <property name="text">
-           <string>Export Result</string>
-          </property>
-         </widget>
-        </item>
-       </layout>
-      </item>
-     </layout>
-    </widget>
-   </item>
-   <item row="1" column="0">
+   <item>
     <widget class="ctkCollapsibleButton" name="CollapsibleButton_previewClassificationGroups" native="true">
      <property name="text" stdset="0">
       <string>Preview/Update Groups</string>
@@ -402,6 +211,211 @@
       </item>
      </layout>
     </widget>
+   </item>
+   <item>
+    <widget class="ctkCollapsibleButton" name="CollapsibleButton_computeAverageGroups" native="true">
+     <property name="text" stdset="0">
+      <string>Computation of mean group</string>
+     </property>
+     <layout class="QGridLayout" name="gridLayout">
+      <item row="1" column="0">
+       <widget class="QGroupBox" name="groupBox_3">
+        <property name="title">
+         <string>Selection of Groups</string>
+        </property>
+        <layout class="QVBoxLayout" name="verticalLayout_8">
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayout_7">
+           <item>
+            <widget class="QLabel" name="label_CSVFileComputeMean">
+             <property name="text">
+              <string>CSV File</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="ctkPathLineEdit" name="PathLineEdit_selectionClassificationGroups" native="true"/>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <widget class="QPushButton" name="pushButton_computeMeanGroup">
+           <property name="text">
+            <string>Compute mean group</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayout_exportMeanGroups">
+           <item>
+            <widget class="ctkDirectoryButton" name="directoryButton_exportMeanGroups" native="true"/>
+           </item>
+           <item>
+            <widget class="QPushButton" name="pushButton_exportMeanGroups">
+             <property name="text">
+              <string>Export</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="ctkCollapsibleGroupBox" name="CollapsibleGroupBox">
+        <property name="title">
+         <string>Preview of Group's Mean</string>
+        </property>
+        <layout class="QVBoxLayout" name="verticalLayout_4">
+	 <item>
+          <layout class="QHBoxLayout" name="horizontalLayout">
+           <item>
+            <widget class="QLabel" name="label_healthyGroup">
+             <property name="text">
+              <string>Healthy group:</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QSpinBox" name="spinBox_healthyGroup"/>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <widget class="QPushButton" name="pushButton_previewGroups">
+           <property name="text">
+            <string>Preview</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="qMRMLTreeView" name="MRMLTreeView_classificationGroups">
+           <property name="sceneModelType" stdset="0">
+            <string>ModelHierarchy</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="ctkCollapsibleButton" name="CollapsibleButton_selectInputData" native="true">
+     <property name="text" stdset="0">
+      <string>Select Input Data</string>
+     </property>
+     <property name="checked" stdset="0">
+      <bool>false</bool>
+     </property>
+     <layout class="QGridLayout" name="gridLayout_4">
+      <item row="2" column="2">
+       <widget class="ctkPathLineEdit" name="PathLineEdit_CSVInputData" native="true"/>
+      </item>
+      <item row="1" column="2">
+       <widget class="QCheckBox" name="checkBox_fileInGroups">
+        <property name="text">
+         <string>File already in the groups</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QLabel" name="label_CSVFile">
+        <property name="text">
+         <string>CSV File</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="2">
+       <widget class="qMRMLNodeComboBox" name="MRMLNodeComboBox_VTKInputData" native="true">
+        <property name="nodeTypes" stdset="0">
+         <stringlist>
+          <string>vtkMRMLModelNode</string>
+         </stringlist>
+        </property>
+        <property name="showHidden" stdset="0">
+         <bool>false</bool>
+        </property>
+        <property name="noneEnabled" stdset="0">
+         <bool>true</bool>
+        </property>
+        <property name="addEnabled" stdset="0">
+         <bool>false</bool>
+        </property>
+        <property name="removeEnabled" stdset="0">
+         <bool>false</bool>
+        </property>
+        <property name="selectNodeUponCreation" stdset="0">
+         <bool>false</bool>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="2">
+       <widget class="QPushButton" name="pushButton_applyOAIndex">
+        <property name="text">
+         <string>Apply</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="0">
+       <widget class="QLabel" name="label_VTKFile">
+        <property name="text">
+         <string>VTK file</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+     <zorder>pushButton_applyOAIndex</zorder>
+     <zorder>label_VTKFile</zorder>
+     <zorder>label_CSVFile</zorder>
+     <zorder>PathLineEdit_CSVInputData</zorder>
+     <zorder>checkBox_fileInGroups</zorder>
+     <zorder>MRMLNodeComboBox_VTKInputData</zorder>
+    </widget>
+   </item>
+   <item>
+    <widget class="ctkCollapsibleButton" name="CollapsibleButton_Result" native="true">
+     <property name="text" stdset="0">
+      <string>Result / Analysis</string>
+     </property>
+     <property name="checked" stdset="0">
+      <bool>false</bool>
+     </property>
+     <layout class="QVBoxLayout" name="verticalLayout_2">
+      <item>
+       <widget class="QTableWidget" name="tableWidget_result"/>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout_exportResult">
+        <item>
+         <widget class="ctkDirectoryButton" name="DirectoryButton_exportResult" native="true"/>
+        </item>
+        <item>
+         <widget class="QPushButton" name="pushButton_exportResult">
+          <property name="text">
+           <string>Export Result</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <spacer name="verticalSpacer">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>40</height>
+      </size>
+     </property>
+    </spacer>
    </item>
   </layout>
  </widget>

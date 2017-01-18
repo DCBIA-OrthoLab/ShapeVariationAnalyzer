@@ -90,7 +90,7 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
                  # Tab: Selection Classification Groups
         # self.collapsibleButton_SelectClassificationGroups = self.logic.get('CollapsibleButton_SelectClassificationGroups')
         # self.pathLineEdit_selectionClassificationGroups = self.logic.get('PathLineEdit_selectionClassificationGroups')
-        # self.spinBox_healthyGroup = self.logic.get('spinBox_healthyGroup')
+        self.spinBox_healthyGroup = self.logic.get('spinBox_healthyGroup')
         # self.pushButton_previewGroups = self.logic.get('pushButton_previewGroups')
         # self.MRMLTreeView_classificationGroups = self.logic.get('MRMLTreeView_classificationGroups')
         #          Tab: Select Input Data
@@ -118,7 +118,7 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         # Widget Configuration
 
         #     disable/enable and hide/show widget
-        # self.spinBox_healthyGroup.setDisabled(True)
+        self.spinBox_healthyGroup.setDisabled(True)
         # self.pushButton_previewGroups.setDisabled(True)
         # self.pushButton_compute.setDisabled(True)
         # self.pushButton_compute.setDisabled(True)
@@ -252,6 +252,9 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         self.patientList = list()
         self.dictResult = dict()
 
+
+
+        print "ALLOOOO"
         # Tab: New Classification Groups
         self.pathLineEdit_previewGroups.setCurrentPath(" ")
         self.checkableComboBox_ChoiceOfGroup.setDisabled(True)
@@ -272,11 +275,13 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         self.directoryButton_exportUpdatedClassification.setDisabled(True)
         self.pushButton_exportUpdatedClassification.setDisabled(True)
 
+        print "lamaaaa"
+
         # Tab: Selection of Classification Groups
         self.pathLineEdit_selectionClassificationGroups.setCurrentPath(" ")
-        # if self.spinBox_healthyGroup.enabled:
-        #     self.spinBox_healthyGroup.setValue(0)
-        # self.spinBox_healthyGroup.setDisabled(True)
+        if self.spinBox_healthyGroup.enabled:
+            self.spinBox_healthyGroup.setValue(0)
+        self.spinBox_healthyGroup.setDisabled(True)
 
         # Tab: Preview of Classification Group
         self.MRMLTreeView_classificationGroups.setDisabled(True)
@@ -743,19 +748,27 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
             return
 
         # Enable/disable buttons
-        # self.spinBox_healthyGroup.setEnabled(True)
+        self.spinBox_healthyGroup.setEnabled(True)
         
 
         self.pushButton_computeMeanGroup.setEnabled(True)
 
         # Configuration of the spinbox specify the healthy group
         #      Set the Maximum value of spinBox_healthyGroup at the maximum number groups
-        # self.spinBox_healthyGroup.setMaximum(len(self.dictShapeModels))
+        self.spinBox_healthyGroup.setMaximum(len(self.dictShapeModels))
 
     def onComputeMeanGroup(self):
 
-        for key, value in self.dictShapeModels.items():
-            self.logic.computeMean(key, value)
+        for group, listvtk in self.dictShapeModels.items():
+            # Compute the mean of each group thanks to the CLI "computeMean"
+            self.logic.computeMean(group, listvtk)
+
+            # Storage of the means for each group
+            self.logic.storageMean(self.dictGroups, group)
+
+            # print "\n " + str(self.dictGroups)
+
+        # REMPLIR LE CSV ??
 
         self.pushButton_exportMeanGroups.setEnabled(True)
         self.directoryButton_exportMeanGroups.setEnabled(True)
@@ -772,44 +785,44 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
     def onPreviewGroupMeans(self):
         print "------ Preview of the Group's Mean in Slicer ------"
 
-        for group, h5path in self.dictShapeModels.items():
-            # Compute the mean of each group thanks to Statismo
-            self.logic.computeMean(group, h5path)
+        # for group, h5path in self.dictShapeModels.items():
+        #     # Compute the mean of each group thanks to Statismo
+        #     self.logic.computeMean(group, h5path)
 
-            # Storage of the means for each group
-            self.logic.storageMean(self.dictGroups, group)
+        #     # Storage of the means for each group
+        #     self.logic.storageMean(self.dictGroups, group)
 
         # If the user doesn't specify the healthy group
         #     error message for the user
         # Else
         #     load the Classification Groups in Slicer
-        if self.spinBox_healthyGroup.value == 0:
-            # Error message:
-            slicer.util.errorDisplay('Miss the number of the healthy group ')
-        else:
-            for key in self.dictGroups.keys():
-                filename = self.dictGroups.get(key, None)
-                loader = slicer.util.loadModel
-                loader(filename)
+        # if self.spinBox_healthyGroup.value == 0:
+        #     # Error message:
+        #     slicer.util.errorDisplay('Miss the number of the healthy group ')
+        # else:
+        for key in self.dictGroups.keys():
+            filename = self.dictGroups.get(key, None)
+            loader = slicer.util.loadModel
+            loader(filename)
 
-        # Change the color and the opacity for each vtk file
-            list = slicer.mrmlScene.GetNodesByClass("vtkMRMLModelNode")
-            end = list.GetNumberOfItems()
-            for i in range(3,end):
-                model = list.GetItemAsObject(i)
-                disp = model.GetDisplayNode()
-                for group in self.dictGroups.keys():
-                    filename = self.dictGroups.get(group, None)
-                    if os.path.splitext(os.path.basename(filename))[0] == model.GetName():
-                        if self.spinBox_healthyGroup.value == group:
-                            disp.SetColor(1, 1, 1)
-                            disp.VisibilityOn()
-                        else:
-                            disp.SetColor(1, 0, 0)
-                            disp.VisibilityOff()
-                        disp.SetOpacity(0.8)
-                        break
-                    disp.VisibilityOff()
+    # Change the color and the opacity for each vtk file
+        list = slicer.mrmlScene.GetNodesByClass("vtkMRMLModelNode")
+        end = list.GetNumberOfItems()
+        for i in range(3,end):
+            model = list.GetItemAsObject(i)
+            disp = model.GetDisplayNode()
+            for group in self.dictGroups.keys():
+                filename = self.dictGroups.get(group, None)
+                if os.path.splitext(os.path.basename(filename))[0] == model.GetName():
+                    if self.spinBox_healthyGroup.value == group:
+                        disp.SetColor(1, 1, 1)
+                        disp.VisibilityOn()
+                    else:
+                        disp.SetColor(1, 0, 0)
+                        disp.VisibilityOff()
+                    disp.SetOpacity(0.8)
+                    break
+                disp.VisibilityOff()
 
         # Center the 3D view of the scene
         layoutManager = slicer.app.layoutManager()
@@ -819,7 +832,69 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
 
 
     def onExportMeanGroups(self):
-        print "a exporter : les shapes moyennes + csv les listant"
+        print "--- Export all the mean shapes + csv file ---"
+
+        # Message for the user if files already exist
+        directory = self.directoryButton_exportMeanGroups.directory.encode('utf-8')
+        messageBox = ctk.ctkMessageBox()
+        messageBox.setWindowTitle(' /!\ WARNING /!\ ')
+        messageBox.setIcon(messageBox.Warning)
+        filePathExisting = list()
+
+        #   Check if the CSV file exists
+        CSVfilePath = directory + "/meanGroups.csv"
+        if os.path.exists(CSVfilePath):
+            filePathExisting.append(CSVfilePath)
+
+        #   Check if the shape model exist
+        for key, value in self.dictShapeModels.items():
+            modelFilename = os.path.basename(value)
+            modelFilePath = directory + '/' + modelFilename
+            if os.path.exists(modelFilePath):
+                filePathExisting.append(modelFilePath)
+
+        #   Write the message for the user
+        if len(filePathExisting) > 0:
+            if len(filePathExisting) == 1:
+                text = 'File ' + filePathExisting[0] + ' already exists!'
+                informativeText = 'Do you want to replace it ?'
+            elif len(filePathExisting) > 1:
+                text = 'These files are already exist: \n'
+                for path in filePathExisting:
+                    text = text + path + '\n'
+                    informativeText = 'Do you want to replace them ?'
+            messageBox.setText(text)
+            messageBox.setInformativeText(informativeText)
+            messageBox.setStandardButtons( messageBox.No | messageBox.Yes)
+            choice = messageBox.exec_()
+            if choice == messageBox.No:
+                return
+
+        # Save the CSV File and the shape model of each group
+        # self.logic.saveNewClassificationGroups('Groups.csv', directory, self.dictShapeModels)
+        self.logic.creationCSVFile(directory, "Groups.csv", self.dictVTKFiles, "Groups")
+
+        # Remove the shape model (GX.h5) of each group
+        self.logic.removeDataAfterNCG(self.dictShapeModels)
+
+        # Re-Initialization of the dictionary containing the path of the shape model of each group
+        self.dictShapeModels = dict()
+
+        # Message for the user
+        slicer.util.delayDisplay("Files Saved")
+
+        # Disable the option to export the new data
+        self.directoryButton_exportUpdatedClassification.setDisabled(True)
+        self.pushButton_exportUpdatedClassification.setDisabled(True)
+
+        # Load automatically the CSV file in the pathline in the next tab "Selection of Classification Groups"
+        if self.pathLineEdit_selectionClassificationGroups.currentPath == CSVfilePath:
+            self.pathLineEdit_selectionClassificationGroups.setCurrentPath(" ")
+        self.pathLineEdit_selectionClassificationGroups.setCurrentPath(CSVfilePath)
+
+
+
+
         return 
     # ---------------------------------------------------- #
     #               Tab: Select Input Data                 #
@@ -1422,7 +1497,6 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
         # sys.path.insert(0, libPath)
         # computeMean = os.path.join(scriptedModulesPath, '../hidden-cli-modules/computeMean')
         computeMean = "/Users/prisgdd/Documents/Projects/CNN/computeMean-build/src/bin/computemean"
-        # for key, value -> et value te donne la liste du group
         arguments = list()
         arguments.append("--inputList")
         vtkfilelist = ""
