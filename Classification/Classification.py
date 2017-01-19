@@ -753,7 +753,7 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
 
         # Configuration of the spinbox specify the healthy group
         #      Set the Maximum value of spinBox_healthyGroup at the maximum number groups
-        self.spinBox_healthyGroup.setMaximum(len(self.dictShapeModels))
+        self.spinBox_healthyGroup.setMaximum(len(self.dictShapeModels) - 1)
 
     def onComputeMeanGroup(self):
 
@@ -779,7 +779,35 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
 
 
     def onMeanGroupCSV(self):
-        print 'hihi'
+        
+        print "------ onMeanGroupCSV ------"
+        self.dictGroups = dict()
+
+        # Check if it's a CSV file
+        condition1 = self.logic.checkExtension(self.pathLineEdit_meanGroup.currentPath, ".csv")
+        if not condition1:
+            self.pathLineEdit_meanGroup.setCurrentPath(" ")
+            return
+
+        # Download the CSV file
+        self.logic.table = self.logic.readCSVFile(self.pathLineEdit_meanGroup.currentPath)
+        condition2 = self.logic.creationDictVTKFiles(self.dictGroups)
+
+        print "avt cond3"
+        condition3 = self.logic.checkOneMeshPerGroupInDict(self.dictGroups)
+        print "apres cond3"
+
+        # If the file is not conformed:
+        #    Re-initialization of the dictionary containing all the data
+        #    which will be used to create a new Classification Groups
+        if not (condition2 and condition3):
+            self.dictGroups = dict()
+            # self.pathLineEdit_meanGroup.setCurrentPath(" ")
+            return
+
+        self.pushButton_previewGroups.setEnabled(True)
+        self.spinBox_healthyGroup.setEnabled(True)
+        self.MRMLTreeView_classificationGroups.setEnabled(True)
 
     # Function to preview the Classification Groups in Slicer
     #    - The opacity of all the vtk files is set to 0.8
@@ -902,7 +930,7 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         # Load automatically the CSV file in the pathline in the next tab "Selection of Classification Groups"
         # if self.pathLineEdit_selectionClassificationGroups.currentPath == CSVfilePath:
         #     self.pathLineEdit_selectionClassificationGroups.setCurrentPath(" ")
-        # self.pathLineEdit_selectionClassificationGroups.setCurrentPath(CSVfilePath)
+        # self.pathLineEdit_meanGroup.setCurrentPath(CSVfilePath)
 
         return 
 
@@ -1211,6 +1239,14 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
         for key, value in dict.items():
             if type(value) is not ListType or len(value) == 1:
                 slicer.util.errorDisplay('The group ' + str(key) + ' must contain more than one mesh.')
+                return False
+        return True
+
+    # Function to check if in each group there is at least more than one mesh
+    def checkOneMeshPerGroupInDict(self, dict):
+        for key, value in dict.items():
+            if type(value) is ListType: # or len(value) != 1:
+                slicer.util.errorDisplay('The group ' + str(key) + ' must contain exactly one mesh.')
                 return False
         return True
 
