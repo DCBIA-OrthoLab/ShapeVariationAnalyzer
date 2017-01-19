@@ -90,7 +90,7 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
                  # Tab: Selection Classification Groups
         # self.collapsibleButton_SelectClassificationGroups = self.logic.get('CollapsibleButton_SelectClassificationGroups')
         # self.pathLineEdit_selectionClassificationGroups = self.logic.get('PathLineEdit_selectionClassificationGroups')
-        self.spinBox_healthyGroup = self.logic.get('spinBox_healthyGroup')
+        self.comboBox_healthyGroup = self.logic.get('comboBox_healthyGroup')
         # self.pushButton_previewGroups = self.logic.get('pushButton_previewGroups')
         # self.MRMLTreeView_classificationGroups = self.logic.get('MRMLTreeView_classificationGroups')
         #          Tab: Select Input Data
@@ -119,7 +119,7 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         # Widget Configuration
 
         #     disable/enable and hide/show widget
-        self.spinBox_healthyGroup.setDisabled(True)
+        self.comboBox_healthyGroup.setDisabled(True)
         # self.pushButton_previewGroups.setDisabled(True)
         # self.pushButton_compute.setDisabled(True)
         # self.pushButton_compute.setDisabled(True)
@@ -243,6 +243,13 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
 
     # function called each time that the scene is closed (if Diagnostic Index has been initialized)
     def onCloseScene(self, obj, event):
+
+        # numItem = self.comboBox_healthyGroup.count
+        # for i in range(0, numItem):
+        #     self.comboBox_healthyGroup.removeItem(0)
+            
+        self.comboBox_healthyGroup.clear()
+
         print "onCloseScene"
         self.dictVTKFiles = dict()
         self.dictGroups = dict()
@@ -275,9 +282,9 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
 
         # Tab: Selection of Classification Groups
         self.pathLineEdit_selectionClassificationGroups.setCurrentPath(" ")
-        if self.spinBox_healthyGroup.enabled:
-            self.spinBox_healthyGroup.setValue(0)
-        self.spinBox_healthyGroup.setDisabled(True)
+        if self.comboBox_healthyGroup.enabled:
+            self.comboBox_healthyGroup.setValue(0)
+        self.comboBox_healthyGroup.setDisabled(True)
 
         # Tab: Preview of Classification Group
         self.MRMLTreeView_classificationGroups.setDisabled(True)
@@ -734,31 +741,36 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
             self.pathLineEdit_selectionClassificationGroups.setCurrentPath(" ")
             return
 
+
         # Read CSV File:
         self.logic.table = self.logic.readCSVFile(self.pathLineEdit_selectionClassificationGroups.currentPath)
         condition3 = self.logic.creationDictVTKFiles(self.dictShapeModels)
+        condition2 = self.logic.checkSeveralMeshInDict(self.dictShapeModels)
 
         #    If the file is not conformed:
         #    Re-initialization of the dictionary containing the Classification Groups
-        if not condition3:
+        if not (condition2 and condition3):
             self.dictShapeModels = dict()
             self.pathLineEdit_selectionClassificationGroups.setCurrentPath(" ")
             return
 
         # Enable/disable buttons
-        self.spinBox_healthyGroup.setEnabled(True)
+        # self.comboBox_healthyGroup.setEnabled(True)
         
 
         self.pushButton_computeMeanGroup.setEnabled(True)
 
         # Configuration of the spinbox specify the healthy group
-        #      Set the Maximum value of spinBox_healthyGroup at the maximum number groups
-        self.spinBox_healthyGroup.setMaximum(len(self.dictShapeModels) - 1)
+        #      Set the Maximum value of comboBox_healthyGroup at the maximum number groups
+
+
+        # self.comboBox_healthyGroup.setMaximum(len(self.dictShapeModels) - 1)
 
     def onComputeMeanGroup(self):
 
         for group, listvtk in self.dictShapeModels.items():
             # Compute the mean of each group thanks to the CLI "computeMean"
+            print "un des groups : " + str(group)
             self.logic.computeMean(group, listvtk)
 
             # Storage of the means for each group
@@ -806,8 +818,21 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
             return
 
         self.pushButton_previewGroups.setEnabled(True)
-        self.spinBox_healthyGroup.setEnabled(True)
-        self.MRMLTreeView_classificationGroups.setEnabled(True)
+        self.comboBox_healthyGroup.setEnabled(True)
+        # self.comboBox_healthyGroup.setMaximum(len(self.dictGroups.keys()) - 1)
+
+        # numItem = self.comboBox_healthyGroup.count
+        # for i in range(0, numItem):
+        #     self.comboBox_healthyGroup.removeItem(0)
+        self.comboBox_healthyGroup.clear()
+
+        print "wallou   :::  \n" + str(self.dictGroups)
+        for key, value in self.dictGroups.items():
+            # Fill the Checkable Combobox
+            self.comboBox_healthyGroup.addItem("Group " + str(key))
+
+
+        
 
     # Function to preview the Classification Groups in Slicer
     #    - The opacity of all the vtk files is set to 0.8
@@ -830,6 +855,19 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         #     # Error message:
         #     slicer.util.errorDisplay('Miss the number of the healthy group ')
         # else:
+
+        # list = slicer.mrmlScene.GetNodesByClass("vtkMRMLModelNode")
+        # end = list.GetNumberOfItems()
+        # for i in range(0,end):
+        #     model = list.GetItemAsObject(i)
+        #     print model.GetName()
+        #     print 
+        #     if model.GetName()[:len("meanGroup")] == "meanGroup":
+        #         hardenModel = slicer.mrmlScene.GetNodesByName(model.GetName()).GetItemAsObject(0)
+        #         slicer.mrmlScene.RemoveNode(hardenModel)
+
+
+        self.MRMLTreeView_classificationGroups.setEnabled(True)
         for key in self.dictGroups.keys():
             filename = self.dictGroups.get(key, None)
             loader = slicer.util.loadModel
@@ -844,7 +882,7 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
             for group in self.dictGroups.keys():
                 filename = self.dictGroups.get(group, None)
                 if os.path.splitext(os.path.basename(filename))[0] == model.GetName():
-                    if self.spinBox_healthyGroup.value == group:
+                    if self.comboBox_healthyGroup.currentText == "Group " + str(group):
                         disp.SetColor(1, 1, 1)
                         disp.VisibilityOn()
                     else:
@@ -872,7 +910,7 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         filePathExisting = list()
 
         #   Check if the CSV file exists
-        CSVfilePath = directory + "/meanGroups.csv"
+        CSVfilePath = directory + "/MeanGroups.csv"
         if os.path.exists(CSVfilePath):
             filePathExisting.append(CSVfilePath)
 
@@ -922,15 +960,16 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
 
         # Message for the user
         slicer.util.delayDisplay("Files Saved")
+        print "Saved in :: " + directory + "/MeanGroups.csv"
 
         # Disable the option to export the new data
         # self.directoryButton_exportUpdatedClassification.setDisabled(True)
         # self.pushButton_exportUpdatedClassification.setDisabled(True)
 
         # Load automatically the CSV file in the pathline in the next tab "Selection of Classification Groups"
-        # if self.pathLineEdit_selectionClassificationGroups.currentPath == CSVfilePath:
-        #     self.pathLineEdit_selectionClassificationGroups.setCurrentPath(" ")
-        # self.pathLineEdit_meanGroup.setCurrentPath(CSVfilePath)
+        if self.pathLineEdit_meanGroup.currentPath == CSVfilePath:
+            self.pathLineEdit_meanGroup.setCurrentPath(" ")
+        self.pathLineEdit_meanGroup.setCurrentPath(CSVfilePath)
 
         return 
 
