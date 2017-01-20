@@ -94,11 +94,19 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         # self.pushButton_previewGroups = self.logic.get('pushButton_previewGroups')
         # self.MRMLTreeView_classificationGroups = self.logic.get('MRMLTreeView_classificationGroups')
         #          Tab: Select Input Data
-        self.collapsibleButton_selectInputData = self.logic.get('CollapsibleButton_selectInputData')
+        self.collapsibleButton_classificationNetwork = self.logic.get('collapsibleButton_classificationNetwork')
         self.MRMLNodeComboBox_VTKInputData = self.logic.get('MRMLNodeComboBox_VTKInputData')
         self.pathLineEdit_CSVInputData = self.logic.get('PathLineEdit_CSVInputData')
         # self.checkBox_fileInGroups = self.logic.get('checkBox_fileInGroups')
         self.pushButton_applyOAIndex = self.logic.get('pushButton_applyOAIndex')
+
+        self.pushButton_trainNetwork = self.logic.get('pushButton_trainNetwork')
+        self.pushButton_exportNetwork = self.logic.get('pushButton_ExportNetwork')
+        self.pathLineEdit_CSVFileDataset = self.logic.get('pathLineEdit_CSVFileDataset')
+        self.pathLineEdit_CSVFileMeansShape = self.logic.get('pathLineEdit_CSVFileMeansShape')
+        self.directoryButton_exportNetwork = self.logic.get('directoryButton_ExportNetwork')
+
+
         #          Tab: Result / Analysis
         self.collapsibleButton_Result = self.logic.get('CollapsibleButton_Result')
         self.tableWidget_result = self.logic.get('tableWidget_result')
@@ -134,6 +142,13 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         self.pushButton_computeMeanGroup.setDisabled(True)
         self.directoryButton_exportMeanGroups.setDisabled(True)
         self.pushButton_exportMeanGroups.setDisabled(True)
+
+        self.pushButton_trainNetwork.setDisabled(True)
+        self.pushButton_exportNetwork.setDisabled(True)
+        self.directoryButton_exportNetwork.setDisabled(True)
+
+
+
 
         #     qMRMLNodeComboBox configuration
         self.MRMLNodeComboBox_VTKInputData.setMRMLScene(slicer.mrmlScene)
@@ -209,11 +224,14 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         # self.pathLineEdit_selectionClassificationGroups.connect('currentPathChanged(const QString)', self.onSelectionClassificationGroups)
         # self.pushButton_previewGroups.connect('clicked()', self.onPreviewGroupMeans)
         #          Tab: Select Input Data
-        self.collapsibleButton_selectInputData.connect('clicked()',
-                                                       lambda: self.onSelectedCollapsibleButtonOpen(self.collapsibleButton_selectInputData))
+        self.collapsibleButton_classificationNetwork.connect('clicked()',
+                                                       lambda: self.onSelectedCollapsibleButtonOpen(self.collapsibleButton_classificationNetwork))
         self.MRMLNodeComboBox_VTKInputData.connect('currentNodeChanged(vtkMRMLNode*)', self.onVTKInputData)
         # self.checkBox_fileInGroups.connect('clicked()', self.onCheckFileInGroups)
         # self.pathLineEdit_CSVInputData.connect('currentPathChanged(const QString)', self.onCSVInputData)
+        
+        
+        
         self.pushButton_applyOAIndex.connect('clicked()', self.onComputeOAIndex)
         #          Tab: Result / Analysis
         self.collapsibleButton_Result.connect('clicked()',
@@ -283,7 +301,7 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         # Tab: Selection of Classification Groups
         self.pathLineEdit_selectionClassificationGroups.setCurrentPath(" ")
         if self.comboBox_healthyGroup.enabled:
-            self.comboBox_healthyGroup.setValue(0)
+            self.comboBox_healthyGroup.clear()
         self.comboBox_healthyGroup.setDisabled(True)
 
         # Tab: Preview of Classification Group
@@ -311,7 +329,7 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
             collapsibleButtonList = [self.collapsibleButton_creationCSVFile,
                                      self.collapsibleButton_previewClassificationGroups,
                                      self.CollapsibleButton_computeAverageGroups,
-                                     self.collapsibleButton_selectInputData,
+                                     self.collapsibleButton_classificationNetwork,
                                      self.collapsibleButton_Result]
             for collapsibleButton in collapsibleButtonList:
                 collapsibleButton.setChecked(False)

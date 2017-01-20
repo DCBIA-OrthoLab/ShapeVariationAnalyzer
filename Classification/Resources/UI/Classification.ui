@@ -6,14 +6,14 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1389</width>
-    <height>1446</height>
+    <width>1391</width>
+    <height>855</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Form</string>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout_9">
+  <layout class="QVBoxLayout" name="verticalLayout_12">
    <item>
     <widget class="ctkCollapsibleButton" name="CollapsibleButton_creationCSVFile" native="true">
      <property name="text" stdset="0">
@@ -268,20 +268,20 @@
          <string>Preview of Group's Mean</string>
         </property>
         <layout class="QVBoxLayout" name="verticalLayout_4">
-      <item>
-       <layout class="QHBoxLayout" name="horizontalLayout_meanGroupCSV">
-        <item>
-         <widget class="QLabel" name="label_meanGroup">
-          <property name="text">
-           <string>CSV File mean shapes:</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="ctkPathLineEdit" name="pathLineEdit_meanGroup" native="true"/>
-        </item>
-       </layout>
-      </item>
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayout_meanGroupCSV">
+           <item>
+            <widget class="QLabel" name="label_meanGroup">
+             <property name="text">
+              <string>CSV File mean shapes:</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="ctkPathLineEdit" name="pathLineEdit_meanGroup" native="true"/>
+           </item>
+          </layout>
+         </item>
          <item>
           <layout class="QHBoxLayout" name="horizontalLayout">
            <item>
@@ -292,7 +292,7 @@
             </widget>
            </item>
            <item>
-            <widget class="QSpinBox" name="spinBox_healthyGroup"/>
+            <widget class="QComboBox" name="comboBox_healthyGroup"/>
            </item>
           </layout>
          </item>
@@ -317,76 +317,133 @@
     </widget>
    </item>
    <item>
-    <widget class="ctkCollapsibleButton" name="CollapsibleButton_selectInputData" native="true">
+    <widget class="ctkCollapsibleButton" name="collapsibleButton_classificationNetwork" native="true">
      <property name="text" stdset="0">
-      <string>Select Input Data</string>
+      <string>Classification Network</string>
      </property>
      <property name="checked" stdset="0">
       <bool>false</bool>
      </property>
      <layout class="QGridLayout" name="gridLayout_4">
-      <item row="2" column="2">
-       <widget class="ctkPathLineEdit" name="PathLineEdit_CSVInputData" native="true"/>
-      </item>
       <item row="1" column="2">
-       <widget class="QCheckBox" name="checkBox_fileInGroups">
-        <property name="text">
-         <string>File already in the groups</string>
+       <widget class="QGroupBox" name="groupBox_createNetwork">
+        <property name="title">
+         <string>Create Network</string>
         </property>
+        <layout class="QVBoxLayout" name="verticalLayout_11">
+         <item>
+          <layout class="QGridLayout" name="gridLayout_3">
+           <item row="0" column="0">
+            <widget class="QLabel" name="label_CSVFileDataset">
+             <property name="text">
+              <string>CSV File dataset</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="ctkPathLineEdit" name="pathLineEdit_CSVFileDataset" native="true"/>
+           </item>
+           <item row="1" column="0">
+            <widget class="QLabel" name="label_CSVFileMeanShapes">
+             <property name="text">
+              <string>CSV File mean shapes</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="ctkPathLineEdit" name="pathLineEdit_CSVFileMeansShape" native="true"/>
+           </item>
+           <item row="2" column="1">
+            <widget class="QPushButton" name="pushButton_trainNetwork">
+             <property name="text">
+              <string>Train Network</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="1">
+            <widget class="QPushButton" name="pushButton_ExportNetwork">
+             <property name="text">
+              <string>Export Network</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="0">
+            <widget class="ctkDirectoryButton" name="directoryButton_ExportNetwork" native="true"/>
+           </item>
+          </layout>
+         </item>
+        </layout>
        </widget>
       </item>
-      <item row="2" column="0">
-       <widget class="QLabel" name="label_CSVFile">
-        <property name="text">
-         <string>CSV File</string>
+      <item row="2" column="2">
+       <widget class="QGroupBox" name="groupBox_evalNetwork">
+        <property name="title">
+         <string>Classify shape(s)</string>
         </property>
-       </widget>
-      </item>
-      <item row="0" column="2">
-       <widget class="qMRMLNodeComboBox" name="MRMLNodeComboBox_VTKInputData" native="true">
-        <property name="nodeTypes" stdset="0">
-         <stringlist>
-          <string>vtkMRMLModelNode</string>
-         </stringlist>
-        </property>
-        <property name="showHidden" stdset="0">
-         <bool>false</bool>
-        </property>
-        <property name="noneEnabled" stdset="0">
-         <bool>true</bool>
-        </property>
-        <property name="addEnabled" stdset="0">
-         <bool>false</bool>
-        </property>
-        <property name="removeEnabled" stdset="0">
-         <bool>false</bool>
-        </property>
-        <property name="selectNodeUponCreation" stdset="0">
-         <bool>false</bool>
-        </property>
-       </widget>
-      </item>
-      <item row="4" column="2">
-       <widget class="QPushButton" name="pushButton_applyOAIndex">
-        <property name="text">
-         <string>Apply</string>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="0">
-       <widget class="QLabel" name="label_VTKFile">
-        <property name="text">
-         <string>VTK file</string>
-        </property>
+        <layout class="QVBoxLayout" name="verticalLayout_9">
+         <item>
+          <layout class="QGridLayout" name="gridLayout_2">
+           <item row="2" column="1">
+            <widget class="ctkPathLineEdit" name="PathLineEdit_CSVInputData" native="true"/>
+           </item>
+           <item row="2" column="0">
+            <widget class="QLabel" name="label_CSVFile">
+             <property name="text">
+              <string>CSV File</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="qMRMLNodeComboBox" name="MRMLNodeComboBox_VTKInputData" native="true">
+             <property name="nodeTypes" stdset="0">
+              <stringlist>
+               <string>vtkMRMLModelNode</string>
+              </stringlist>
+             </property>
+             <property name="showHidden" stdset="0">
+              <bool>false</bool>
+             </property>
+             <property name="noneEnabled" stdset="0">
+              <bool>true</bool>
+             </property>
+             <property name="addEnabled" stdset="0">
+              <bool>false</bool>
+             </property>
+             <property name="removeEnabled" stdset="0">
+              <bool>false</bool>
+             </property>
+             <property name="selectNodeUponCreation" stdset="0">
+              <bool>false</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="0">
+            <widget class="QLabel" name="label_VTKFile">
+             <property name="text">
+              <string>VTK file</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="1">
+            <widget class="QPushButton" name="pushButton_applyOAIndex">
+             <property name="text">
+              <string>Apply</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="QCheckBox" name="checkBox_fileInGroups">
+             <property name="text">
+              <string>File already in the groups</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+        </layout>
        </widget>
       </item>
      </layout>
-     <zorder>pushButton_applyOAIndex</zorder>
-     <zorder>label_VTKFile</zorder>
-     <zorder>label_CSVFile</zorder>
-     <zorder>PathLineEdit_CSVInputData</zorder>
-     <zorder>checkBox_fileInGroups</zorder>
-     <zorder>MRMLNodeComboBox_VTKInputData</zorder>
     </widget>
    </item>
    <item>
