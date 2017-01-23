@@ -52,6 +52,8 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         self.patientList = list()
         self.dictResult = dict()
 
+        self.dictFeatData = dict()
+
         # Interface
         loader = qt.QUiLoader()
         self.moduleName = 'Classification'
@@ -1092,6 +1094,8 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
     def onPreprocessData(self):
         print "----- onPreprocessData -----"
 
+        self.dictFeatData = dict()
+
         tempPath = slicer.app.temporaryPath
         print os.listdir(tempPath)
         
@@ -1114,7 +1118,7 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
                 self.logic.extractFeatures(shape, meansList, outputDir)
 
                 # # Storage of the means for each group
-                # self.logic.storageMean(self.dictGroups, group)
+                self.logic.storageFeaturesData(self.dictFeatData, self.dictShapeModels)
 
         # self.pushButton_exportMeanGroups.setEnabled(True)
         # self.directoryButton_exportMeanGroups.setEnabled(True)
@@ -1930,9 +1934,22 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
         # print "error: " + str(process.error())
         
         processOutput = str(process.readAll())
-        print processOutput
+        # print processOutput
 
         return
+
+
+    def storageFeaturesData(self, dictFeatData, dictShapeModels):
+        for key, value in dictShapeModels.items():
+            newValue = list()
+            for shape in value:
+                filename,_ = os.path.splitext(os.path.basename(shape))
+                ftPath = slicer.app.temporaryPath + '/dataFeatures' + filename + '_ft.vtk'
+
+                newValue.append(ftPath)
+                
+            dictFeatData[key] = newValue
+        print str(dictFeatData)
 
 
 
