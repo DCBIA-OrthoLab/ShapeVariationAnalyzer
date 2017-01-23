@@ -1103,9 +1103,9 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         meansList = ""
         for k, v in self.dictGroups.items():
             if meansList == "":
-                meanList = str(v)
+                meansList = str(v)
             else:
-                meansList = meansList + str(v)
+                meansList = meansList + "," +  str(v)
         print "meansList ::: " + meansList
 
         for group, listvtk in self.dictShapeModels.items():
