@@ -105,6 +105,7 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         self.pathLineEdit_CSVFileDataset = self.logic.get('pathLineEdit_CSVFileDataset')
         self.pathLineEdit_CSVFileMeansShape = self.logic.get('pathLineEdit_CSVFileMeansShape')
         self.directoryButton_exportNetwork = self.logic.get('directoryButton_ExportNetwork')
+        self.pushButton_preprocessData = self.logic.get('pushButton_preprocessData')
 
 
         #          Tab: Result / Analysis
@@ -146,7 +147,7 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         self.pushButton_trainNetwork.setDisabled(True)
         self.pushButton_exportNetwork.setDisabled(True)
         self.directoryButton_exportNetwork.setDisabled(True)
-
+        self.pushButton_preprocessData.setDisabled(True)
 
 
 
@@ -241,13 +242,21 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         slicer.mrmlScene.AddObserver(slicer.mrmlScene.EndCloseEvent, self.onCloseScene)
 
 
-                 # Tab: Compute Average Groups
+                 
         self.pathLineEdit_selectionClassificationGroups.connect('currentPathChanged(const QString)', self.onComputeAverageClassificationGroups)
         self.pushButton_previewGroups.connect('clicked()', self.onPreviewGroupMeans)
         self.pushButton_computeMeanGroup.connect('clicked()', self.onComputeMeanGroup)
         self.pushButton_exportMeanGroups.connect('clicked()', self.onExportMeanGroups)
         self.pathLineEdit_meanGroup.connect('currentPathChanged(const QString)', self.onMeanGroupCSV)
 
+                # Tab: Classification Network
+        self.pushButton_trainNetwork.connect('clicked()', self.onTrainNetwork)
+        self.pushButton_exportNetwork.connect('clicked()', self.onExportNetwork)
+        self.pathLineEdit_CSVFileDataset.connect('currentPathChanged(const QString)', self.onCSVFileDataset)
+        self.pathLineEdit_CSVFileMeansShape.connect('currentPathChanged(const QString)', self.onCSVFileMeansShape)
+        self.pushButton_preprocessData.connect('clicked()', self.onPreprocessData)
+        self.stateCSVMeansShape = False
+        self.stateCSVDataset = False
 
     # function called each time that the user "enter" in Diagnostic Index interface
     def enter(self):
@@ -788,15 +797,11 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
 
         for group, listvtk in self.dictShapeModels.items():
             # Compute the mean of each group thanks to the CLI "computeMean"
-            print "un des groups : " + str(group)
             self.logic.computeMean(group, listvtk)
 
             # Storage of the means for each group
             self.logic.storageMean(self.dictGroups, group)
 
-            # print "\n " + str(self.dictGroups)
-        
-        # REMPLIR LE CSV ??
 
         self.pushButton_exportMeanGroups.setEnabled(True)
         self.directoryButton_exportMeanGroups.setEnabled(True)
@@ -993,8 +998,142 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
 
 
     # ---------------------------------------------------- #
-    #               Tab: Select Input Data                 #
+    #               Tab: Select Input Data
+    #               
+    #               Classification Network                 #
     # ---------------------------------------------------- #
+
+    def enableNetwork(self):
+        if self.stateCSVDataset and self.stateCSVMeansShape:
+            self.pushButton_trainNetwork.setEnabled(True)
+            self.pushButton_preprocessData.setEnabled(True)
+        else:
+            self.pushButton_trainNetwork.setDisabled(True)
+            self.pushButton_preprocessData.setDisabled(True)
+        return
+
+    def onCSVFileDataset(self):
+        # Re-initialization of the dictionary containing the Training dataset
+        self.dictShapeModels = dict()
+
+        # Check if the path exists:
+        if not os.path.exists(self.pathLineEdit_CSVFileDataset.currentPath):
+            self.stateCSVDataset = False
+            self.enableNetwork()
+            return
+
+        print "------ Selection of a Dataset ------"
+        # Check if it's a CSV file
+        condition1 = self.logic.checkExtension(self.pathLineEdit_CSVFileDataset.currentPath, ".csv")
+        if not condition1:
+            self.pathLineEdit_CSVFileDataset.setCurrentPath(" ")
+            self.stateCSVDataset = False
+            self.enableNetwork()
+            return
+
+        # Read CSV File:
+        self.logic.table = self.logic.readCSVFile(self.pathLineEdit_CSVFileDataset.currentPath)
+        condition3 = self.logic.creationDictVTKFiles(self.dictShapeModels)
+        condition2 = self.logic.checkSeveralMeshInDict(self.dictShapeModels)
+
+        #    If the file is not conformed:
+        #    Re-initialization of the dictionary containing the Classification Groups
+        if not (condition2 and condition3):
+            self.dictShapeModels = dict()
+            self.pathLineEdit_CSVFileDataset.setCurrentPath(" ")
+            self.stateCSVDataset = False
+            self.enableNetwork()
+            return
+
+        self.stateCSVDataset = True
+        self.enableNetwork()
+
+        return
+
+
+    def onCSVFileMeansShape(self):
+        # Re-initialization of the dictionary containing the Training dataset
+        self.dictGroups = dict()
+
+        # Check if the path exists:
+        if not os.path.exists(self.pathLineEdit_CSVFileMeansShape.currentPath):
+            self.stateCSVMeansShape = False
+            self.enableNetwork()
+            return
+
+        print "------ Selection of a Dataset ------"
+        # Check if it's a CSV file
+        condition1 = self.logic.checkExtension(self.pathLineEdit_CSVFileMeansShape.currentPath, ".csv")
+        if not condition1:
+            self.pathLineEdit_CSVFileMeansShape.setCurrentPath(" ")
+            self.stateCSVMeansShape = False
+            self.enableNetwork()
+            return
+
+        # Read CSV File:
+        self.logic.table = self.logic.readCSVFile(self.pathLineEdit_CSVFileMeansShape.currentPath)
+        condition3 = self.logic.creationDictVTKFiles(self.dictGroups)
+        condition2 = self.logic.checkOneMeshPerGroupInDict(self.dictGroups)
+
+        #    If the file is not conformed:
+        #    Re-initialization of the dictionary containing the Classification Groups
+        if not (condition2 and condition3):
+            self.dictGroups = dict()
+            self.pathLineEdit_CSVFileMeansShape.setCurrentPath(" ")
+            self.stateCSVMeansShape = False
+            self.enableNetwork()
+            return
+
+        self.stateCSVMeansShape = True
+        self.enableNetwork()
+        return
+        return
+
+    def onPreprocessData(self):
+        print "----- onPreprocessData -----"
+
+        tempPath = slicer.app.temporaryPath
+        print os.listdir(tempPath)
+        
+        outputDir = os.path.join(tempPath, "dataFeatures")
+        if os.path.isdir(outputDir):
+            shutil.rmtree(outputDir)
+        os.mkdir(outputDir) 
+
+        meansList = ""
+        for k, v in self.dictGroups.items():
+            if meansList == "":
+                meanList = str(v)
+            else:
+                meansList = meansList + str(v)
+        print "meansList ::: " + meansList
+
+        for group, listvtk in self.dictShapeModels.items():
+            for shape in listvtk:
+
+                self.logic.extractFeatures(shape, meansList, outputDir)
+
+                # # Storage of the means for each group
+                # self.logic.storageMean(self.dictGroups, group)
+
+        # self.pushButton_exportMeanGroups.setEnabled(True)
+        # self.directoryButton_exportMeanGroups.setEnabled(True)
+        # self.pushButton_previewGroups.setEnabled(True)
+        
+        # self.pushButton_previewGroups.setEnabled(True)
+        # self.MRMLTreeView_classificationGroups.setEnabled(True)
+
+        return
+
+    def onTrainNetwork(self):
+        print "----- onTrainNetwork -----"
+        return
+
+    def onExportNetwork(self):
+        print "----- onExportNetwork -----"
+        return
+
+
 
     # Function to select the vtk Input Data
     def onVTKInputData(self):
@@ -1741,6 +1880,62 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
             if not listSaveVTKFiles == None and not file == None:
                 value = dict.get(listSaveVTKFiles[0], None)
                 value.append(listSaveVTKFiles[1])
+
+
+    def extractFeatures(self, shape, meansList, outputDir):
+
+
+        print "--- Extract features of shape : " + shape + " ---"
+
+        # Call of computeMean used to compute a mean from a shape model
+        # Arguments:
+        #  --groupnumber is the number of the group used to create the shape model
+        #  --resultdir is the path where the newly build model should be saved
+        #  --shapemodel: Shape model of one group (H5 file path)
+
+        #     Creation of the command line
+        # scriptedModulesPath = eval('slicer.modules.%s.path' % self.interface.moduleName.lower())
+        # scriptedModulesPath = os.path.dirname(scriptedModulesPath)
+        # libPath = os.path.join(scriptedModulesPath)
+        # sys.path.insert(0, libPath)
+        # computeMean = os.path.join(scriptedModulesPath, '../hidden-cli-modules/computeMean')
+        
+        condylesfeaturesextractor = "/Users/prisgdd/Documents/Projects/CNN/CondylesFeaturesExtractor-build/src/bin/condylesfeaturesextractor"
+        
+        filename = str(os.path.basename(shape))
+        basename, _ = os.path.splitext(filename)
+        
+
+        arguments = list()
+        arguments.append("--input")
+        arguments.append(shape)
+
+        arguments.append("--output")
+        arguments.append(str(os.path.join(outputDir,basename)) + "_ft.vtk")
+
+        arguments.append("--meanGroup")
+        arguments.append(str(meansList))
+
+        print arguments
+
+        #     Call the executable
+        process = qt.QProcess()
+        process.setProcessChannelMode(qt.QProcess.MergedChannels)
+
+        # print "Calling " + os.path.basename(computeMean)
+        process.start(condylesfeaturesextractor, arguments)
+        process.waitForStarted()
+        # print "state: " + str(process2.state())
+        process.waitForFinished()
+        # print "error: " + str(process.error())
+        
+        processOutput = str(process.readAll())
+        print processOutput
+
+        return
+
+
+
 
     # Function in order to compute the shape OA loads of a sample
     def computeShapeOALoads(self, groupnumber, vtkfilepath, shapemodel):
