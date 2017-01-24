@@ -1047,6 +1047,12 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
             self.enableNetwork()
             return
 
+        # Condition : All the shapes should have the same number of points
+        condition4 = self.logic.checkNumberOfPoints(self.dictShapeModels)
+        if not condition4: 
+            self.pathLineEdit_CSVFileDataset.setCurrentPath(" ")
+            return
+
         self.stateCSVDataset = True
         self.enableNetwork()
 
@@ -1086,31 +1092,37 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
             self.enableNetwork()
             return
 
+        # First condition : All the shapes should have the same number of points
+        condition4 = self.logic.checkNumberOfPoints(self.dictGroups)
+        if not condition4: 
+            self.pathLineEdit_CSVFileMeansShape.setCurrentPath(" ")
+            return
+
         self.stateCSVMeansShape = True
         self.enableNetwork()
-        return
         return
 
     def onPreprocessData(self):
         print "----- onPreprocessData -----"
-
         self.dictFeatData = dict()
 
         tempPath = slicer.app.temporaryPath
-        print os.listdir(tempPath)
+        # print os.listdir(tempPath)
         
         outputDir = os.path.join(tempPath, "dataFeatures")
         if os.path.isdir(outputDir):
             shutil.rmtree(outputDir)
         os.mkdir(outputDir) 
 
+        #
+        # Extract features on shapes, with CondylesFeaturesExtractor
         meansList = ""
         for k, v in self.dictGroups.items():
             if meansList == "":
                 meansList = str(v)
             else:
                 meansList = meansList + "," +  str(v)
-        print "meansList ::: " + meansList
+        # print "meansList ::: " + meansList
 
         for group, listvtk in self.dictShapeModels.items():
             for shape in listvtk:
@@ -1119,6 +1131,13 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
 
                 # # Storage of the means for each group
                 self.logic.storageFeaturesData(self.dictFeatData, self.dictShapeModels)
+
+
+        # 
+        # Pickle the data for the network
+        
+
+
 
         # self.pushButton_exportMeanGroups.setEnabled(True)
         # self.directoryButton_exportMeanGroups.setEnabled(True)
@@ -1886,6 +1905,53 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
                 value.append(listSaveVTKFiles[1])
 
 
+    def checkNumberOfPoints(self, dictShapes):
+        num_shape = 0
+        num_points = 0 
+        for key, value in dictShapes.items():
+            if type(value) is ListType:
+                for shape in value:
+                    try:
+                        reader_poly = vtk.vtkPolyDataReader()
+                        reader_poly.SetFileName(shape)
+                        reader_poly.Update()
+                        geometry = reader_poly.GetOutput()
+                        
+                        if num_shape == 0:
+                            num_points = geometry.GetNumberOfPoints()
+                        else:
+                            if not geometry.GetNumberOfPoints() == num_points:
+                                slicer.util.errorDisplay('All the shapes must have the same number of points!')
+                                return False
+                                # raise Exception('Unexpected number of points in the shape: %s' % str(geometry.GetNumberOfPoints()))
+                    
+                    except IOError as e:
+                        print('Could not read:', shape, ':', e, '- it\'s ok, skipping.')
+                    
+                num_shape = num_shape + 1
+            else: 
+                shape = value
+                try:
+                    reader_poly = vtk.vtkPolyDataReader()
+                    reader_poly.SetFileName(shape)
+                    reader_poly.Update()
+                    geometry = reader_poly.GetOutput()
+                    
+                    if num_shape == 0:
+                        num_points = geometry.GetNumberOfPoints()
+                    else:
+                        if not geometry.GetNumberOfPoints() == num_points:
+                            slicer.util.errorDisplay('All the shapes must have the same number of points!')
+                            return False
+                            # raise Exception('Unexpected number of points in the shape: %s' % str(geometry.GetNumberOfPoints()))
+                
+                except IOError as e:
+                    print('Could not read:', shape, ':', e, '- it\'s ok, skipping.')
+
+
+        return True
+
+
     def extractFeatures(self, shape, meansList, outputDir):
 
 
@@ -1919,8 +1985,7 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
 
         arguments.append("--meanGroup")
         arguments.append(str(meansList))
-
-        print arguments
+        # print arguments
 
         #     Call the executable
         process = qt.QProcess()
@@ -1947,10 +2012,7 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
                 ftPath = slicer.app.temporaryPath + '/dataFeatures' + filename + '_ft.vtk'
 
                 newValue.append(ftPath)
-                
             dictFeatData[key] = newValue
-        print str(dictFeatData)
-
 
 
 
