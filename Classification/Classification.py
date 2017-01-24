@@ -7,7 +7,7 @@ from types import *
 import math
 import shutil
 
-# import inputData
+import inputData
 
 
 class Classification(ScriptedLoadableModule):
@@ -1122,7 +1122,7 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
                 meansList = str(v)
             else:
                 meansList = meansList + "," +  str(v)
-        # print "meansList ::: " + meansList
+        print "meansList ::: " + meansList
 
         for group, listvtk in self.dictShapeModels.items():
             for shape in listvtk:
@@ -1135,7 +1135,8 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
 
         # 
         # Pickle the data for the network
-        
+        aaaa =self.logic.pickleData(self.dictFeatData)
+        print aaaa
 
 
 
@@ -1955,7 +1956,7 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
     def extractFeatures(self, shape, meansList, outputDir):
 
 
-        print "--- Extract features of shape : " + shape + " ---"
+        # print "--- Extract features of shape : " + shape + " ---"
 
         # Call of computeMean used to compute a mean from a shape model
         # Arguments:
@@ -2003,18 +2004,23 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
 
         return
 
-
     def storageFeaturesData(self, dictFeatData, dictShapeModels):
         for key, value in dictShapeModels.items():
             newValue = list()
             for shape in value:
                 filename,_ = os.path.splitext(os.path.basename(shape))
-                ftPath = slicer.app.temporaryPath + '/dataFeatures' + filename + '_ft.vtk'
+                ftPath = slicer.app.temporaryPath + '/dataFeatures/' + filename + '_ft.vtk'
 
                 newValue.append(ftPath)
             dictFeatData[key] = newValue
+        return
 
+    def pickleData(self, dictFeatData):
+        # for group, vtklist in dictFeatData.items():
+        input_Data = inputData.inputData()
+        dataset_names = input_Data.maybe_pickle(dictFeatData, 3, force=False)
 
+        return dataset_names
 
     # Function in order to compute the shape OA loads of a sample
     def computeShapeOALoads(self, groupnumber, vtkfilepath, shapemodel):
