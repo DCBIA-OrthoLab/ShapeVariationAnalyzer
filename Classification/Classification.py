@@ -10,6 +10,8 @@ import shutil
 import inputData
 import pickle
 import neuralNetwork as nn
+import numpy as np
+import tensorflow as tf
 
 
 class Classification(ScriptedLoadableModule):
@@ -1054,6 +1056,7 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         if not condition4: 
             self.pathLineEdit_CSVFileDataset.setCurrentPath(" ")
             return
+        self.logic.neuralNetwork.NUM_POINTS = condition4
 
         self.stateCSVDataset = True
         self.enableNetwork()
@@ -1367,6 +1370,7 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
         self.interface = interface
         self.table = vtk.vtkTable
         self.colorBar = {'Point1': [0, 0, 1, 0], 'Point2': [0.5, 1, 1, 0], 'Point3': [1, 1, 0, 0]}
+        self.neuralNetwork = nn.neuralNetwork()
 
     # Functions to recovery the widget in the .ui file
     def get(self, objectName):
@@ -1948,7 +1952,7 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
                     print('Could not read:', shape, ':', e, '- it\'s ok, skipping.')
 
 
-        return True
+        return num_points
 
 
     def extractFeatures(self, shape, meansList, outputDir):
@@ -2017,13 +2021,15 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
         # for group, vtklist in dictFeatData.items():
         input_Data = inputData.inputData()
         dataset_names = input_Data.maybe_pickle(dictFeatData, 3, force=False)
-
+        self.neuralNetwork.NUM_CLASSES = len(dataset_names)
+        self.neuralNetwork.NUM_FEATURES = self.neuralNetwork.NUM_CLASSES + 3 + 4 
 
         #
         # Determine dataset size
         #
         nbGroups = len(dictFeatData.keys())
-        print "\n\n nbGroups :: " + str(nbGroups)
+        self.neuralNetwork.NUM_CLASSES = nbGroups
+        self.neuralNetwork.NUM_FEATURES = nbGroups + 3 + 4 
         small_classe = 100000000
         completeDataset = 0
         for key, value in dictFeatData.items():
@@ -2065,9 +2071,162 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
 
         return pickle_file
 
+        #
+        #   Fonctions pour le gros du Neural Network
+        #   
+        #
+    def placeholder_inputs(self, batch_size):
+        tf_train_dataset = tf.placeholder(tf.float32, shape=(batch_size, self.neuralNetwork.NUM_POINTS * self.neuralNetwork.NUM_FEATURES))
+        tf_train_labels = tf.placeholder(tf.int32, shape=(batch_size, self.neuralNetwork.NUM_CLASSES))
+        return tf_train_dataset, tf_train_labels
+        
+    ## Reformat into a shape that's more adapted to the models we're going to train:
+    #   - data as a flat matrix
+    #   - labels as float 1-hot encodings
+    def reformat(self, dataset, labels):
+        dataset = dataset.reshape((-1, self.neuralNetwork.NUM_POINTS * self.neuralNetwork.NUM_FEATURES)).astype(np.float32)
+        labels = (np.arange(self.neuralNetwork.NUM_CLASSES) == labels[:, None]).astype(np.float32)
+        return dataset, labels
+        
+    def get_inputs(self, pickle_file):
+
+        # Reoad the data generated in pickleData.py
+        with open(pickle_file, 'rb') as f:
+            save = pickle.load(f)
+            train_dataset = save['train_dataset']
+            train_labels = save['train_labels']
+            valid_dataset = save['valid_dataset']
+            valid_labels = save['valid_labels']
+            # test_dataset = save['test_dataset']
+            # test_labels = save['test_labels']
+            del save  # hint to help gc free up memory
+            print('Training set', train_dataset.shape, train_labels.shape)
+            print('Validation set', valid_dataset.shape, valid_labels.shape)
+            # print('Test set', test_dataset.shape, test_labels.shape)
+
+            train_dataset, train_labels = self.reformat(train_dataset, train_labels)
+            valid_dataset, valid_labels = self.reformat(valid_dataset, valid_labels)
+            # test_dataset, test_labels = inputdata.reformat(test_dataset, test_labels)
+            print("\nTraining set", train_dataset.shape, train_labels.shape)
+            print("Validation set", valid_dataset.shape, valid_labels.shape)
+            # print("Test set", test_dataset.shape, test_labels.shape)
+
+            return train_dataset, train_labels, valid_dataset, valid_labels
+
+
+    def run_training(self, train_dataset, train_labels, valid_dataset, valid_labels, saveModelPath, ):
+
+        if self.neuralNetwork.NUM_HIDDEN_LAYERS == 1:
+            nb_hidden_nodes_1 = 2048
+        elif self.neuralNetwork.NUM_HIDDEN_LAYERS == 2:
+            nb_hidden_nodes_1, nb_hidden_nodes_2 = 2048, 2048
+
+        # Construct the graph
+        graph = tf.Graph()
+        with graph.as_default():
+            # Input data.
+            with tf.name_scope('Inputs_management'):
+                tf_train_dataset, tf_train_labels = self.placeholder_inputs(self.neuralNetwork.batch_size)
+
+                keep_prob = tf.placeholder(tf.float32)
+
+                tf_valid_dataset = tf.constant(valid_dataset)
+                # tf_test_dataset = tf.constant(test_dataset)
+
+            with tf.name_scope('Bias_and_weights_management'):
+                weightsDict = self.neuralNetwork.bias_weights_creation(nb_hidden_nodes_1, nb_hidden_nodes_2)    
+            # Training computation.
+            with tf.name_scope('Training_computations'):
+                logits, weightsDict = self.neuralNetwork.model(tf_train_dataset, weightsDict)
+                
+            with tf.name_scope('Loss_computation'):
+                loss = self.neuralNetwork.loss(logits, tf_train_labels, self.neuralNetwork.lambda_reg, weightsDict)
+            
+            
+            with tf.name_scope('Optimization'):
+                # Optimizer.
+                optimizer = tf.train.GradientDescentOptimizer(self.neuralNetwork.learning_rate).minimize(loss)
+                # optimizer = tf.train.AdagradOptimizer(self.neuralNetwork.learning_rate).minimize(loss)
+            
+            # tf.tensor_summary("W_fc1", weightsDict['W_fc1'])
+            tf.summary.scalar("Loss", loss)
+            summary_op = tf.summary.merge_all()
+            saver = tf.train.Saver(weightsDict)
+                
+            with tf.name_scope('Predictions'):
+                # Predictions for the training, validation, and test data.
+                train_prediction = tf.nn.softmax(logits)
+                valid_prediction = tf.nn.softmax(self.neuralNetwork.model(tf_valid_dataset, weightsDict)[0])
+                # test_prediction = tf.nn.softmax(nn.model(tf_test_dataset, weightsDict)[0])
+
+
+            # -------------------------- #
+            #       Let's run it         #
+            # -------------------------- #
+            # 
+            with tf.Session(graph=graph) as session:
+                tf.global_variables_initializer().run()
+                print("Initialized")
+
+                # create log writer object
+                writer = tf.summary.FileWriter('./train', graph=graph)
+
+                for epoch in range(0, self.neuralNetwork.num_epochs):
+                    for step in range(self.neuralNetwork.num_steps):
+                        # Pick an offset within the training data, which has been randomized.
+                        # Note: we could use better randomization across epochs.
+                        offset = (step * self.neuralNetwork.batch_size) % (train_labels.shape[0] - self.neuralNetwork.batch_size)
+                        # Generate a minibatch.
+                        batch_data = train_dataset[offset:(offset + self.neuralNetwork.batch_size), :]
+                        batch_labels = train_labels[offset:(offset + self.neuralNetwork.batch_size), :]
+                        # Prepare a dictionary telling the session where to feed the minibatch.
+                        # The key of the dictionary is the placeholder node of the graph to be fed,
+                        # and the value is the numpy array to feed to it.
+                        feed_dict = {tf_train_dataset : batch_data, tf_train_labels : batch_labels, keep_prob:0.7}
+                        _, l, predictions, summary = session.run([optimizer, loss, train_prediction, summary_op], feed_dict=feed_dict)
+
+                        # write log
+                        batch_count = 20
+                        writer.add_summary(summary, epoch * batch_count + step)
+                        if (step % 500 == 0):
+                            print("Minibatch loss at step %d: %f" % (step, l))
+                            print("Minibatch accuracy: %.1f%%" % self.neuralNetwork.accuracy(predictions, batch_labels)[0])
+                            print("Validation accuracy: %.1f%%" % self.neuralNetwork.accuracy(valid_prediction.eval(feed_dict = {keep_prob:1.0}), valid_labels)[0])
+
+                # finalaccuracy, mat_confusion, PPV, TPR = self.neuralNetwork.accuracy(test_prediction.eval(feed_dict={keep_prob:1.0}), test_labels)
+                # print "\n AVEC DROPOUT\n"
+                # print("Test accuracy: %.1f%%" % finalaccuracy)
+                # print("\n\nConfusion matrix :\n" + str(mat_confusion))
+                # print "\n PPV : " + str(PPV)
+                # print "\n TPR : " + str(TPR)
+
+                # if saveModelPath.rfind(".ckpt") != -1:
+                    # save_path = saver.save(session, saveModelPath)
+                    # print("Model saved in file: %s" % save_path)
+                # else:
+                    # raise Exception("Impossible to save train model at %s. Must be a .cpkt file" % saveModelPath)
+                save_path = saver.save(session, saveModelPath, write_meta_graph=False)
+                print("Model saved in file: %s" % save_path)
+        return
 
 
     def trainNetworkClassification(self, pickle_file):
+        self.neuralNetwork.learning_rate = 0.0005
+        self.neuralNetwork.lambda_reg = 0.01
+        self.neuralNetwork.num_epochs = 2
+        self.neuralNetwork.num_steps =  1001
+        self.neuralNetwork.batch_size = 10
+
+
+        train_dataset, train_labels, valid_dataset, valid_labels = self.get_inputs(pickle_file)
+        saveModelPath = os.path.join(slicer.app.temporaryPath, 'modelSaved')
+        self.run_training(train_dataset, train_labels, valid_dataset, valid_labels, saveModelPath)
+
+        print "COUCOU LE NUM_POINTS :: " + str(self.neuralNetwork.NUM_POINTS)
+        print "COUCOU LE NUM_FEATURES :: " + str(self.neuralNetwork.NUM_FEATURES)
+        print "COUCOU LE NUM_CLASSES :: " + str(self.neuralNetwork.NUM_CLASSES)
+
+
 
         return
 

@@ -5,7 +5,7 @@ import pickle
 
 
 class inputData():
-    def __init__(self, parent=None):
+    def __init__(self, parent = None):
         if parent:
             parent.title = " "
 
@@ -315,11 +315,3 @@ class inputData():
         shuffled_labels = labels[permutation]
         return shuffled_dataset, shuffled_labels
 
-
-    ## Reformat into a shape that's more adapted to the models we're going to train:
-    #   - data as a flat matrix
-    #   - labels as float 1-hot encodings
-    def reformat(self,dataset, labels):
-        dataset = dataset.reshape((-1, self.NUM_POINTS * self.NUM_FEATURES)).astype(np.float32)
-        labels = (np.arange(self.NUM_CLASSES) == labels[:, None]).astype(np.float32)
-        return dataset, labels

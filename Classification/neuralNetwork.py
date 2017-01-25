@@ -2,19 +2,28 @@ import os
 import numpy as np
 import pandas as pd
 # import vtk
-import inputData
+# import inputData
 # from six.moves import cPickle as pickle
-
+import tensorflow as tf
 
 
 class neuralNetwork():
-	def __init__(self, parent=None):
+	def __init__(self, parent=None, num_classes_param=0, num_points_param=0, num_features_param = 0):
 		if parent:
 			parent.title = " "
 
 		self.NUM_HIDDEN_LAYERS = 2
-		import tensorflow as tf
-		input_Data = inputData.inputData()
+		# import tensorflow as tf
+		
+		self.NUM_CLASSES = num_classes_param
+		self.NUM_POINTS = num_points_param
+		self.NUM_FEATURES = num_features_param 
+		self.learning_rate = 0
+		self.lambda_reg = 0
+		self.num_epochs = 0
+		self.num_steps =  0
+		self.batch_size = 0
+		self.NUM_HIDDEN_LAYERS = 2
 
 
 	# ----------------------------------------------------------------------------- #
@@ -27,7 +36,7 @@ class neuralNetwork():
 	# 					- Precision (PPV)
 	# 					- Sensitivity (TPR)
 	# 					- Confusion matrix
-	def accuracy(predictions, labels):
+	def accuracy(self, predictions, labels):
 		# Accuracy
 		accuracy = (100.0 * np.sum(np.argmax(predictions, 1) == np.argmax(labels, 1)) / predictions.shape[0])
 
@@ -60,42 +69,42 @@ class neuralNetwork():
 		return accuracy, df_confusion, PPV, TPR
 
 
-	def weight_variable(shape, name=None):
+	def weight_variable(self, shape, name=None):
 		"""Create a weight variable with appropriate initialization."""
 		# initial = tf.truncated_normal(shape, stddev=0.1)
 		return tf.Variable(tf.truncated_normal(shape, stddev=0.1), name = name)
 
-	def bias_variable(shape, name=None):
+	def bias_variable(self, shape, name=None):
 		"""Create a bias variable with appropriate initialization."""
 		# initial = tf.constant(0.1, shape=shape)
 		return tf.Variable(tf.constant(0.1, shape=shape),name = name)
 
-	def bias_weights_creation(nb_hidden_nodes_1=0, nb_hidden_nodes_2=0):
+	def bias_weights_creation(self, nb_hidden_nodes_1=0, nb_hidden_nodes_2=0):
 		weightsDict = dict()
-		if not NUM_HIDDEN_LAYERS:
-			W_fc1 = weight_variable([input_Data.NUM_POINTS * input_Data.NUM_FEATURES, input_Data.NUM_CLASSES], "W_fc1")
-			b_fc1 = bias_variable([input_Data.NUM_CLASSES],"b_fc1")
+		if not self.NUM_HIDDEN_LAYERS:
+			W_fc1 = self.weight_variable([self.NUM_POINTS * self.NUM_FEATURES, self.NUM_CLASSES], "W_fc1")
+			b_fc1 = self.bias_variable([self.NUM_CLASSES],"b_fc1")
 
 			weightsDict = {"W_fc1": W_fc1, "b_fc1": b_fc1}
 
-		elif NUM_HIDDEN_LAYERS == 1:
-			W_fc1 = weight_variable([input_Data.NUM_POINTS * input_Data.NUM_FEATURES, nb_hidden_nodes_1], "W_fc1")
-			b_fc1 = bias_variable([nb_hidden_nodes_1],"b_fc1")
+		elif self.NUM_HIDDEN_LAYERS == 1:
+			W_fc1 = self.weight_variable([self.NUM_POINTS * self.NUM_FEATURES, nb_hidden_nodes_1], "W_fc1")
+			b_fc1 = self.bias_variable([nb_hidden_nodes_1],"b_fc1")
 
-			W_fc2 = weight_variable([nb_hidden_nodes_1, input_Data.NUM_CLASSES], "W_fc2")
-			b_fc2 = bias_variable([input_Data.NUM_CLASSES],"b_fc2")
+			W_fc2 = self.weight_variable([nb_hidden_nodes_1, self.NUM_CLASSES], "W_fc2")
+			b_fc2 = self.bias_variable([self.NUM_CLASSES],"b_fc2")
 
 
 			weightsDict = {"W_fc1": W_fc1, "b_fc1": b_fc1, "W_fc2": W_fc2, "b_fc2": b_fc2}
-		elif NUM_HIDDEN_LAYERS == 2:
-			W_fc1 = weight_variable([input_Data.NUM_POINTS * input_Data.NUM_FEATURES, nb_hidden_nodes_1], "W_fc1")
-			b_fc1 = bias_variable([nb_hidden_nodes_1],"b_fc1")
+		elif self.NUM_HIDDEN_LAYERS == 2:
+			W_fc1 = self.weight_variable([self.NUM_POINTS * self.NUM_FEATURES, nb_hidden_nodes_1], "W_fc1")
+			b_fc1 = self.bias_variable([nb_hidden_nodes_1],"b_fc1")
 
-			W_fc2 = weight_variable([nb_hidden_nodes_1, nb_hidden_nodes_2], "W_fc2")
-			b_fc2 = bias_variable([nb_hidden_nodes_2],"b_fc2")
+			W_fc2 = self.weight_variable([nb_hidden_nodes_1, nb_hidden_nodes_2], "W_fc2")
+			b_fc2 = self.bias_variable([nb_hidden_nodes_2],"b_fc2")
 
-			W_fc3 = weight_variable([nb_hidden_nodes_2, input_Data.NUM_CLASSES], "W_fc3")
-			b_fc3 = bias_variable([input_Data.NUM_CLASSES],"b_fc3")
+			W_fc3 = self.weight_variable([nb_hidden_nodes_2, self.NUM_CLASSES], "W_fc3")
+			b_fc3 = self.bias_variable([self.NUM_CLASSES],"b_fc3")
 
 			weightsDict = dict()
 			weightsDict = {"W_fc1": W_fc1, "b_fc1": b_fc1, "W_fc2": W_fc2, "b_fc2": b_fc2, "W_fc3": W_fc3, "b_fc3": b_fc3}
@@ -104,14 +113,14 @@ class neuralNetwork():
 
 
 	# Model.
-	def model(data, weightsDict):
+	def model(self, data, weightsDict):
 
-		if not NUM_HIDDEN_LAYERS:
+		if not self.NUM_HIDDEN_LAYERS:
 			with tf.name_scope('FullyConnected1'):
 				h_fc1 = tf.matmul(data, W_fc1) + b_fc1
 				valren = h_fc1
 
-		elif NUM_HIDDEN_LAYERS == 1:
+		elif self.NUM_HIDDEN_LAYERS == 1:
 			with tf.name_scope('FullyConnected1'):
 
 				h_fc1 = tf.matmul(data, W_fc1) + b_fc1
@@ -122,7 +131,7 @@ class neuralNetwork():
 				h_fc2 = tf.matmul(h_relu1, W_fc2) + b_fc2
 				valren = h_fc2
 
-		elif NUM_HIDDEN_LAYERS == 2:
+		elif self.NUM_HIDDEN_LAYERS == 2:
 			with tf.name_scope('FullyConnected1'):
 
 				h_fc1 = tf.matmul(data, weightsDict['W_fc1']) + weightsDict['b_fc1']
@@ -142,16 +151,17 @@ class neuralNetwork():
 
 		return valren, weightsDict
 
-	regularization = True
-	def loss(logits, tf_train_labels, lambda_reg, weightsDict):
+	
+	def loss(self, logits, tf_train_labels, lambda_reg, weightsDict):
+		regularization = True
 		if not regularization:
 			loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits, tf_train_labels))
 		else:
-			if not NUM_HIDDEN_LAYERS:
+			if not self.NUM_HIDDEN_LAYERS:
 				norms = tf.nn.l2_loss(weightsDict['W_fc1']) 
-			elif NUM_HIDDEN_LAYERS == 1:
+			elif self.NUM_HIDDEN_LAYERS == 1:
 				norms = tf.nn.l2_loss(weightsDict['W_fc1']) + tf.nn.l2_loss(weightsDict['W_fc2'])
-			elif NUM_HIDDEN_LAYERS == 2:
+			elif self.NUM_HIDDEN_LAYERS == 2:
 				norms = tf.nn.l2_loss(weightsDict['W_fc1']) + tf.nn.l2_loss(weightsDict['W_fc2']) + tf.nn.l2_loss(weightsDict['W_fc3'])
 
 			loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits, tf_train_labels) + lambda_reg*norms)
