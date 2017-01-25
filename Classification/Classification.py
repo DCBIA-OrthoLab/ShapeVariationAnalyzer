@@ -8,6 +8,8 @@ import math
 import shutil
 
 import inputData
+import pickle
+import neuralNetwork as nn
 
 
 class Classification(ScriptedLoadableModule):
@@ -834,10 +836,7 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         # Download the CSV file
         self.logic.table = self.logic.readCSVFile(self.pathLineEdit_meanGroup.currentPath)
         condition2 = self.logic.creationDictVTKFiles(self.dictGroups)
-
-        print "avt cond3"
         condition3 = self.logic.checkOneMeshPerGroupInDict(self.dictGroups)
-        print "apres cond3"
 
         # If the file is not conformed:
         #    Re-initialization of the dictionary containing all the data
@@ -856,7 +855,6 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         #     self.comboBox_healthyGroup.removeItem(0)
         self.comboBox_healthyGroup.clear()
 
-        print "wallou   :::  \n" + str(self.dictGroups)
         for key, value in self.dictGroups.items():
             # Fill the Checkable Combobox
             self.comboBox_healthyGroup.addItem("Group " + str(key))
@@ -1012,7 +1010,6 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
 
     def enableNetwork(self):
         if self.stateCSVDataset and self.stateCSVMeansShape:
-            self.pushButton_trainNetwork.setEnabled(True)
             self.pushButton_preprocessData.setEnabled(True)
         else:
             self.pushButton_trainNetwork.setDisabled(True)
@@ -1110,6 +1107,7 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
     def onPreprocessData(self):
         print "----- onPreprocessData -----"
         self.dictFeatData = dict()
+        self.pickle_file = ""
 
         tempPath = slicer.app.temporaryPath
         # print os.listdir(tempPath)
@@ -1127,12 +1125,12 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
                 meansList = str(v)
             else:
                 meansList = meansList + "," +  str(v)
-        print "meansList ::: " + meansList
 
         for group, listvtk in self.dictShapeModels.items():
             for shape in listvtk:
 
-                self.logic.extractFeatures(shape, meansList, outputDir)
+# >>>>>>> UNCOMMENT HERE !!! FEATURES EXTRACTION
+                # self.logic.extractFeatures(shape, meansList, outputDir)
 
                 # # Storage of the means for each group
                 self.logic.storageFeaturesData(self.dictFeatData, self.dictShapeModels)
@@ -1140,22 +1138,17 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
 
         # 
         # Pickle the data for the network
-        aaaa =self.logic.pickleData(self.dictFeatData)
-        print aaaa
-
-
-
-        # self.pushButton_exportMeanGroups.setEnabled(True)
-        # self.directoryButton_exportMeanGroups.setEnabled(True)
-        # self.pushButton_previewGroups.setEnabled(True)
-        
-        # self.pushButton_previewGroups.setEnabled(True)
-        # self.MRMLTreeView_classificationGroups.setEnabled(True)
+        self.pickle_file = self.logic.pickleData(self.dictFeatData)
+        # print self.pickle_file
+        self.pushButton_trainNetwork.setEnabled(True)
 
         return
 
     def onTrainNetwork(self):
         print "----- onTrainNetwork -----"
+
+        self.logic.trainNetworkClassification(self.pickle_file)
+
         return
 
     def onExportNetwork(self):
@@ -2025,15 +2018,60 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
         input_Data = inputData.inputData()
         dataset_names = input_Data.maybe_pickle(dictFeatData, 3, force=False)
 
-        train_size = 256
-        valid_size = 32
-        
-        valid_dataset, valid_labels, train_dataset, train_labels = input_Data.merge_datasets(train_datasets, train_size, valid_size)
+
+        #
+        # Determine dataset size
+        #
+        nbGroups = len(dictFeatData.keys())
+        print "\n\n nbGroups :: " + str(nbGroups)
+        small_classe = 100000000
+        completeDataset = 0
+        for key, value in dictFeatData.items():
+            if len(value) < small_classe:
+                small_classe = len(value)
+            completeDataset = completeDataset + len(value)
+
+        train_size = ( small_classe - 3 ) * nbGroups
+        valid_size = 3 * nbGroups
+        test_size = completeDataset
+
+        valid_dataset, valid_labels, train_dataset, train_labels = input_Data.merge_datasets(dataset_names, train_size, valid_size) 
+        _, _, test_dataset, test_labels = input_Data.merge_all_datasets(dataset_names, test_size)
 
         train_dataset, train_labels = input_Data.randomize(train_dataset, train_labels)
+        valid_dataset, valid_labels = input_Data.randomize(valid_dataset, valid_labels)
         test_dataset, test_labels = input_Data.randomize(test_dataset, test_labels)
 
-        return dataset_names
+        pickle_file = os.path.join(slicer.app.temporaryPath,'condyles.pickle')
+
+        try:
+            f = open(pickle_file, 'wb')
+            save = {
+                'train_dataset': train_dataset,
+                'train_labels': train_labels,
+                'valid_dataset': valid_dataset,
+                'valid_labels': valid_labels,
+                'test_dataset': test_dataset,
+                'test_labels': test_labels,
+            }
+            pickle.dump(save, f, pickle.HIGHEST_PROTOCOL)
+            f.close()
+        except Exception as e:
+            print('Unable to save data to', pickle_file, ':', e)
+            raise
+
+        statinfo = os.stat(pickle_file)
+        print('Compressed pickle size:', statinfo.st_size)
+
+        return pickle_file
+
+
+
+    def trainNetworkClassification(self, pickle_file):
+
+        return
+
+
 
     # Function in order to compute the shape OA loads of a sample
     def computeShapeOALoads(self, groupnumber, vtkfilepath, shapemodel):

@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1391</width>
-    <height>855</height>
+    <width>1388</width>
+    <height>1687</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -353,22 +353,29 @@
            <item row="1" column="1">
             <widget class="ctkPathLineEdit" name="pathLineEdit_CSVFileMeansShape" native="true"/>
            </item>
-           <item row="2" column="1">
+           <item row="3" column="1">
             <widget class="QPushButton" name="pushButton_trainNetwork">
              <property name="text">
               <string>Train Network</string>
              </property>
             </widget>
            </item>
-           <item row="3" column="1">
+           <item row="4" column="0">
+            <widget class="ctkDirectoryButton" name="directoryButton_ExportNetwork" native="true"/>
+           </item>
+           <item row="4" column="1">
             <widget class="QPushButton" name="pushButton_ExportNetwork">
              <property name="text">
               <string>Export Network</string>
              </property>
             </widget>
            </item>
-           <item row="3" column="0">
-            <widget class="ctkDirectoryButton" name="directoryButton_ExportNetwork" native="true"/>
+           <item row="2" column="1">
+            <widget class="QPushButton" name="pushButton_preprocessData">
+             <property name="text">
+              <string>Preprocess data</string>
+             </property>
+            </widget>
            </item>
           </layout>
          </item>

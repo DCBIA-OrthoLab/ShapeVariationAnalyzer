@@ -144,23 +144,23 @@ class inputData():
 
     #
     # Function load_features_classe(folder, min_num_shapes)
-    #   Call load_features for a entire folder/classe. Checl if there's enough shapes in a classe.
+    #   Call load_features for an entire folder/classe. Check if there's enough shapes in a classe.
     #
-    def load_features_classe(self, folder, min_num_shapes):
-        vtk_filenames = os.listdir(folder)  # Juste le nom du vtk file
+    def load_features_classe(self, vtklist, min_num_shapes):
+        # vtk_filenames = os.listdir(folder)  # Juste le nom du vtk file
 
         # Delete .DS_Store file if there is one
-        if vtk_filenames.count(".DS_Store"):
-            vtk_filenames.remove(".DS_Store")
+        # if vtk_filenames.count(".DS_Store"):
+            # vtk_filenames.remove(".DS_Store")
 
+        vtk_filenames = vtklist
         dataset = np.ndarray(shape=(len(vtk_filenames), self.NUM_POINTS, self.NUM_FEATURES), dtype=np.float32)
 
         num_shapes = 0
         for shape in vtk_filenames:
-            shapePath = os.path.join(folder, shape)
 
             # Prepare data
-            currentData = self.load_features(shapePath)
+            currentData = self.load_features(shape)
 
             # Stack the current finished data in dataset
             dataset[num_shapes, :, :] = currentData
@@ -181,22 +181,27 @@ class inputData():
     # Function maybe_pickle(data_folders, min_num_shapes_per_class, force=False)
     #   Pickle features array sorted by class
     #
-    def maybe_pickle(self, data_folders, min_num_shapes_per_class, force=False):
+    def maybe_pickle(self, dictFeatData, min_num_shapes_per_class, force=False):
         dataset_names = []
-        folders = list()
-        for d in data_folders:
-            if os.path.isdir(os.path.join(data_folders, d)):
-                folders.append(os.path.join(data_folders, d))
-        for folder in folders:
-            head, tail = os.path.split(folder)
-            set_filename = os.path.join(slicer.app.temporaryPath, tail + '.pickle')
+        # folders = list()
+        # for d in data_folders:
+        #     if os.path.isdir(os.path.join(data_folders, d)):
+        #         folders.append(os.path.join(data_folders, d))
+        
+        for group, vtklist in dictFeatData.items():
+            set_filename = os.path.join(slicer.app.temporaryPath, 'Group' + str(group) + '.pickle')
+
+
+        # for folder in folders:
+        #     head, tail = os.path.split(folder)
+        #     set_filename = os.path.join(slicer.app.temporaryPath, tail + '.pickle')
             dataset_names.append(set_filename)
             if os.path.exists(set_filename) and not force:
                 # You may override by setting force=True.
                 print('%s already present - Skipping pickling.' % set_filename)
             else:
                 print('Pickling %s.' % set_filename)
-                dataset = self.load_features_classe(folder, min_num_shapes_per_class)
+                dataset = self.load_features_classe(vtklist, min_num_shapes_per_class)
                 try:
                     with open(set_filename, 'wb') as f:
                         pickle.dump(dataset, f, pickle.HIGHEST_PROTOCOL)
