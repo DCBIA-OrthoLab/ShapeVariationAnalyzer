@@ -481,6 +481,7 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
 
         # Load automatically the CSV file in the pathline in the next tab "Creation of New Classification Groups"
         self.pathLineEdit_previewGroups.setCurrentPath(filepath)
+        self.pathLineEdit_selectionClassificationGroups.setCurrentPath(filepath)
 
     # ---------------------------------------------------- #
     #     Tab: Creation of New Classification Groups       #
@@ -783,6 +784,10 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
             self.pathLineEdit_selectionClassificationGroups.setCurrentPath(" ")
             return
 
+        condition4 = self.logic.checkNumberOfPoints(self.dictShapeModels)
+        if not condition4: 
+            self.pathLineEdit_CSVFileDataset.setCurrentPath(" ")
+            return
         # Enable/disable buttons
         # self.comboBox_healthyGroup.setEnabled(True)
         
@@ -2019,6 +2024,14 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
         # for group, vtklist in dictFeatData.items():
         input_Data = inputData.inputData()
         dataset_names = input_Data.maybe_pickle(dictFeatData, 3, force=False)
+
+        train_size = 256
+        valid_size = 32
+        
+        valid_dataset, valid_labels, train_dataset, train_labels = input_Data.merge_datasets(train_datasets, train_size, valid_size)
+
+        train_dataset, train_labels = input_Data.randomize(train_dataset, train_labels)
+        test_dataset, test_labels = input_Data.randomize(test_dataset, test_labels)
 
         return dataset_names
 
