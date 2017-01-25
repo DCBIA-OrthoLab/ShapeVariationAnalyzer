@@ -2214,13 +2214,26 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
         self.neuralNetwork.learning_rate = 0.0005
         self.neuralNetwork.lambda_reg = 0.01
         self.neuralNetwork.num_epochs = 2
-        self.neuralNetwork.num_steps =  1001
+        self.neuralNetwork.num_steps =  101
         self.neuralNetwork.batch_size = 10
 
 
         train_dataset, train_labels, valid_dataset, valid_labels = self.get_inputs(pickle_file)
         saveModelPath = os.path.join(slicer.app.temporaryPath, 'modelSaved')
+
+        # Affiche que ca train!
+        messageBox = ctk.ctkMessageBox()
+        messageBox.setWindowTitle(' COMPUTING... ')
+        messageBox.setIcon(messageBox.Warning)
+        messageBox.setText("Atds gros ca train")
+        
+        
+        messageBox.setVisible(True)
+            
+
+
         self.run_training(train_dataset, train_labels, valid_dataset, valid_labels, saveModelPath)
+        messageBox.dontShowAgain = True
 
         print "COUCOU LE NUM_POINTS :: " + str(self.neuralNetwork.NUM_POINTS)
         print "COUCOU LE NUM_FEATURES :: " + str(self.neuralNetwork.NUM_FEATURES)
