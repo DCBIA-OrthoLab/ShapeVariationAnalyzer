@@ -1152,12 +1152,18 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
     def onTrainNetwork(self):
         print "----- onTrainNetwork -----"
         # self.label_trainNetwork.show()
-        self.logic.trainNetworkClassification(self.pickle_file)
+        self.logic.trainNetworkClassification(self.pickle_file, 'modelCondylesClassification')
         # self.label_trainNetwork.hide()
+        
+        self.pushButton_exportNetwork.setEnabled(True)
+        self.directoryButton_exportNetwork.setEnabled(True)
         return
 
     def onExportNetwork(self):
         print "----- onExportNetwork -----"
+
+        self.logic.exportModelNetwork('modelCondylesClassification', self.directoryButton_exportNetwork.directory)
+        print "ici"
         return
 
 
@@ -2211,16 +2217,16 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
         return
 
 
-    def trainNetworkClassification(self, pickle_file):
+    def trainNetworkClassification(self, pickle_file, modelName):
         self.neuralNetwork.learning_rate = 0.0005
         self.neuralNetwork.lambda_reg = 0.01
         self.neuralNetwork.num_epochs = 2
-        self.neuralNetwork.num_steps =  101
+        self.neuralNetwork.num_steps =  11
         self.neuralNetwork.batch_size = 10
 
 
         train_dataset, train_labels, valid_dataset, valid_labels = self.get_inputs(pickle_file)
-        saveModelPath = os.path.join(slicer.app.temporaryPath, 'modelSaved')
+        saveModelPath = os.path.join(slicer.app.temporaryPath, modelName)
 
         self.run_training(train_dataset, train_labels, valid_dataset, valid_labels, saveModelPath)
 
@@ -2230,6 +2236,15 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
 
         return
 
+    def exportModelNetwork(self, modelName, directory):
+        dim = len(modelName)
+        for file in os.listdir(slicer.app.temporaryPath):
+            if file[:dim] == modelName:
+                oldpath = os.path.join(slicer.app.temporaryPath, file)
+                newpath = os.path.join(directory, file)
+                shutil.copyfile(oldpath, newpath)
+
+        return
 
 
     # Function in order to compute the shape OA loads of a sample
