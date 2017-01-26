@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1388</width>
+    <width>1394</width>
     <height>1687</height>
    </rect>
   </property>
@@ -14,7 +14,7 @@
    <string>Form</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_12">
-   <item>
+      <item>
     <widget class="ctkCollapsibleButton" name="CollapsibleButton_creationCSVFile" native="true">
      <property name="text" stdset="0">
       <string>Creation of CSV File for Classification Groups</string>
@@ -377,6 +377,13 @@
              </property>
             </widget>
            </item>
+           <item row="3" column="0">
+            <widget class="QLabel" name="label_trainNetwork">
+             <property name="text">
+              <string>Computing network...</string>
+             </property>
+            </widget>
+           </item>
           </layout>
          </item>
         </layout>
@@ -482,7 +489,7 @@
      </layout>
     </widget>
    </item>
-   <item>
+<item>
     <spacer name="verticalSpacer">
      <property name="orientation">
       <enum>Qt::Vertical</enum>
@@ -495,6 +502,7 @@
      </property>
     </spacer>
    </item>
+
   </layout>
  </widget>
  <customwidgets>

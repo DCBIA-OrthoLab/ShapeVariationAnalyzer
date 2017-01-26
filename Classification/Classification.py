@@ -112,6 +112,7 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         self.pathLineEdit_CSVFileMeansShape = self.logic.get('pathLineEdit_CSVFileMeansShape')
         self.directoryButton_exportNetwork = self.logic.get('directoryButton_ExportNetwork')
         self.pushButton_preprocessData = self.logic.get('pushButton_preprocessData')
+        self.label_trainNetwork = self.logic.get('label_trainNetwork')
 
 
         #          Tab: Result / Analysis
@@ -155,6 +156,7 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         self.directoryButton_exportNetwork.setDisabled(True)
         self.pushButton_preprocessData.setDisabled(True)
 
+        self.label_trainNetwork.hide()
 
 
         #     qMRMLNodeComboBox configuration
@@ -1149,9 +1151,9 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
 
     def onTrainNetwork(self):
         print "----- onTrainNetwork -----"
-
+        # self.label_trainNetwork.show()
         self.logic.trainNetworkClassification(self.pickle_file)
-
+        # self.label_trainNetwork.hide()
         return
 
     def onExportNetwork(self):
@@ -1162,7 +1164,6 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
 
     # Function to select the vtk Input Data
     def onVTKInputData(self):
-        print "heheeee"
         # Remove the old vtk file in the temporary directory of slicer if it exists
         if self.patientList:
             print "onVTKInputData remove old vtk file"
@@ -2221,25 +2222,11 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
         train_dataset, train_labels, valid_dataset, valid_labels = self.get_inputs(pickle_file)
         saveModelPath = os.path.join(slicer.app.temporaryPath, 'modelSaved')
 
-        # Affiche que ca train!
-        messageBox = ctk.ctkMessageBox()
-        messageBox.setWindowTitle(' COMPUTING... ')
-        messageBox.setIcon(messageBox.Warning)
-        messageBox.setText("Atds gros ca train")
-        
-        
-        messageBox.setVisible(True)
-            
-
-
         self.run_training(train_dataset, train_labels, valid_dataset, valid_labels, saveModelPath)
-        messageBox.dontShowAgain = True
 
         print "COUCOU LE NUM_POINTS :: " + str(self.neuralNetwork.NUM_POINTS)
         print "COUCOU LE NUM_FEATURES :: " + str(self.neuralNetwork.NUM_FEATURES)
         print "COUCOU LE NUM_CLASSES :: " + str(self.neuralNetwork.NUM_CLASSES)
-
-
 
         return
 
