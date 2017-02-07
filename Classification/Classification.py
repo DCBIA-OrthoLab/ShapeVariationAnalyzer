@@ -1172,6 +1172,32 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
     def onNetworkPath(self):
         print "----- onNetworkPath -----"
 
+        # Check qu'il y a un bien:
+        #   - modelName.meta
+        #   - modelName.index
+        #   - modelName.data-00000-of-00001 
+        modelFound = list()
+        listContent = os.listdir(self.directoryButton_networkPath.directory)
+        for file in listContent:
+            if os.path.splitext(os.path.basename(file))[1] == ".meta":
+                potentialModel = os.path.splitext(os.path.basename(file))[0]
+                print potentialModel
+                nbPotientalModel = 0
+
+                for fileBis in listContent:
+                    if os.path.splitext(os.path.basename(fileBis))[0] == potentialModel:
+                        nbPotientalModel = nbPotientalModel + 1
+                if nbPotientalModel == 3:
+                    modelFound.append(potentialModel)
+
+        
+        if len(modelFound == 1):
+            # C'est parfait, on l'utilise cash!
+            print "Niquel!"
+        elif len(modelFound == 0):
+            print " :::: Wallouh y a pas de model dans ton path !!!"
+        else:
+            print " :: Y a trop de model, il va falloit choisir frere!"
 
         return
 
