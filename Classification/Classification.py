@@ -114,6 +114,8 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         self.pushButton_preprocessData = self.logic.get('pushButton_preprocessData')
         self.label_trainNetwork = self.logic.get('label_trainNetwork')
 
+        self.directoryButton_networkPath = self.logic.get('directoryButton_networkPath')
+
 
         #          Tab: Result / Analysis
         self.collapsibleButton_Result = self.logic.get('CollapsibleButton_Result')
@@ -265,6 +267,7 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         self.pushButton_preprocessData.connect('clicked()', self.onPreprocessData)
         self.stateCSVMeansShape = False
         self.stateCSVDataset = False
+        self.directoryButton_networkPath.connect('directoryChanged(const QString)', self.onNetworkPath)
 
     # function called each time that the user "enter" in Diagnostic Index interface
     def enter(self):
@@ -1163,9 +1166,14 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         print "----- onExportNetwork -----"
 
         self.logic.exportModelNetwork('modelCondylesClassification', self.directoryButton_exportNetwork.directory)
-        print "ici"
+        self.directoryButton_networkPath.directory = self.directoryButton_exportNetwork.directory
         return
 
+    def onNetworkPath(self):
+        print "----- onNetworkPath -----"
+
+
+        return
 
 
     # Function to select the vtk Input Data
@@ -1980,7 +1988,7 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
         # sys.path.insert(0, libPath)
         # computeMean = os.path.join(scriptedModulesPath, '../hidden-cli-modules/computeMean')
         
-        condylesfeaturesextractor = "/Users/prisgdd/Documents/Projects/CNN/CondylesFeaturesExtractor-build/src/bin/condylesfeaturesextractor"
+        condylesfeaturesextractor = "/Users/prisgdd/Documents/Projects/CNN/CondylesFeaturesExtractor-build-cmptemean/src/CondylesFeaturesExtractor/bin/condylesfeaturesextractor"
         
         filename = str(os.path.basename(shape))
         basename, _ = os.path.splitext(filename)
@@ -2121,8 +2129,9 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
             return train_dataset, train_labels, valid_dataset, valid_labels
 
 
-    def run_training(self, train_dataset, train_labels, valid_dataset, valid_labels, saveModelPath, ):
+    def run_training(self, train_dataset, train_labels, valid_dataset, valid_labels, saveModelPath):
 
+        #       >>>>>       A RENDRE GENERIQUE !!!!!!!
         if self.neuralNetwork.NUM_HIDDEN_LAYERS == 1:
             nb_hidden_nodes_1 = 2048
         elif self.neuralNetwork.NUM_HIDDEN_LAYERS == 2:
@@ -2133,15 +2142,21 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
         with graph.as_default():
             # Input data.
             with tf.name_scope('Inputs_management'):
-                tf_train_dataset, tf_train_labels = self.placeholder_inputs(self.neuralNetwork.batch_size)
+                # tf_train_dataset, tf_train_labels = placeholder_inputs(self.neuralNetwork.batch_size, name='data')
+                tf_train_dataset = tf.placeholder(tf.float32, shape=(self.neuralNetwork.batch_size, self.neuralNetwork.NUM_POINTS * self.neuralNetwork.NUM_FEATURES), name='tf_train_dataset')
+                tf_train_labels = tf.placeholder(tf.int32, shape=(self.neuralNetwork.batch_size, self.neuralNetwork.NUM_CLASSES), name='tf_train_labels')
 
-                keep_prob = tf.placeholder(tf.float32)
+                keep_prob = tf.placeholder(tf.float32, name='keep_prob')
 
-                tf_valid_dataset = tf.constant(valid_dataset)
+                tf_valid_dataset = tf.constant(valid_dataset, name="tf_valid_dataset")
+
+                # tf_data = tf.Variable(tf.zeros([1,inputdata.NUM_POINTS * inputdata.NUM_FEATURES]))
+                tf_data = tf.placeholder(tf.float32, shape=(1,self.neuralNetwork.NUM_POINTS * self.neuralNetwork.NUM_FEATURES), name="input")
                 # tf_test_dataset = tf.constant(test_dataset)
 
             with tf.name_scope('Bias_and_weights_management'):
                 weightsDict = self.neuralNetwork.bias_weights_creation(nb_hidden_nodes_1, nb_hidden_nodes_2)    
+            
             # Training computation.
             with tf.name_scope('Training_computations'):
                 logits, weightsDict = self.neuralNetwork.model(tf_train_dataset, weightsDict)
@@ -2159,12 +2174,15 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
             tf.summary.scalar("Loss", loss)
             summary_op = tf.summary.merge_all()
             saver = tf.train.Saver(weightsDict)
+
                 
             with tf.name_scope('Predictions'):
                 # Predictions for the training, validation, and test data.
                 train_prediction = tf.nn.softmax(logits)
-                valid_prediction = tf.nn.softmax(self.neuralNetwork.model(tf_valid_dataset, weightsDict)[0])
-                # test_prediction = tf.nn.softmax(nn.model(tf_test_dataset, weightsDict)[0])
+                valid_prediction = tf.nn.softmax(self.neuralNetwork.model(tf_valid_dataset, weightsDict)[0], name="valid_prediction")
+
+                data_pred = tf.nn.softmax(self.neuralNetwork.model(tf_data, weightsDict)[0], name="output")
+                # test_prediction = tf.nn.softmax(self.neuralNetwork.model(tf_test_dataset, weightsDict)[0])
 
 
             # -------------------------- #
@@ -2191,10 +2209,14 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
                         # and the value is the numpy array to feed to it.
                         feed_dict = {tf_train_dataset : batch_data, tf_train_labels : batch_labels, keep_prob:0.7}
                         _, l, predictions, summary = session.run([optimizer, loss, train_prediction, summary_op], feed_dict=feed_dict)
+                        # _, l, predictions = session.run([optimizer, loss, train_prediction], feed_dict=feed_dict)
+
 
                         # write log
                         batch_count = 20
                         writer.add_summary(summary, epoch * batch_count + step)
+
+
                         if (step % 500 == 0):
                             print("Minibatch loss at step %d: %f" % (step, l))
                             print("Minibatch accuracy: %.1f%%" % self.neuralNetwork.accuracy(predictions, batch_labels)[0])
@@ -2207,14 +2229,11 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
                 # print "\n PPV : " + str(PPV)
                 # print "\n TPR : " + str(TPR)
 
-                # if saveModelPath.rfind(".ckpt") != -1:
-                    # save_path = saver.save(session, saveModelPath)
-                    # print("Model saved in file: %s" % save_path)
-                # else:
-                    # raise Exception("Impossible to save train model at %s. Must be a .cpkt file" % saveModelPath)
-                save_path = saver.save(session, saveModelPath, write_meta_graph=False)
+                save_path = saver.save(session, saveModelPath, write_meta_graph=True)
                 print("Model saved in file: %s" % save_path)
-        return
+        
+        return 
+
 
 
     def trainNetworkClassification(self, pickle_file, modelName):
@@ -2230,10 +2249,6 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
 
         self.run_training(train_dataset, train_labels, valid_dataset, valid_labels, saveModelPath)
 
-        print "COUCOU LE NUM_POINTS :: " + str(self.neuralNetwork.NUM_POINTS)
-        print "COUCOU LE NUM_FEATURES :: " + str(self.neuralNetwork.NUM_FEATURES)
-        print "COUCOU LE NUM_CLASSES :: " + str(self.neuralNetwork.NUM_CLASSES)
-
         return
 
     def exportModelNetwork(self, modelName, directory):
@@ -2243,7 +2258,6 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
                 oldpath = os.path.join(slicer.app.temporaryPath, file)
                 newpath = os.path.join(directory, file)
                 shutil.copyfile(oldpath, newpath)
-
         return
 
 

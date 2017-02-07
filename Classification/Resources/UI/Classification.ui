@@ -6,15 +6,15 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1394</width>
-    <height>1687</height>
+    <width>1397</width>
+    <height>1713</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Form</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_12">
-      <item>
+   <item>
     <widget class="ctkCollapsibleButton" name="CollapsibleButton_creationCSVFile" native="true">
      <property name="text" stdset="0">
       <string>Creation of CSV File for Classification Groups</string>
@@ -397,17 +397,17 @@
         <layout class="QVBoxLayout" name="verticalLayout_9">
          <item>
           <layout class="QGridLayout" name="gridLayout_2">
-           <item row="2" column="1">
+           <item row="3" column="1">
             <widget class="ctkPathLineEdit" name="PathLineEdit_CSVInputData" native="true"/>
            </item>
-           <item row="2" column="0">
+           <item row="3" column="0">
             <widget class="QLabel" name="label_CSVFile">
              <property name="text">
               <string>CSV File</string>
              </property>
             </widget>
            </item>
-           <item row="0" column="1">
+           <item row="1" column="1">
             <widget class="qMRMLNodeComboBox" name="MRMLNodeComboBox_VTKInputData" native="true">
              <property name="nodeTypes" stdset="0">
               <stringlist>
@@ -431,24 +431,34 @@
              </property>
             </widget>
            </item>
-           <item row="0" column="0">
+           <item row="1" column="0">
             <widget class="QLabel" name="label_VTKFile">
              <property name="text">
               <string>VTK file</string>
              </property>
             </widget>
            </item>
-           <item row="3" column="1">
+           <item row="4" column="1">
             <widget class="QPushButton" name="pushButton_applyOAIndex">
              <property name="text">
               <string>Apply</string>
              </property>
             </widget>
            </item>
-           <item row="1" column="1">
+           <item row="2" column="1">
             <widget class="QCheckBox" name="checkBox_fileInGroups">
              <property name="text">
               <string>File already in the groups</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="ctkDirectoryButton" name="directoryButton_networkPath" native="true"/>
+           </item>
+           <item row="0" column="0">
+            <widget class="QLabel" name="label_NetworkPath">
+             <property name="text">
+              <string>Network path</string>
              </property>
             </widget>
            </item>
@@ -489,7 +499,7 @@
      </layout>
     </widget>
    </item>
-<item>
+   <item>
     <spacer name="verticalSpacer">
      <property name="orientation">
       <enum>Qt::Vertical</enum>
@@ -502,7 +512,6 @@
      </property>
     </spacer>
    </item>
-
   </layout>
  </widget>
  <customwidgets>
