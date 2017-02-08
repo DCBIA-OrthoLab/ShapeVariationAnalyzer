@@ -56,23 +56,6 @@ class inputData():
             normalArray = geometry.GetPointData().GetNormals()
             nbCompNormal = normalArray.GetElementComponentSize() - 1  # -1 car 4eme comp = 1ere du pt suivant
 
-            # *****
-            # ***** Get positions (3 useful components) *****
-            positionName = "position"
-            positionArray = geometry.GetPointData().GetVectors(positionName)
-            nbCompPosition = positionArray.GetElementComponentSize() - 1  # -1 car 4eme comp = 1ere du pt suivant
-
-            # Get position range & normalize
-            positionMin, positionMax = 1000000, -1000000
-            for i in range(0, self.NUM_POINTS):
-                for numComponent in range(0, nbCompPosition):
-                    value = positionArray.GetComponent(i, numComponent)
-                    if value < positionMin:
-                        positionMin = value
-                    if value > positionMax:
-                        positionMax = value
-            positionDepth = positionMax - positionMin
-
             # ***** Get distances to each mean group (nbGlicroups components) and normalization *****
             listGroupMean = list()
             for i in range(0, self.NUM_CLASSES):
@@ -81,7 +64,10 @@ class inputData():
                 temp_range = temp.GetRange()
                 temp_min, temp_max = temp_range[0], temp_range[1]
                 for j in range(0, self.NUM_POINTS):
-                    temp.SetTuple1(j, 2 * (temp.GetTuple1(j) - temp_min) / (temp_max) - 1)
+                    if temp_max:
+                        temp.SetTuple1(j, 2 * (temp.GetTuple1(j) - temp_min) / (temp_max) - 1)
+                    else:
+                        temp.SetTuple1(j, 2 * (temp.GetTuple1(j) - temp_min) / (1) - 1)     # CHANGEEEER
                 listGroupMean.append(temp)
 
             # ***** Get Curvatures and value for normalization (4 components) *****

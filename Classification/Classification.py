@@ -104,7 +104,7 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         self.MRMLNodeComboBox_VTKInputData = self.logic.get('MRMLNodeComboBox_VTKInputData')
         self.pathLineEdit_CSVInputData = self.logic.get('PathLineEdit_CSVInputData')
         # self.checkBox_fileInGroups = self.logic.get('checkBox_fileInGroups')
-        self.pushButton_applyOAIndex = self.logic.get('pushButton_applyOAIndex')
+        self.pushButton_classifyIndex = self.logic.get('pushButton_classifyIndex')
 
         self.pushButton_trainNetwork = self.logic.get('pushButton_trainNetwork')
         self.pushButton_exportNetwork = self.logic.get('pushButton_ExportNetwork')
@@ -115,6 +115,7 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         self.label_trainNetwork = self.logic.get('label_trainNetwork')
 
         self.directoryButton_networkPath = self.logic.get('directoryButton_networkPath')
+        self.pathLineEdit_CSVFileMeansShapeClassify = self.logic.get('pathLineEdit_CSVFileMeansShapeClassify')
 
 
         #          Tab: Result / Analysis
@@ -239,11 +240,11 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
                                                        lambda: self.onSelectedCollapsibleButtonOpen(self.collapsibleButton_classificationNetwork))
         self.MRMLNodeComboBox_VTKInputData.connect('currentNodeChanged(vtkMRMLNode*)', self.onVTKInputData)
         # self.checkBox_fileInGroups.connect('clicked()', self.onCheckFileInGroups)
-        # self.pathLineEdit_CSVInputData.connect('currentPathChanged(const QString)', self.onCSVInputData)
+        self.pathLineEdit_CSVInputData.connect('currentPathChanged(const QString)', self.onCSVInputData)
         
         
         
-        self.pushButton_applyOAIndex.connect('clicked()', self.onComputeOAIndex)
+        self.pushButton_classifyIndex.connect('clicked()', self.onClassifyIndex)
         #          Tab: Result / Analysis
         self.collapsibleButton_Result.connect('clicked()',
                                               lambda: self.onSelectedCollapsibleButtonOpen(self.collapsibleButton_Result))
@@ -268,6 +269,7 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         self.stateCSVMeansShape = False
         self.stateCSVDataset = False
         self.directoryButton_networkPath.connect('directoryChanged(const QString)', self.onNetworkPath)
+        self.pathLineEdit_CSVFileMeansShapeClassify.connect('currentPathChanged(const QString)', self.onCSVFileMeansShapeClassify)
 
     # function called each time that the user "enter" in Diagnostic Index interface
     def enter(self):
@@ -1136,9 +1138,9 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
 
         for group, listvtk in self.dictShapeModels.items():
             for shape in listvtk:
-
+                print shape
 # >>>>>>> UNCOMMENT HERE !!! FEATURES EXTRACTION
-                # self.logic.extractFeatures(shape, meansList, outputDir)
+                self.logic.extractFeatures(shape, meansList, outputDir)
 
                 # # Storage of the means for each group
                 self.logic.storageFeaturesData(self.dictFeatData, self.dictShapeModels)
@@ -1169,6 +1171,41 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         self.directoryButton_networkPath.directory = self.directoryButton_exportNetwork.directory
         return
 
+
+    def onCSVFileMeansShapeClassify(self):
+        # Re-initialization of the dictionary containing the Training dataset
+        self.dictShapeModels = dict()
+
+        # Check if the path exists:
+        if not os.path.exists(self.pathLineEdit_CSVFileMeansShapeClassify.currentPath):
+            return
+
+        # Check if it's a CSV file
+        condition1 = self.logic.checkExtension(self.pathLineEdit_CSVFileMeansShapeClassify.currentPath, ".csv")
+        if not condition1:
+            self.pathLineEdit_CSVFileMeansShapeClassify.setCurrentPath(" ")
+            return
+
+        # Read CSV File:
+        self.logic.table = self.logic.readCSVFile(self.pathLineEdit_CSVFileMeansShapeClassify.currentPath)
+        condition3 = self.logic.creationDictVTKFiles(self.dictShapeModels)
+        condition2 = self.logic.checkOneMeshPerGroupInDict(self.dictShapeModels)
+
+        #    If the file is not conformed:
+        #    Re-initialization of the dictionary containing the Classification Groups
+        if not (condition2 and condition3):
+            self.dictShapeModels = dict()
+            self.pathLineEdit_CSVFileMeansShapeClassify.setCurrentPath(" ")
+            return
+
+        # First condition : All the shapes should have the same number of points
+        condition4 = self.logic.checkNumberOfPoints(self.dictShapeModels)
+        if not condition4: 
+            self.pathLineEdit_CSVFileMeansShapeClassify.setCurrentPath(" ")
+            return
+
+        return
+
     def onNetworkPath(self):
         print "----- onNetworkPath -----"
 
@@ -1176,6 +1213,9 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         #   - modelName.meta
         #   - modelName.index
         #   - modelName.data-00000-of-00001 
+        
+        self.modelName = ""
+
         modelFound = list()
         listContent = os.listdir(self.directoryButton_networkPath.directory)
         for file in listContent:
@@ -1191,13 +1231,17 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
                     modelFound.append(potentialModel)
 
         
-        if len(modelFound == 1):
-            # C'est parfait, on l'utilise cash!
+        if len(modelFound) == 1:
+            self.modelName = modelFound[0]
+            # C'est parfait, on l'utilise !
             print "Niquel!"
-        elif len(modelFound == 0):
+            self.logic.importModelNetwork(self.modelName, self.directoryButton_networkPath.directory)
+        elif len(modelFound) == 0:
             print " :::: Wallouh y a pas de model dans ton path !!!"
         else:
             print " :: Y a trop de model, il va falloit choisir frere!"
+
+
 
         return
 
@@ -1210,7 +1254,7 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
             oldVTKPath = slicer.app.temporaryPath + "/" + os.path.basename(self.patientList[0])
             if os.path.exists(oldVTKPath):
                 os.remove(oldVTKPath)
-
+        print self.patientList
         # Re-Initialization of the patient list
         self.patientList = list()
 
@@ -1231,6 +1275,7 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
             self.logic.saveVTKFile(self.MRMLNodeComboBox_VTKInputData.currentNode().GetPolyData(), vtkfilepath)
             #     Adding to the list
             self.patientList.append(vtkfilepath)
+        print self.patientList
 
     # Function to handle the checkbox "File already in the groups"
     # def enableOption(self):
@@ -1261,23 +1306,25 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
     #                 self.checkBox_fileInGroups.setChecked(False)
 
     # Function to select the CSV Input Data
-    # def onCSVInputData(self):
-    #     self.patientList = list()
+    def onCSVInputData(self):
+        self.patientList = list()
 
-    #     # Delete the path in VTK file
-    #     if not os.path.exists(self.pathLineEdit_CSVInputData.currentPath):
-    #         return
-    #     self.MRMLNodeComboBox_VTKInputData.setCurrentNode(None)
+        # Delete the path in VTK file
+        if not os.path.exists(self.pathLineEdit_CSVInputData.currentPath):
+            return
+        self.MRMLNodeComboBox_VTKInputData.setCurrentNode(None)
 
-    #     # Adding the name of the node a list
-    #     if os.path.exists(self.pathLineEdit_CSVInputData.currentPath):
-    #         patientTable = vtk.vtkTable
-    #         patientTable = self.logic.readCSVFile(self.pathLineEdit_CSVInputData.currentPath)
-    #         for i in range(0, patientTable.GetNumberOfRows()):
-    #             self.patientList.append(patientTable.GetValue(i,0).ToString())
+        # Adding the name of the node a list
+        if os.path.exists(self.pathLineEdit_CSVInputData.currentPath):
+            patientTable = vtk.vtkTable
+            patientTable = self.logic.readCSVFile(self.pathLineEdit_CSVInputData.currentPath)
+            for i in range(0, patientTable.GetNumberOfRows()):
+                self.patientList.append(patientTable.GetValue(i,0).ToString())
+        print self.patientList
 
-    #     # Handle checkbox "File already in the groups"
-    #     self.enableOption()
+
+        # Handle checkbox "File already in the groups"
+        # self.enableOption()
 
     # Function to define the OA index type of the patient
     #    *** CROSS VALIDATION:
@@ -1290,23 +1337,21 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
     #    - Else:
     #           - Compute the ShapeOALoads for each group
     #           - Compute the OA index type of a patient
-    def onComputeOAIndex(self):
+    def onClassifyIndex(self):
         print "------ Compute the OA index Type of a patient ------"
 
-
-        # print "------ Compute the OA index Type of a patient ------"
-        # # Check if the user gave all the data used to compute the OA index type of the patient:
-        # # - VTK input data or CSV input data
-        # # - CSV file containing the Classification Groups
+        # Check if the user gave all the data used to compute the OA index type of the patient:
+        # - VTK input data or CSV input data
+        # - Model network!
         # if not os.path.exists(self.pathLineEdit_selectionClassificationGroups.currentPath):
         #     slicer.util.errorDisplay('Miss the CSV file containing the Classification Groups')
         #     return
-        # if self.MRMLNodeComboBox_VTKInputData.currentNode() == None and not self.pathLineEdit_CSVInputData.currentPath:
-        #     slicer.util.errorDisplay('Miss the Input Data')
-        #     return
+        if self.MRMLNodeComboBox_VTKInputData.currentNode() == None and not self.pathLineEdit_CSVInputData.currentPath:
+            slicer.util.errorDisplay('Miss the Input Data')
+            return
 
-        # # **** CROSS VALIDATION ****
-        # # If the selected file is in the groups used to create the classification groups
+        # **** CROSS VALIDATION ****
+        # If the selected file is in the groups used to create the classification groups
         # if self.checkBox_fileInGroups.isChecked():
         #     #      Remove the file in the dictionary used to compute the classification groups
         #     listSaveVTKFiles = list()
@@ -1324,17 +1369,46 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         #     #      Re-compute the new classification groups
         #     self.onComputeNewClassificationGroups()
 
-        # # *** Define the OA index type of a patient ***
-        # # For each patient:
-        # for patient in self.patientList:
-        #     # Compute the ShapeOALoads for each group
-        #     for key, value in self.dictShapeModels.items():
-        #         self.logic.computeShapeOALoads(key, patient, value)
+        # *** Define the OA index type of a patient ***
 
-        #     # Compute the OA index type of a patient
-        #     resultgroup = self.logic.computeOAIndex(self.dictShapeModels.keys())
+        self.dictFeatData = dict()
+        tempPath = slicer.app.temporaryPath
+        
+        outputDir = os.path.join(tempPath, "dataToClassify")
+        if os.path.isdir(outputDir):
+            shutil.rmtree(outputDir)
+        os.mkdir(outputDir) 
 
-        #     # Display the result in the next tab "Result/Analysis"
+        #
+        # Extract features on shapes, with CondylesFeaturesExtractor and get new path (in slicer temp path)
+        meansList = ""
+        for k, v in self.dictShapeModels.items():
+            if meansList == "":
+                meansList = str(v)
+            else:
+                meansList = meansList + "," +  str(v)
+
+        print " :: meansList :: " +  str(meansList)
+
+        for shape in self.patientList:
+            # Extract features de la/les shapes a classifier
+            # print shape
+            self.logic.extractFeatures(shape, meansList, outputDir)
+
+        # Change paths in patientList to have shape with features
+        self.logic.storageDataToClassify(self.dictFeatData, self.patientList, outputDir)
+        # print self.patientList
+
+
+        # For each patient:
+        self.dictClassified = dict()
+        for patient in self.patientList:
+            # Compute the classification
+            self.logic.evalClassification(self.dictClassified, os.path.join(tempPath, self.modelName), patient)
+
+        print "\n "
+        print self.dictClassified
+            # Display the result in the next tab "Result/Analysis"
         #     self.displayResult(resultgroup, os.path.basename(patient))
 
         # # Remove the CSV file containing the Shape OA Vector Loads
@@ -1452,7 +1526,7 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
     def checkExtension(self, filename, extension):
         if os.path.splitext(os.path.basename(filename))[1] == extension:
             return True
-        slicer.util.errorDisplay('Wrong extension file, a CSV file is needed!')
+        slicer.util.errorDisplay('Wrong extension file, a ' + extension + ' file is needed!')
         return False
 
     # Function to read a CSV file
@@ -2029,7 +2103,7 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
 
         arguments.append("--meanGroup")
         arguments.append(str(meansList))
-        # print arguments
+        print arguments
 
         #     Call the executable
         process = qt.QProcess()
@@ -2043,7 +2117,7 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
         # print "error: " + str(process.error())
         
         processOutput = str(process.readAll())
-        # print processOutput
+        print processOutput
 
         return
 
@@ -2057,6 +2131,13 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
                 newValue.append(ftPath)
             dictFeatData[key] = newValue
         return
+
+    def storageDataToClassify(self, dictFeatData, listPatient, outputDir):
+        for i in range(0, len(listPatient)):
+            filename,_ = os.path.splitext(os.path.basename(listPatient[i]))
+            ftPath = outputDir + "/" + filename + '_ft.vtk'
+            listPatient[i] = ftPath
+        return listPatient
 
     def pickleData(self, dictFeatData):
         # for group, vtklist in dictFeatData.items():
@@ -2128,6 +2209,13 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
         dataset = dataset.reshape((-1, self.neuralNetwork.NUM_POINTS * self.neuralNetwork.NUM_FEATURES)).astype(np.float32)
         labels = (np.arange(self.neuralNetwork.NUM_CLASSES) == labels[:, None]).astype(np.float32)
         return dataset, labels
+
+    ## Reformat into a shape that's more adapted to the models we're going to train:
+    #   - data as a flat matrix
+    #   - labels as float 1-hot encodings
+    def reformat_data(self, dataset):
+        dataset = dataset.reshape((-1, self.neuralNetwork.NUM_POINTS * self.neuralNetwork.NUM_FEATURES)).astype(np.float32)
+        return dataset
         
     def get_inputs(self, pickle_file):
 
@@ -2286,61 +2374,130 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
                 shutil.copyfile(oldpath, newpath)
         return
 
+    def importModelNetwork(self, modelName, directory):
+        for file in os.listdir(directory):
+            if os.path.splitext(os.path.basename(file))[0] == modelName:
+                oldpath = os.path.join(directory, file)
+                newpath = os.path.join(slicer.app.temporaryPath, file)
+                shutil.copyfile(oldpath, newpath)
+        return
 
-    # Function in order to compute the shape OA loads of a sample
-    def computeShapeOALoads(self, groupnumber, vtkfilepath, shapemodel):
-        # Call of computeShapeOALoads used to compute shape loads of a sample for the current shape model
-        # Arguments:
-        #  --vtkfile: Sample Input Data (VTK file path)
-        #  --resultdir: The path where the newly build model should be saved
-        #  --groupnumber: The number of the group used to create the shape model
-        #  --shapemodel: Shape model of one group (H5 file path)
 
-        #     Creation of the command line
-        scriptedModulesPath = eval('slicer.modules.%s.path' % self.interface.moduleName.lower())
-        scriptedModulesPath = os.path.dirname(scriptedModulesPath)
-        libPath = os.path.join(scriptedModulesPath)
-        sys.path.insert(0, libPath)
-        computeShapeOALoads = os.path.join(scriptedModulesPath, '../hidden-cli-modules/computeShapeOALoads')
-        #computeShapeOALoads = "/Users/lpascal/Desktop/test/ClassificationExtension-build/bin/computeShapeOALoads"
-        arguments = list()
-        arguments.append("--groupnumber")
-        arguments.append(groupnumber)
-        arguments.append("--vtkfile")
-        arguments.append(vtkfilepath)
-        arguments.append("--resultdir")
-        resultdir = slicer.app.temporaryPath
-        arguments.append(resultdir)
-        arguments.append("--shapemodel")
-        arguments.append(shapemodel)
+    # # Function in order to compute the shape OA loads of a sample
+    # def computeShapeOALoads(self, groupnumber, vtkfilepath, shapemodel):
+    #     # Call of computeShapeOALoads used to compute shape loads of a sample for the current shape model
+    #     # Arguments:
+    #     #  --vtkfile: Sample Input Data (VTK file path)
+    #     #  --resultdir: The path where the newly build model should be saved
+    #     #  --groupnumber: The number of the group used to create the shape model
+    #     #  --shapemodel: Shape model of one group (H5 file path)
 
-        #     Call the CLI
-        process = qt.QProcess()
-        print "Calling " + os.path.basename(computeShapeOALoads)
-        process.start(computeShapeOALoads, arguments)
-        process.waitForStarted()
-        # print "state: " + str(process.state())
-        process.waitForFinished()
-        # print "error: " + str(process.error())
+    #     #     Creation of the command line
+    #     scriptedModulesPath = eval('slicer.modules.%s.path' % self.interface.moduleName.lower())
+    #     scriptedModulesPath = os.path.dirname(scriptedModulesPath)
+    #     libPath = os.path.join(scriptedModulesPath)
+    #     sys.path.insert(0, libPath)
+    #     computeShapeOALoads = os.path.join(scriptedModulesPath, '../hidden-cli-modules/computeShapeOALoads')
+    #     #computeShapeOALoads = "/Users/lpascal/Desktop/test/ClassificationExtension-build/bin/computeShapeOALoads"
+    #     arguments = list()
+    #     arguments.append("--groupnumber")
+    #     arguments.append(groupnumber)
+    #     arguments.append("--vtkfile")
+    #     arguments.append(vtkfilepath)
+    #     arguments.append("--resultdir")
+    #     resultdir = slicer.app.temporaryPath
+    #     arguments.append(resultdir)
+    #     arguments.append("--shapemodel")
+    #     arguments.append(shapemodel)
+
+    #     #     Call the CLI
+    #     process = qt.QProcess()
+    #     print "Calling " + os.path.basename(computeShapeOALoads)
+    #     process.start(computeShapeOALoads, arguments)
+    #     process.waitForStarted()
+    #     # print "state: " + str(process.state())
+    #     process.waitForFinished()
+    #     # print "error: " + str(process.error())
+
+    def get_input_shape(self,inputFile):
+
+        # Get features in a matrix (NUM_FEATURES x NUM_POINTS)
+        input_Data = inputData.inputData()
+        data = input_Data.load_features(inputFile)
+        data = data.reshape((-1, self.neuralNetwork.NUM_POINTS * self.neuralNetwork.NUM_FEATURES)).astype(np.float32)
+        data = self.reformat_data(data)
+        return data
+
+    def get_result(self,prediction):
+        return np.argmax(prediction[0,:])
 
     # Function to compute the OA index of a patient
-    def computeOAIndex(self, keyList):
-        OAIndexList = list()
-        for key in keyList:
-            ShapeOAVectorLoadsPath = slicer.app.temporaryPath + "/ShapeOAVectorLoadsG" + str(key) + ".csv"
-            if not os.path.exists(ShapeOAVectorLoadsPath):
-                return
-            tableShapeOAVectorLoads = vtk.vtkTable
-            tableShapeOAVectorLoads = self.readCSVFile(ShapeOAVectorLoadsPath)
-            sum = 0
-            for row in range(0, tableShapeOAVectorLoads.GetNumberOfRows()):
-                ShapeOALoad = tableShapeOAVectorLoads.GetValue(row, 0).ToDouble()
-                sum = sum + math.pow(ShapeOALoad, 2)
-            OAIndexList.append(math.sqrt(sum)/tableShapeOAVectorLoads.GetNumberOfRows())
-        # print OAIndexList
-        resultGroup = OAIndexList.index(min(OAIndexList)) + 1
-        # print "RESULT: " + str(resultGroup)
-        return resultGroup
+    def evalClassification(self, dictClassified, model, shape):
+        self.neuralNetwork.learning_rate = 0.0005
+        self.neuralNetwork.lambda_reg = 0.01
+        self.neuralNetwork.num_epochs = 2
+        self.neuralNetwork.num_steps =  11
+        self.neuralNetwork.batch_size = 10
+        # Create session, and import existing graph
+        # print shape
+        myData = self.get_input_shape(shape)
+        session = tf.InteractiveSession()
+
+
+        new_saver = tf.train.import_meta_graph(model + '.meta')
+        new_saver.restore(session, model)
+        graph = tf.Graph().as_default()
+        
+        # Get useful tensor in the graph
+        tf_data = session.graph.get_tensor_by_name("Inputs_management/input:0")
+        data_pred = session.graph.get_tensor_by_name("Predictions/output:0")
+
+        feed_dict = {tf_data: myData}
+        data_pred = session.run(data_pred, feed_dict=feed_dict)
+        
+        result = self.get_result(data_pred)
+        print "Shape : " + os.path.basename(shape)
+        print "Group predicted :" + str(result) + "\n"
+        
+        # Mise a jour du dictClassified
+        
+        # Est-ce que ce result existe deja comme cle ?
+        listkey = dictClassified.keys()
+        print listkey
+
+        if listkey.count(result):       # La key exist
+            valueKey = dictClassified[result]
+            valueKey.append(shape)
+        else:       # la key n'existe pas 
+            valueKey = list()
+            valueKey.append(shape)
+        dictClassified[result] = valueKey
+
+        print dictClassified
+
+
+
+
+        return
+
+
+
+        # OAIndexList = list()
+        # for key in keyList:
+        #     ShapeOAVectorLoadsPath = slicer.app.temporaryPath + "/ShapeOAVectorLoadsG" + str(key) + ".csv"
+        #     if not os.path.exists(ShapeOAVectorLoadsPath):
+        #         return
+        #     tableShapeOAVectorLoads = vtk.vtkTable
+        #     tableShapeOAVectorLoads = self.readCSVFile(ShapeOAVectorLoadsPath)
+        #     sum = 0
+        #     for row in range(0, tableShapeOAVectorLoads.GetNumberOfRows()):
+        #         ShapeOALoad = tableShapeOAVectorLoads.GetValue(row, 0).ToDouble()
+        #         sum = sum + math.pow(ShapeOALoad, 2)
+        #     OAIndexList.append(math.sqrt(sum)/tableShapeOAVectorLoads.GetNumberOfRows())
+        # # print OAIndexList
+        # resultGroup = OAIndexList.index(min(OAIndexList)) 
+        # # print "RESULT: " + str(resultGroup)
+        # return resultGroup
 
     # Function to remove the shape model of each group
     def removeShapeOALoadsCSVFile(self, keylist):
