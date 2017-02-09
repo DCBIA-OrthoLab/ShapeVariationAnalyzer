@@ -12,6 +12,7 @@ import pickle
 import neuralNetwork as nn
 import numpy as np
 import tensorflow as tf
+import zipfile
 
 
 class Classification(ScriptedLoadableModule):
@@ -114,7 +115,7 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         self.pushButton_preprocessData = self.logic.get('pushButton_preprocessData')
         self.label_trainNetwork = self.logic.get('label_trainNetwork')
 
-        self.directoryButton_networkPath = self.logic.get('directoryButton_networkPath')
+        self.pathLineEdit_networkPath = self.logic.get('ctkPathLineEdit_networkPath')
         self.pathLineEdit_CSVFileMeansShapeClassify = self.logic.get('pathLineEdit_CSVFileMeansShapeClassify')
 
 
@@ -268,7 +269,7 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         self.pushButton_preprocessData.connect('clicked()', self.onPreprocessData)
         self.stateCSVMeansShape = False
         self.stateCSVDataset = False
-        self.directoryButton_networkPath.connect('directoryChanged(const QString)', self.onNetworkPath)
+        self.pathLineEdit_networkPath.connect('currentPathChanged(const QString)', self.onNetworkPath)
         self.pathLineEdit_CSVFileMeansShapeClassify.connect('currentPathChanged(const QString)', self.onCSVFileMeansShapeClassify)
 
     # function called each time that the user "enter" in Diagnostic Index interface
@@ -1168,7 +1169,7 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         print "----- onExportNetwork -----"
 
         self.logic.exportModelNetwork('modelCondylesClassification', self.directoryButton_exportNetwork.directory)
-        self.directoryButton_networkPath.directory = self.directoryButton_exportNetwork.directory
+        self.pathLineEdit_networkPath.currentPath = self.directoryButton_exportNetwork.directory + "/monZip.zip"
         return
 
 
@@ -1216,34 +1217,47 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         
         self.modelName = ""
 
-        modelFound = list()
-        listContent = os.listdir(self.directoryButton_networkPath.directory)
-        for file in listContent:
-            if os.path.splitext(os.path.basename(file))[1] == ".meta":
-                potentialModel = os.path.splitext(os.path.basename(file))[0]
-                print potentialModel
-                nbPotientalModel = 0
+        condition1 = self.logic.checkExtension(self.pathLineEdit_networkPath.currentPath, '.zip')
+        if not condition1:
+            self.pathLineEdit_networkPath.setCurrentPath(" ")
+            return
 
-                for fileBis in listContent:
-                    if os.path.splitext(os.path.basename(fileBis))[0] == potentialModel:
-                        nbPotientalModel = nbPotientalModel + 1
-                if nbPotientalModel == 3:
-                    modelFound.append(potentialModel)
+        # UNZIP FILE DANS LE TEMPPATH
+
+        zip_ref = zipfile.ZipFile(self.pathLineEdit_networkPath.currentPath, 'r')
+        zip_ref.extractall(os.path.join(slicer.app.temporaryPath, "Network_dezip"))
+        zip_ref.close()
+
+        print "c'est dezii"
+
+        # modelFound = list()
+        # listContent = os.listdir(self.pathLineEdit_networkPath.directory)
+        # for file in listContent:
+        #     if os.path.splitext(os.path.basename(file))[1] == ".meta":
+        #         potentialModel = os.path.splitext(os.path.basename(file))[0]
+        #         print potentialModel
+        #         nbPotientalModel = 0
+
+        #         for fileBis in listContent:
+        #             if os.path.splitext(os.path.basename(fileBis))[0] == potentialModel:
+        #                 nbPotientalModel = nbPotientalModel + 1
+        #         if nbPotientalModel == 3:
+        #             modelFound.append(potentialModel)
 
         
-        if len(modelFound) == 1:
-            self.modelName = modelFound[0]
-            # C'est parfait, on l'utilise !
-            print "Niquel!"
-            self.logic.importModelNetwork(self.modelName, self.directoryButton_networkPath.directory)
-        elif len(modelFound) == 0:
-            print " :::: Wallouh y a pas de model dans ton path !!!"
-        else:
-            print " :: Y a trop de model, il va falloit choisir frere!"
+        # if len(modelFound) == 1:
+        #     self.modelName = modelFound[0]
+        #     # C'est parfait, on l'utilise !
+        #     print "Niquel!"
+        #     self.logic.importModelNetwork(self.modelName, self.pathLineEdit_networkPath.directory)
+        # elif len(modelFound) == 0:
+        #     print " :::: Wallouh y a pas de model dans ton path !!!"
+        # else:
+        #     print " :: Y a trop de model, il va falloit choisir frere!"
 
 
 
-        return
+        # return
 
 
     # Function to select the vtk Input Data
@@ -2357,21 +2371,46 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
         self.neuralNetwork.num_steps =  11
         self.neuralNetwork.batch_size = 10
 
+        tempPath = slicer.app.temporaryPath
+        networkDir = os.path.join(tempPath, "Network")
+        if os.path.isdir(networkDir):
+            shutil.rmtree(networkDir)
+        os.mkdir(networkDir) 
 
         train_dataset, train_labels, valid_dataset, valid_labels = self.get_inputs(pickle_file)
-        saveModelPath = os.path.join(slicer.app.temporaryPath, modelName)
+        saveModelPath = os.path.join(networkDir, modelName)
 
         self.run_training(train_dataset, train_labels, valid_dataset, valid_labels, saveModelPath)
 
         return
 
+
+    def zipdir(self, path, ziph):
+        # ziph is zipfile handle
+        for root, dirs, files in os.walk(path):
+            for file in files:
+                ziph.write(os.path.join(root, file))
+
     def exportModelNetwork(self, modelName, directory):
-        dim = len(modelName)
-        for file in os.listdir(slicer.app.temporaryPath):
-            if file[:dim] == modelName:
-                oldpath = os.path.join(slicer.app.temporaryPath, file)
-                newpath = os.path.join(directory, file)
-                shutil.copyfile(oldpath, newpath)
+        tempPath = slicer.app.temporaryPath
+        networkDir = os.path.join(tempPath, "Network")
+
+        # Zipper tout ca 
+        zipPath = 'monZip.zip'
+        zipf = zipfile.ZipFile(zipPath, 'w', zipfile.ZIP_DEFLATED)
+        self.zipdir(networkDir, zipf)
+        zipf.close()
+
+        # Deplacer le zip
+
+        # Copier les 3 fichiers ayant le filename == modelName
+        # dim = len(modelName)
+        # for file in os.listdir(networkDir):
+            # if file[:dim] == modelName:
+            #     oldpath = os.path.join(slicer.app.temporaryPath, file)
+            #     newpath = os.path.join(directory, file)
+            #     shutil.copyfile(oldpath, newpath)
+
         return
 
     def importModelNetwork(self, modelName, directory):
@@ -2380,6 +2419,9 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
                 oldpath = os.path.join(directory, file)
                 newpath = os.path.join(slicer.app.temporaryPath, file)
                 shutil.copyfile(oldpath, newpath)
+
+        # La, on update les infos des dimensions!
+
         return
 
 
@@ -2438,6 +2480,9 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
         self.neuralNetwork.num_epochs = 2
         self.neuralNetwork.num_steps =  11
         self.neuralNetwork.batch_size = 10
+        self.neuralNetwork.NUM_POINTS = 1002
+        self.neuralNetwork.NUM_CLASSES = 6
+        self.neuralNetwork.NUM_FEATURES = self.neuralNetwork.NUM_CLASSES + 3 + 4 
         # Create session, and import existing graph
         # print shape
         myData = self.get_input_shape(shape)
