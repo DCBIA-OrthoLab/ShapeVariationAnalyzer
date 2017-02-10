@@ -123,7 +123,7 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         self.collapsibleButton_Result = self.logic.get('CollapsibleButton_Result')
         self.tableWidget_result = self.logic.get('tableWidget_result')
         self.pushButton_exportResult = self.logic.get('pushButton_exportResult')
-        self.directoryButton_exportResult = self.logic.get('directoryButton_exportResult')
+        self.directoryButton_exportResult = self.logic.get('DirectoryButton_exportResult')
 
         
                  # Tab: Compute Average Groups
@@ -1141,7 +1141,7 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
             for shape in listvtk:
                 print shape
 # >>>>>>> UNCOMMENT HERE !!! FEATURES EXTRACTION
-                # self.logic.extractFeatures(shape, meansList, outputDir)
+                self.logic.extractFeatures(shape, meansList, outputDir)
 
                 # # Storage of the means for each group
                 self.logic.storageFeaturesData(self.dictFeatData, self.dictShapeModels)
@@ -1170,7 +1170,7 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
 
         self.modelName = 'modelCondylesClassification'
         self.logic.exportModelNetwork(self.modelName, self.directoryButton_exportNetwork.directory)
-        self.pathLineEdit_networkPath.currentPath = self.directoryButton_exportNetwork.directory + "/monZip.zip"
+        self.pathLineEdit_networkPath.currentPath = self.directoryButton_exportNetwork.directory + "/coucou.zip"
 
         return
 
@@ -1217,7 +1217,7 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         #   - modelName.index
         #   - modelName.data-00000-of-00001 
         
-        self.modelName = ""
+        # self.modelName = ""
 
         condition1 = self.logic.checkExtension(self.pathLineEdit_networkPath.currentPath, '.zip')
         if not condition1:
@@ -1392,13 +1392,13 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         self.dictClassified = dict()
         for patient in self.patientList:
             # Compute the classification
-            self.logic.evalClassification(self.dictClassified, os.path.join(networkDir, self.modelName), patient)
+            resultgroup = self.logic.evalClassification(self.dictClassified, os.path.join(networkDir, self.modelName), patient)
+
+            # Display the result in the next tab "Result/Analysis"
+            self.displayResult(resultgroup, os.path.basename(patient))
 
         print "\n "
         print self.dictClassified
-            # Display the result in the next tab "Result/Analysis"
-        #     self.displayResult(resultgroup, os.path.basename(patient))
-
         # # Remove the CSV file containing the Shape OA Vector Loads
         # self.logic.removeShapeOALoadsCSVFile(self.dictShapeModels.keys())
 
@@ -2342,7 +2342,7 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
         self.neuralNetwork.learning_rate = 0.0005
         self.neuralNetwork.lambda_reg = 0.01
         self.neuralNetwork.num_epochs = 2
-        self.neuralNetwork.num_steps =  11
+        self.neuralNetwork.num_steps =  1001
         self.neuralNetwork.batch_size = 10
 
         tempPath = slicer.app.temporaryPath
@@ -2380,6 +2380,7 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
 
         tempPath = slicer.app.temporaryPath
         networkDir = os.path.join(tempPath, 'Network')
+        modelName = ""
 
         # Si y a deja un Network dans le coin, on le degage
         if os.path.isdir(networkDir):
@@ -2474,7 +2475,7 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
         self.neuralNetwork.learning_rate = 0.0005
         self.neuralNetwork.lambda_reg = 0.01
         self.neuralNetwork.num_epochs = 2
-        self.neuralNetwork.num_steps =  11
+        self.neuralNetwork.num_steps =  1001
         self.neuralNetwork.batch_size = 10
         self.neuralNetwork.NUM_POINTS = 1002
         self.neuralNetwork.NUM_CLASSES = 6
@@ -2514,12 +2515,7 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
             valueKey.append(shape)
         dictClassified[result] = valueKey
 
-        print dictClassified
-
-
-
-
-        return
+        return result
 
 
 
