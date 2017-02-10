@@ -113,7 +113,7 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         self.pathLineEdit_CSVFileMeansShape = self.logic.get('pathLineEdit_CSVFileMeansShape')
         self.directoryButton_exportNetwork = self.logic.get('directoryButton_ExportNetwork')
         self.pushButton_preprocessData = self.logic.get('pushButton_preprocessData')
-        self.label_trainNetwork = self.logic.get('label_trainNetwork')
+        self.label_stateNetwork = self.logic.get('label_stateNetwork')
 
         self.pathLineEdit_networkPath = self.logic.get('ctkPathLineEdit_networkPath')
         self.pathLineEdit_CSVFileMeansShapeClassify = self.logic.get('pathLineEdit_CSVFileMeansShapeClassify')
@@ -160,7 +160,7 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         self.directoryButton_exportNetwork.setDisabled(True)
         self.pushButton_preprocessData.setDisabled(True)
 
-        self.label_trainNetwork.hide()
+        self.label_stateNetwork.hide()
 
 
         #     qMRMLNodeComboBox configuration
@@ -1141,7 +1141,7 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
             for shape in listvtk:
                 print shape
 # >>>>>>> UNCOMMENT HERE !!! FEATURES EXTRACTION
-                self.logic.extractFeatures(shape, meansList, outputDir)
+                # self.logic.extractFeatures(shape, meansList, outputDir)
 
                 # # Storage of the means for each group
                 self.logic.storageFeaturesData(self.dictFeatData, self.dictShapeModels)
@@ -1157,10 +1157,18 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
 
     def onTrainNetwork(self):
         print "----- onTrainNetwork -----"
-        # self.label_trainNetwork.show()
-        self.logic.trainNetworkClassification(self.pickle_file, 'modelCondylesClassification')
-        # self.label_trainNetwork.hide()
+        self.label_stateNetwork.hide()
+        self.label_stateNetwork.text = 'Computation running...'
+        self.label_stateNetwork.show()
+        print ""
+        accuracy = self.logic.trainNetworkClassification(self.pickle_file, 'modelCondylesClassification')
+        self.label_stateNetwork.hide()
         
+        print "ESTIMATED ACCURACY :: " + str(accuracy)
+
+        self.label_stateNetwork.text = ("Estimated accuracy: %.1f%%" % accuracy)
+        self.label_stateNetwork.show()
+
         self.pushButton_exportNetwork.setEnabled(True)
         self.directoryButton_exportNetwork.setEnabled(True)
         return
@@ -1171,7 +1179,7 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         self.modelName = 'modelCondylesClassification'
         self.logic.exportModelNetwork(self.modelName, self.directoryButton_exportNetwork.directory)
         self.pathLineEdit_networkPath.currentPath = self.directoryButton_exportNetwork.directory + "/coucou.zip"
-
+        self.label_stateNetwork.hide()
         return
 
 
@@ -1241,7 +1249,7 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
             oldVTKPath = slicer.app.temporaryPath + "/" + os.path.basename(self.patientList[0])
             if os.path.exists(oldVTKPath):
                 os.remove(oldVTKPath)
-        print self.patientList
+        # print self.patientList
         # Re-Initialization of the patient list
         self.patientList = list()
 
@@ -1307,7 +1315,7 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
             patientTable = self.logic.readCSVFile(self.pathLineEdit_CSVInputData.currentPath)
             for i in range(0, patientTable.GetNumberOfRows()):
                 self.patientList.append(patientTable.GetValue(i,0).ToString())
-        print self.patientList
+        # print self.patientList
 
 
         # Handle checkbox "File already in the groups"
@@ -1376,7 +1384,7 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
             else:
                 meansList = meansList + "," +  str(v)
 
-        print " :: meansList :: " +  str(meansList)
+        # print " :: meansList :: " +  str(meansList)
 
         for shape in self.patientList:
             # Extract features de la/les shapes a classifier
@@ -1397,8 +1405,8 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
             # Display the result in the next tab "Result/Analysis"
             self.displayResult(resultgroup, os.path.basename(patient))
 
-        print "\n "
-        print self.dictClassified
+        # print "\n "
+        # print self.dictClassified
         # # Remove the CSV file containing the Shape OA Vector Loads
         # self.logic.removeShapeOALoadsCSVFile(self.dictShapeModels.keys())
 
@@ -2091,7 +2099,7 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
 
         arguments.append("--meanGroup")
         arguments.append(str(meansList))
-        print arguments
+        # print arguments
 
         #     Call the executable
         process = qt.QProcess()
@@ -2105,7 +2113,7 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
         # print "error: " + str(process.error())
         
         processOutput = str(process.readAll())
-        print processOutput
+        # print processOutput
 
         return
 
@@ -2214,24 +2222,24 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
             train_labels = save['train_labels']
             valid_dataset = save['valid_dataset']
             valid_labels = save['valid_labels']
-            # test_dataset = save['test_dataset']
-            # test_labels = save['test_labels']
+            test_dataset = save['test_dataset']
+            test_labels = save['test_labels']
             del save  # hint to help gc free up memory
             print('Training set', train_dataset.shape, train_labels.shape)
             print('Validation set', valid_dataset.shape, valid_labels.shape)
-            # print('Test set', test_dataset.shape, test_labels.shape)
+            print('Test set', test_dataset.shape, test_labels.shape)
 
             train_dataset, train_labels = self.reformat(train_dataset, train_labels)
             valid_dataset, valid_labels = self.reformat(valid_dataset, valid_labels)
-            # test_dataset, test_labels = inputdata.reformat(test_dataset, test_labels)
+            test_dataset, test_labels = self.reformat(test_dataset, test_labels)
             print("\nTraining set", train_dataset.shape, train_labels.shape)
             print("Validation set", valid_dataset.shape, valid_labels.shape)
-            # print("Test set", test_dataset.shape, test_labels.shape)
+            print("Test set", test_dataset.shape, test_labels.shape)
 
-            return train_dataset, train_labels, valid_dataset, valid_labels
+            return train_dataset, train_labels, valid_dataset, valid_labels, test_dataset, test_labels
 
 
-    def run_training(self, train_dataset, train_labels, valid_dataset, valid_labels, saveModelPath):
+    def run_training(self, train_dataset, train_labels, valid_dataset, valid_labels, test_dataset, test_labels, saveModelPath):
 
         #       >>>>>       A RENDRE GENERIQUE !!!!!!!
         if self.neuralNetwork.NUM_HIDDEN_LAYERS == 1:
@@ -2251,10 +2259,9 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
                 keep_prob = tf.placeholder(tf.float32, name='keep_prob')
 
                 tf_valid_dataset = tf.constant(valid_dataset, name="tf_valid_dataset")
+                tf_test_dataset = tf.constant(test_dataset)
 
-                # tf_data = tf.Variable(tf.zeros([1,inputdata.NUM_POINTS * inputdata.NUM_FEATURES]))
                 tf_data = tf.placeholder(tf.float32, shape=(1,self.neuralNetwork.NUM_POINTS * self.neuralNetwork.NUM_FEATURES), name="input")
-                # tf_test_dataset = tf.constant(test_dataset)
 
             with tf.name_scope('Bias_and_weights_management'):
                 weightsDict = self.neuralNetwork.bias_weights_creation(nb_hidden_nodes_1, nb_hidden_nodes_2)    
@@ -2284,7 +2291,7 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
                 valid_prediction = tf.nn.softmax(self.neuralNetwork.model(tf_valid_dataset, weightsDict)[0], name="valid_prediction")
 
                 data_pred = tf.nn.softmax(self.neuralNetwork.model(tf_data, weightsDict)[0], name="output")
-                # test_prediction = tf.nn.softmax(self.neuralNetwork.model(tf_test_dataset, weightsDict)[0])
+                test_prediction = tf.nn.softmax(self.neuralNetwork.model(tf_test_dataset, weightsDict)[0])
 
 
             # -------------------------- #
@@ -2324,17 +2331,16 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
                             print("Minibatch accuracy: %.1f%%" % self.neuralNetwork.accuracy(predictions, batch_labels)[0])
                             print("Validation accuracy: %.1f%%" % self.neuralNetwork.accuracy(valid_prediction.eval(feed_dict = {keep_prob:1.0}), valid_labels)[0])
 
-                # finalaccuracy, mat_confusion, PPV, TPR = self.neuralNetwork.accuracy(test_prediction.eval(feed_dict={keep_prob:1.0}), test_labels)
-                # print "\n AVEC DROPOUT\n"
-                # print("Test accuracy: %.1f%%" % finalaccuracy)
-                # print("\n\nConfusion matrix :\n" + str(mat_confusion))
+                finalaccuracy, mat_confusion, PPV, TPR = self.neuralNetwork.accuracy(test_prediction.eval(feed_dict={keep_prob:1.0}), test_labels)
+                print("Test accuracy: %.1f%%" % finalaccuracy)
+                print("\n\nConfusion matrix :\n" + str(mat_confusion))
                 # print "\n PPV : " + str(PPV)
                 # print "\n TPR : " + str(TPR)
 
                 save_path = saver.save(session, saveModelPath, write_meta_graph=True)
                 print("Model saved in file: %s" % save_path)
         
-        return 
+        return finalaccuracy
 
 
 
@@ -2342,21 +2348,27 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
         self.neuralNetwork.learning_rate = 0.0005
         self.neuralNetwork.lambda_reg = 0.01
         self.neuralNetwork.num_epochs = 2
-        self.neuralNetwork.num_steps =  1001
+        self.neuralNetwork.num_steps =  11
         self.neuralNetwork.batch_size = 10
 
+        # Set le path pour le network
         tempPath = slicer.app.temporaryPath
         networkDir = os.path.join(tempPath, "Network")
         if os.path.isdir(networkDir):
             shutil.rmtree(networkDir)
         os.mkdir(networkDir) 
 
-        train_dataset, train_labels, valid_dataset, valid_labels = self.get_inputs(pickle_file)
+        # Virer tous les pickle files 
+        for file in os.listdir(tempPath):
+            if os.path.splitext(os.path.basename(file))[1] == 'pickle':
+                os.remove(file)
+
+        train_dataset, train_labels, valid_dataset, valid_labels, test_dataset, test_labels = self.get_inputs(pickle_file)
         saveModelPath = os.path.join(networkDir, modelName)
 
-        self.run_training(train_dataset, train_labels, valid_dataset, valid_labels, saveModelPath)
+        accuracy = self.run_training(train_dataset, train_labels, valid_dataset, valid_labels, test_dataset, test_labels, saveModelPath)
 
-        return
+        return accuracy
 
 
     def zipdir(self, path, ziph):
@@ -2475,7 +2487,6 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
         self.neuralNetwork.learning_rate = 0.0005
         self.neuralNetwork.lambda_reg = 0.01
         self.neuralNetwork.num_epochs = 2
-        self.neuralNetwork.num_steps =  1001
         self.neuralNetwork.batch_size = 10
         self.neuralNetwork.NUM_POINTS = 1002
         self.neuralNetwork.NUM_CLASSES = 6
