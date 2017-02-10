@@ -1141,7 +1141,7 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
             for shape in listvtk:
                 print shape
 # >>>>>>> UNCOMMENT HERE !!! FEATURES EXTRACTION
-                self.logic.extractFeatures(shape, meansList, outputDir)
+                # self.logic.extractFeatures(shape, meansList, outputDir)
 
                 # # Storage of the means for each group
                 self.logic.storageFeaturesData(self.dictFeatData, self.dictShapeModels)
@@ -1168,8 +1168,10 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
     def onExportNetwork(self):
         print "----- onExportNetwork -----"
 
-        self.logic.exportModelNetwork('modelCondylesClassification', self.directoryButton_exportNetwork.directory)
+        self.modelName = 'modelCondylesClassification'
+        self.logic.exportModelNetwork(self.modelName, self.directoryButton_exportNetwork.directory)
         self.pathLineEdit_networkPath.currentPath = self.directoryButton_exportNetwork.directory + "/monZip.zip"
+
         return
 
 
@@ -1224,40 +1226,11 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
 
         # UNZIP FILE DANS LE TEMPPATH
 
-        zip_ref = zipfile.ZipFile(self.pathLineEdit_networkPath.currentPath, 'r')
-        zip_ref.extractall(os.path.join(slicer.app.temporaryPath, "Network_dezip"))
-        zip_ref.close()
+        self.modelName = self.logic.importModelNetwork(self.pathLineEdit_networkPath.currentPath)
 
-        print "c'est dezii"
+        print "c'est dezipper et le model s'appelle :: " + self.modelName
 
-        # modelFound = list()
-        # listContent = os.listdir(self.pathLineEdit_networkPath.directory)
-        # for file in listContent:
-        #     if os.path.splitext(os.path.basename(file))[1] == ".meta":
-        #         potentialModel = os.path.splitext(os.path.basename(file))[0]
-        #         print potentialModel
-        #         nbPotientalModel = 0
-
-        #         for fileBis in listContent:
-        #             if os.path.splitext(os.path.basename(fileBis))[0] == potentialModel:
-        #                 nbPotientalModel = nbPotientalModel + 1
-        #         if nbPotientalModel == 3:
-        #             modelFound.append(potentialModel)
-
-        
-        # if len(modelFound) == 1:
-        #     self.modelName = modelFound[0]
-        #     # C'est parfait, on l'utilise !
-        #     print "Niquel!"
-        #     self.logic.importModelNetwork(self.modelName, self.pathLineEdit_networkPath.directory)
-        # elif len(modelFound) == 0:
-        #     print " :::: Wallouh y a pas de model dans ton path !!!"
-        # else:
-        #     print " :: Y a trop de model, il va falloit choisir frere!"
-
-
-
-        # return
+        return
 
 
     # Function to select the vtk Input Data
@@ -1387,6 +1360,7 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
 
         self.dictFeatData = dict()
         tempPath = slicer.app.temporaryPath
+        networkDir = os.path.join(tempPath, 'Network')
         
         outputDir = os.path.join(tempPath, "dataToClassify")
         if os.path.isdir(outputDir):
@@ -1418,7 +1392,7 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         self.dictClassified = dict()
         for patient in self.patientList:
             # Compute the classification
-            self.logic.evalClassification(self.dictClassified, os.path.join(tempPath, self.modelName), patient)
+            self.logic.evalClassification(self.dictClassified, os.path.join(networkDir, self.modelName), patient)
 
         print "\n "
         print self.dictClassified
@@ -2392,37 +2366,59 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
                 ziph.write(os.path.join(root, file))
 
     def exportModelNetwork(self, modelName, directory):
+        
         tempPath = slicer.app.temporaryPath
-        networkDir = os.path.join(tempPath, "Network")
+        networkDir = os.path.join(tempPath, 'Network')
 
         # Zipper tout ca 
-        zipPath = 'monZip.zip'
-        zipf = zipfile.ZipFile(zipPath, 'w', zipfile.ZIP_DEFLATED)
-        self.zipdir(networkDir, zipf)
-        zipf.close()
-
-        # Deplacer le zip
-
-        # Copier les 3 fichiers ayant le filename == modelName
-        # dim = len(modelName)
-        # for file in os.listdir(networkDir):
-            # if file[:dim] == modelName:
-            #     oldpath = os.path.join(slicer.app.temporaryPath, file)
-            #     newpath = os.path.join(directory, file)
-            #     shutil.copyfile(oldpath, newpath)
+        shutil.make_archive(base_name = os.path.join(directory,'coucou'), format = 'zip', root_dir = tempPath, base_dir = 'Network')
+        print "jai make_Archiv"
 
         return
 
-    def importModelNetwork(self, modelName, directory):
-        for file in os.listdir(directory):
-            if os.path.splitext(os.path.basename(file))[0] == modelName:
-                oldpath = os.path.join(directory, file)
-                newpath = os.path.join(slicer.app.temporaryPath, file)
-                shutil.copyfile(oldpath, newpath)
+    def importModelNetwork(self, archiveName):
 
-        # La, on update les infos des dimensions!
+        tempPath = slicer.app.temporaryPath
+        networkDir = os.path.join(tempPath, 'Network')
 
-        return
+        # Si y a deja un Network dans le coin, on le degage
+        if os.path.isdir(networkDir):
+            shutil.rmtree(networkDir)
+        os.mkdir(networkDir) 
+
+        with zipfile.ZipFile(archiveName) as zf:
+            zf.extractall(tempPath)
+        
+        print "jai unpack_Archiv"
+        
+        modelFound = list()
+        listContent = os.listdir(networkDir)
+
+        for file in listContent:
+            if os.path.splitext(os.path.basename(file))[1] == ".meta":
+                potentialModel = os.path.splitext(os.path.basename(file))[0]
+                print potentialModel
+                nbPotientalModel = 0
+
+                for fileBis in listContent:
+                    if os.path.splitext(os.path.basename(fileBis))[0] == potentialModel:
+                        nbPotientalModel = nbPotientalModel + 1
+                if nbPotientalModel == 3:
+                    modelFound.append(potentialModel)
+
+        
+        if len(modelFound) == 1:
+            modelName = modelFound[0]
+            # C'est parfait, on l'utilise !
+            print "Niquel!"
+        elif len(modelFound) == 0:
+            print " :::: Wallouh y a pas de model dans ton path !!!"
+        else:
+            print " :: Y a trop de model, il va falloit choisir frere!"
+
+        # La, on update les infos des dimensions! ??
+
+        return modelName
 
 
     # # Function in order to compute the shape OA loads of a sample
