@@ -1121,7 +1121,6 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         self.pickle_file = ""
 
         tempPath = slicer.app.temporaryPath
-        # print os.listdir(tempPath)
         
         outputDir = os.path.join(tempPath, "dataFeatures")
         if os.path.isdir(outputDir):
@@ -1141,7 +1140,7 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
             for shape in listvtk:
                 print shape
 # >>>>>>> UNCOMMENT HERE !!! FEATURES EXTRACTION
-                # self.logic.extractFeatures(shape, meansList, outputDir)
+                self.logic.extractFeatures(shape, meansList, outputDir)
 
                 # # Storage of the means for each group
                 self.logic.storageFeaturesData(self.dictFeatData, self.dictShapeModels)
@@ -1482,6 +1481,7 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
         self.table = vtk.vtkTable
         self.colorBar = {'Point1': [0, 0, 1, 0], 'Point2': [0.5, 1, 1, 0], 'Point3': [1, 1, 0, 0]}
         self.neuralNetwork = nn.neuralNetwork()
+        self.input_Data = inputData.inputData()
 
     # Functions to recovery the widget in the .ui file
     def get(self, objectName):
@@ -2137,10 +2137,25 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
 
     def pickleData(self, dictFeatData):
         # for group, vtklist in dictFeatData.items():
-        input_Data = inputData.inputData()
-        dataset_names = input_Data.maybe_pickle(dictFeatData, 3, force=False)
-        self.neuralNetwork.NUM_CLASSES = len(dataset_names)
+        self.input_Data = inputData.inputData()
+        self.neuralNetwork = nn.neuralNetwork()
+
+        self.neuralNetwork.NUM_CLASSES = len(dictFeatData.keys())
+        self.input_Data.NUM_CLASSES = self.neuralNetwork.NUM_CLASSES
+
         self.neuralNetwork.NUM_FEATURES = self.neuralNetwork.NUM_CLASSES + 3 + 4 
+        self.input_Data.NUM_FEATURES = self.neuralNetwork.NUM_FEATURES
+
+        
+
+        reader_poly = vtk.vtkPolyDataReader()
+        reader_poly.SetFileName(dictFeatData[0][0])
+
+        reader_poly.Update()
+        self.input_Data.NUM_POINTS = reader_poly.GetOutput().GetNumberOfPoints()
+        self.neuralNetwork.NUM_POINTS = self.input_Data.NUM_POINTS
+
+        dataset_names = self.input_Data.maybe_pickle(dictFeatData, 3, force=False)
 
         #
         # Determine dataset size
@@ -2159,12 +2174,12 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
         valid_size = 3 * nbGroups
         test_size = completeDataset
 
-        valid_dataset, valid_labels, train_dataset, train_labels = input_Data.merge_datasets(dataset_names, train_size, valid_size) 
-        _, _, test_dataset, test_labels = input_Data.merge_all_datasets(dataset_names, test_size)
+        valid_dataset, valid_labels, train_dataset, train_labels = self.input_Data.merge_datasets(dataset_names, train_size, valid_size) 
+        _, _, test_dataset, test_labels = self.input_Data.merge_all_datasets(dataset_names, test_size)
 
-        train_dataset, train_labels = input_Data.randomize(train_dataset, train_labels)
-        valid_dataset, valid_labels = input_Data.randomize(valid_dataset, valid_labels)
-        test_dataset, test_labels = input_Data.randomize(test_dataset, test_labels)
+        train_dataset, train_labels = self.input_Data.randomize(train_dataset, train_labels)
+        valid_dataset, valid_labels = self.input_Data.randomize(valid_dataset, valid_labels)
+        test_dataset, test_labels = self.input_Data.randomize(test_dataset, test_labels)
 
         pickle_file = os.path.join(slicer.app.temporaryPath,'condyles.pickle')
 
@@ -2192,16 +2207,18 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
         #
         #   Fonctions pour le gros du Neural Network
         #   
-        #
-    def placeholder_inputs(self, batch_size):
-        tf_train_dataset = tf.placeholder(tf.float32, shape=(batch_size, self.neuralNetwork.NUM_POINTS * self.neuralNetwork.NUM_FEATURES))
-        tf_train_labels = tf.placeholder(tf.int32, shape=(batch_size, self.neuralNetwork.NUM_CLASSES))
-        return tf_train_dataset, tf_train_labels
+    #     #
+    # def placeholder_inputs(self, batch_size):
+    #     tf_train_dataset = tf.placeholder(tf.float32, shape=(batch_size, self.neuralNetwork.NUM_POINTS * self.neuralNetwork.NUM_FEATURES))
+    #     tf_train_labels = tf.placeholder(tf.int32, shape=(batch_size, self.neuralNetwork.NUM_CLASSES))
+    #     return tf_train_dataset, tf_train_labels
         
     ## Reformat into a shape that's more adapted to the models we're going to train:
     #   - data as a flat matrix
     #   - labels as float 1-hot encodings
     def reformat(self, dataset, labels):
+        print self.neuralNetwork.NUM_POINTS
+        print self.neuralNetwork.NUM_FEATURES
         dataset = dataset.reshape((-1, self.neuralNetwork.NUM_POINTS * self.neuralNetwork.NUM_FEATURES)).astype(np.float32)
         labels = (np.arange(self.neuralNetwork.NUM_CLASSES) == labels[:, None]).astype(np.float32)
         return dataset, labels
@@ -2399,82 +2416,64 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
             shutil.rmtree(networkDir)
         os.mkdir(networkDir) 
 
+        # Unpack archive
         with zipfile.ZipFile(archiveName) as zf:
             zf.extractall(tempPath)
-        
-        print "jai unpack_Archiv"
-        
+
+# >>>>>> FAIRE UNE FONCTION POUR CA
+        # Verify there is one (and ONLY ONE) network in the zip file, and get its name
         modelFound = list()
         listContent = os.listdir(networkDir)
 
         for file in listContent:
             if os.path.splitext(os.path.basename(file))[1] == ".meta":
                 potentialModel = os.path.splitext(os.path.basename(file))[0]
-                print potentialModel
                 nbPotientalModel = 0
-
                 for fileBis in listContent:
                     if os.path.splitext(os.path.basename(fileBis))[0] == potentialModel:
                         nbPotientalModel = nbPotientalModel + 1
                 if nbPotientalModel == 3:
                     modelFound.append(potentialModel)
 
-        
         if len(modelFound) == 1:
             modelName = modelFound[0]
-            # C'est parfait, on l'utilise !
-            print "Niquel!"
         elif len(modelFound) == 0:
             print " :::: Wallouh y a pas de model dans ton path !!!"
+            return modelName
         else:
             print " :: Y a trop de model, il va falloit choisir frere!"
+            return modelName
 
-        # La, on update les infos des dimensions! ??
+        print modelName
+
+
+# >>>>>> FAIRE UNE FONCTION POUR CA
+        # La, on set le Neural Network! 
+        self.neuralNetwork = nn.neuralNetwork()
+
+        session = tf.InteractiveSession()
+        new_saver = tf.train.import_meta_graph(os.path.join(networkDir, modelName) + '.meta')
+        new_saver.restore(session, os.path.join(networkDir, modelName))
+        graph = tf.Graph().as_default()
+        
+        # Get useful tensor in the graph
+        tf_train_labels = session.graph.get_tensor_by_name("Inputs_management/tf_train_labels:0")
+        tf_data = session.graph.get_tensor_by_name("Inputs_management/input:0")
+
+
+        self.neuralNetwork.NUM_CLASSES = tf_train_labels.get_shape()[1]
+        self.input_Data.NUM_CLASSES = self.neuralNetwork.NUM_CLASSES
+        self.neuralNetwork.NUM_FEATURES = 3 + 4 + int(self.neuralNetwork.NUM_CLASSES)
+        self.input_Data.NUM_FEATURES = self.neuralNetwork.NUM_FEATURES
+        self.neuralNetwork.NUM_POINTS = (tf_data.get_shape()[1] / int(self.neuralNetwork.NUM_FEATURES))
+        self.input_Data.NUM_POINTS = self.neuralNetwork.NUM_POINTS
 
         return modelName
-
-
-    # # Function in order to compute the shape OA loads of a sample
-    # def computeShapeOALoads(self, groupnumber, vtkfilepath, shapemodel):
-    #     # Call of computeShapeOALoads used to compute shape loads of a sample for the current shape model
-    #     # Arguments:
-    #     #  --vtkfile: Sample Input Data (VTK file path)
-    #     #  --resultdir: The path where the newly build model should be saved
-    #     #  --groupnumber: The number of the group used to create the shape model
-    #     #  --shapemodel: Shape model of one group (H5 file path)
-
-    #     #     Creation of the command line
-    #     scriptedModulesPath = eval('slicer.modules.%s.path' % self.interface.moduleName.lower())
-    #     scriptedModulesPath = os.path.dirname(scriptedModulesPath)
-    #     libPath = os.path.join(scriptedModulesPath)
-    #     sys.path.insert(0, libPath)
-    #     computeShapeOALoads = os.path.join(scriptedModulesPath, '../hidden-cli-modules/computeShapeOALoads')
-    #     #computeShapeOALoads = "/Users/lpascal/Desktop/test/ClassificationExtension-build/bin/computeShapeOALoads"
-    #     arguments = list()
-    #     arguments.append("--groupnumber")
-    #     arguments.append(groupnumber)
-    #     arguments.append("--vtkfile")
-    #     arguments.append(vtkfilepath)
-    #     arguments.append("--resultdir")
-    #     resultdir = slicer.app.temporaryPath
-    #     arguments.append(resultdir)
-    #     arguments.append("--shapemodel")
-    #     arguments.append(shapemodel)
-
-    #     #     Call the CLI
-    #     process = qt.QProcess()
-    #     print "Calling " + os.path.basename(computeShapeOALoads)
-    #     process.start(computeShapeOALoads, arguments)
-    #     process.waitForStarted()
-    #     # print "state: " + str(process.state())
-    #     process.waitForFinished()
-    #     # print "error: " + str(process.error())
 
     def get_input_shape(self,inputFile):
 
         # Get features in a matrix (NUM_FEATURES x NUM_POINTS)
-        input_Data = inputData.inputData()
-        data = input_Data.load_features(inputFile)
+        data = self.input_Data.load_features(inputFile)
         data = data.reshape((-1, self.neuralNetwork.NUM_POINTS * self.neuralNetwork.NUM_FEATURES)).astype(np.float32)
         data = self.reformat_data(data)
         return data
@@ -2484,13 +2483,6 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
 
     # Function to compute the OA index of a patient
     def evalClassification(self, dictClassified, model, shape):
-        self.neuralNetwork.learning_rate = 0.0005
-        self.neuralNetwork.lambda_reg = 0.01
-        self.neuralNetwork.num_epochs = 2
-        self.neuralNetwork.batch_size = 10
-        self.neuralNetwork.NUM_POINTS = 1002
-        self.neuralNetwork.NUM_CLASSES = 6
-        self.neuralNetwork.NUM_FEATURES = self.neuralNetwork.NUM_CLASSES + 3 + 4 
         # Create session, and import existing graph
         # print shape
         myData = self.get_input_shape(shape)
@@ -2513,7 +2505,6 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
         print "Group predicted :" + str(result) + "\n"
         
         # Mise a jour du dictClassified
-        
         # Est-ce que ce result existe deja comme cle ?
         listkey = dictClassified.keys()
         print listkey

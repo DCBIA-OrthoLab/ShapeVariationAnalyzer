@@ -5,12 +5,12 @@ import pickle
 
 
 class inputData():
-    def __init__(self, parent = None):
+    def __init__(self, parent = None, num_points_param = 0, num_classes_param = 0):
         if parent:
             parent.title = " "
 
-        self.NUM_POINTS = 1002
-        self.NUM_CLASSES = 6
+        self.NUM_POINTS = num_points_param
+        self.NUM_CLASSES = num_classes_param
         self.NUM_FEATURES = 3 + self.NUM_CLASSES + 4  # Normals + NUM_CLASSES + curvatures
 
 
