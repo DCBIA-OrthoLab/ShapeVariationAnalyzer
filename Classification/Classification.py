@@ -470,6 +470,7 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
             messageBox.setStandardButtons( messageBox.No | messageBox.Yes)
             choice = messageBox.exec_()
             if choice == messageBox.No:
+
                 return
 
         # Save the CSV File
@@ -494,6 +495,7 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         # Load automatically the CSV file in the pathline in the next tab "Creation of New Classification Groups"
         self.pathLineEdit_previewGroups.setCurrentPath(filepath)
         self.pathLineEdit_selectionClassificationGroups.setCurrentPath(filepath)
+        self.pathLineEdit_CSVFileDataset.setCurrentPath(filepath)
 
     # ---------------------------------------------------- #
     #     Tab: Creation of New Classification Groups       #
@@ -759,6 +761,7 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         if self.pathLineEdit_selectionClassificationGroups.currentPath == CSVfilePath:
             self.pathLineEdit_selectionClassificationGroups.setCurrentPath(" ")
         self.pathLineEdit_selectionClassificationGroups.setCurrentPath(CSVfilePath)
+        self.pathLineEdit_CSVFileDataset.setCurrentPath(CSVfilePath)
 
     # ---------------------------------------------------- #
     #        Tab: Selection of Classification Groups       #
@@ -1008,6 +1011,8 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         if self.pathLineEdit_meanGroup.currentPath == CSVfilePath:
             self.pathLineEdit_meanGroup.setCurrentPath(" ")
         self.pathLineEdit_meanGroup.setCurrentPath(CSVfilePath)
+        self.pathLineEdit_CSVFileMeansShape.setCurrentPath(CSVfilePath)
+        self.pathLineEdit_CSVFileMeansShapeClassify.setCurrentPath(CSVfilePath)
 
         return 
 
