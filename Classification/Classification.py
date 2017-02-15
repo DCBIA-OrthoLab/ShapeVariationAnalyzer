@@ -1003,10 +1003,6 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         slicer.util.delayDisplay("Files Saved")
         print "Saved in :: " + directory + "/MeanGroups.csv"
 
-        # Disable the option to export the new data
-        # self.directoryButton_exportUpdatedClassification.setDisabled(True)
-        # self.pushButton_exportUpdatedClassification.setDisabled(True)
-
         # Load automatically the CSV file in the pathline in the next tab "Selection of Classification Groups"
         if self.pathLineEdit_meanGroup.currentPath == CSVfilePath:
             self.pathLineEdit_meanGroup.setCurrentPath(" ")
@@ -1069,7 +1065,7 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         if not condition4: 
             self.pathLineEdit_CSVFileDataset.setCurrentPath(" ")
             return
-        self.logic.neuralNetwork.NUM_POINTS = condition4
+        # self.logic.neuralNetwork.NUM_POINTS = condition4
 
         self.stateCSVDataset = True
         self.enableNetwork()
@@ -1141,6 +1137,8 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
             else:
                 meansList = meansList + "," +  str(v)
 
+        print "\n\n Je vais entrer dans la boucle qui extractFeatures + storageFeaturesData \n"
+        print self.dictShapeModels
         for group, listvtk in self.dictShapeModels.items():
             for shape in listvtk:
                 print shape
@@ -1150,7 +1148,7 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
                 # # Storage of the means for each group
                 self.logic.storageFeaturesData(self.dictFeatData, self.dictShapeModels)
 
-
+        print "\n\n J'ai fini la boucle, et maintenant je vais pickler tout ca \n"
         # 
         # Pickle the data for the network
         self.pickle_file = self.logic.pickleData(self.dictFeatData)
@@ -1189,7 +1187,7 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
 
     def onCSVFileMeansShapeClassify(self):
         # Re-initialization of the dictionary containing the Training dataset
-        self.dictShapeModels = dict()
+        self.dictGroups = dict()
 
         # Check if the path exists:
         if not os.path.exists(self.pathLineEdit_CSVFileMeansShapeClassify.currentPath):
@@ -1203,18 +1201,18 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
 
         # Read CSV File:
         self.logic.table = self.logic.readCSVFile(self.pathLineEdit_CSVFileMeansShapeClassify.currentPath)
-        condition3 = self.logic.creationDictVTKFiles(self.dictShapeModels)
-        condition2 = self.logic.checkOneMeshPerGroupInDict(self.dictShapeModels)
+        condition3 = self.logic.creationDictVTKFiles(self.dictGroups)
+        condition2 = self.logic.checkOneMeshPerGroupInDict(self.dictGroups)
 
         #    If the file is not conformed:
         #    Re-initialization of the dictionary containing the Classification Groups
         if not (condition2 and condition3):
-            self.dictShapeModels = dict()
+            self.dictGroups = dict()
             self.pathLineEdit_CSVFileMeansShapeClassify.setCurrentPath(" ")
             return
 
         # First condition : All the shapes should have the same number of points
-        condition4 = self.logic.checkNumberOfPoints(self.dictShapeModels)
+        condition4 = self.logic.checkNumberOfPoints(self.dictGroups)
         if not condition4: 
             self.pathLineEdit_CSVFileMeansShapeClassify.setCurrentPath(" ")
             return
@@ -1382,7 +1380,7 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         #
         # Extract features on shapes, with CondylesFeaturesExtractor and get new path (in slicer temp path)
         meansList = ""
-        for k, v in self.dictShapeModels.items():
+        for k, v in self.dictGroups.items():
             if meansList == "":
                 meansList = str(v)
             else:
@@ -2151,8 +2149,6 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
         self.neuralNetwork.NUM_FEATURES = self.neuralNetwork.NUM_CLASSES + 3 + 4 
         self.input_Data.NUM_FEATURES = self.neuralNetwork.NUM_FEATURES
 
-        
-
         reader_poly = vtk.vtkPolyDataReader()
         reader_poly.SetFileName(dictFeatData[0][0])
 
@@ -2160,7 +2156,13 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
         self.input_Data.NUM_POINTS = reader_poly.GetOutput().GetNumberOfPoints()
         self.neuralNetwork.NUM_POINTS = self.input_Data.NUM_POINTS
 
-        dataset_names = self.input_Data.maybe_pickle(dictFeatData, 3, force=False)
+        tempPath = slicer.app.temporaryPath
+
+        for file in tempPath:
+            if os.path.splitext(os.path.basename(file))[1] == 'pickle':
+                os.remove(file)
+
+        dataset_names = self.input_Data.maybe_pickle(dictFeatData, 3, path=tempPath, force=False)
 
         #
         # Determine dataset size
@@ -2179,6 +2181,10 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
         valid_size = 3 * nbGroups
         test_size = completeDataset
 
+
+
+
+
         valid_dataset, valid_labels, train_dataset, train_labels = self.input_Data.merge_datasets(dataset_names, train_size, valid_size) 
         _, _, test_dataset, test_labels = self.input_Data.merge_all_datasets(dataset_names, test_size)
 
@@ -2186,7 +2192,7 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
         valid_dataset, valid_labels = self.input_Data.randomize(valid_dataset, valid_labels)
         test_dataset, test_labels = self.input_Data.randomize(test_dataset, test_labels)
 
-        pickle_file = os.path.join(slicer.app.temporaryPath,'condyles.pickle')
+        pickle_file = os.path.join(tempPath,'condyles.pickle')
 
         try:
             f = open(pickle_file, 'wb')
@@ -2370,7 +2376,7 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
         self.neuralNetwork.learning_rate = 0.0005
         self.neuralNetwork.lambda_reg = 0.01
         self.neuralNetwork.num_epochs = 2
-        self.neuralNetwork.num_steps =  11
+        self.neuralNetwork.num_steps =  1001
         self.neuralNetwork.batch_size = 10
 
         # Set le path pour le network

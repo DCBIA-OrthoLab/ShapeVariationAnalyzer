@@ -167,7 +167,7 @@ class inputData():
     # Function maybe_pickle(data_folders, min_num_shapes_per_class, force=False)
     #   Pickle features array sorted by class
     #
-    def maybe_pickle(self, dictFeatData, min_num_shapes_per_class, force=False):
+    def maybe_pickle(self, dictFeatData, min_num_shapes_per_class, path, force=False):
         dataset_names = []
         # folders = list()
         # for d in data_folders:
@@ -175,7 +175,7 @@ class inputData():
         #         folders.append(os.path.join(data_folders, d))
         
         for group, vtklist in dictFeatData.items():
-            set_filename = os.path.join(slicer.app.temporaryPath, 'Group' + str(group) + '.pickle')
+            set_filename = os.path.join(path, 'Group' + str(group) + '.pickle')
 
 
         # for folder in folders:
