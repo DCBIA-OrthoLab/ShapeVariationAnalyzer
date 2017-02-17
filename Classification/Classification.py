@@ -1141,9 +1141,9 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         print self.dictShapeModels
         for group, listvtk in self.dictShapeModels.items():
             for shape in listvtk:
-                print shape
+                # print shape
 # >>>>>>> UNCOMMENT HERE !!! FEATURES EXTRACTION
-                self.logic.extractFeatures(shape, meansList, outputDir)
+                # self.logic.extractFeatures(shape, meansList, outputDir)
 
                 # # Storage of the means for each group
                 self.logic.storageFeaturesData(self.dictFeatData, self.dictShapeModels)
@@ -1162,6 +1162,8 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         self.label_stateNetwork.hide()
         self.label_stateNetwork.text = 'Computation running...'
         self.label_stateNetwork.show()
+        print ""
+        a = 3
         print ""
         accuracy = self.logic.trainNetworkClassification(self.pickle_file, 'modelCondylesClassification')
         self.label_stateNetwork.hide()
@@ -2158,12 +2160,12 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
 
         tempPath = slicer.app.temporaryPath
 
-        for file in tempPath:
-            if os.path.splitext(os.path.basename(file))[1] == 'pickle':
+        for file in os.listdir(tempPath):
+            if os.path.splitext(os.path.basename(file))[1] == '.pickle':
                 os.remove(file)
 
         dataset_names = self.input_Data.maybe_pickle(dictFeatData, 3, path=tempPath, force=False)
-
+        
         #
         # Determine dataset size
         #
@@ -2180,10 +2182,6 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
         train_size = ( small_classe - 3 ) * nbGroups
         valid_size = 3 * nbGroups
         test_size = completeDataset
-
-
-
-
 
         valid_dataset, valid_labels, train_dataset, train_labels = self.input_Data.merge_datasets(dataset_names, train_size, valid_size) 
         _, _, test_dataset, test_labels = self.input_Data.merge_all_datasets(dataset_names, test_size)
@@ -2228,8 +2226,6 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
     #   - data as a flat matrix
     #   - labels as float 1-hot encodings
     def reformat(self, dataset, labels):
-        print self.neuralNetwork.NUM_POINTS
-        print self.neuralNetwork.NUM_FEATURES
         dataset = dataset.reshape((-1, self.neuralNetwork.NUM_POINTS * self.neuralNetwork.NUM_FEATURES)).astype(np.float32)
         labels = (np.arange(self.neuralNetwork.NUM_CLASSES) == labels[:, None]).astype(np.float32)
         return dataset, labels
