@@ -7,13 +7,13 @@
     <x>0</x>
     <y>0</y>
     <width>1578</width>
-    <height>1739</height>
+    <height>1635</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Form</string>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout_12">
+  <layout class="QVBoxLayout" name="verticalLayout_5">
    <item>
     <widget class="ctkCollapsibleButton" name="CollapsibleButton_creationCSVFile" native="true">
      <property name="text" stdset="0">
@@ -92,22 +92,10 @@
        </widget>
       </item>
       <item>
-       <widget class="QGroupBox" name="groupBox_exportCSVFile">
-        <property name="title">
-         <string>Export CSV File</string>
+       <widget class="QPushButton" name="pushButton_exportCSVfile">
+        <property name="text">
+         <string>Export</string>
         </property>
-        <layout class="QVBoxLayout" name="verticalLayout_5">
-         <item>
-          <widget class="ctkDirectoryButton" name="DirectoryButton_exportCSVFile" native="true"/>
-         </item>
-         <item>
-          <widget class="QPushButton" name="pushButton_exportCSVfile">
-           <property name="text">
-            <string>Export</string>
-           </property>
-          </widget>
-         </item>
-        </layout>
        </widget>
       </item>
      </layout>
@@ -186,27 +174,10 @@
        </widget>
       </item>
       <item>
-       <widget class="QGroupBox" name="groupBox_exportUpdatedCSVFile">
-        <property name="title">
-         <string>Export updated CSV file</string>
+       <widget class="QPushButton" name="pushButton_exportUpdatedClassification">
+        <property name="text">
+         <string>Export</string>
         </property>
-        <layout class="QVBoxLayout" name="verticalLayout_10">
-         <item>
-          <layout class="QHBoxLayout" name="horizontalLayout_exportUpdatedClassification">
-           <item>
-            <widget class="ctkDirectoryButton" name="DirectoryButton_exportUpdatedClassification" native="true"/>
-           </item>
-           <item>
-            <widget class="QPushButton" name="pushButton_exportUpdatedClassification">
-             <property name="text">
-              <string>Export</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </item>
-        </layout>
-        <zorder></zorder>
        </widget>
       </item>
      </layout>
@@ -360,9 +331,6 @@
              </property>
             </widget>
            </item>
-           <item row="5" column="0">
-            <widget class="ctkDirectoryButton" name="directoryButton_ExportNetwork" native="true"/>
-           </item>
            <item row="5" column="1">
             <widget class="QPushButton" name="pushButton_ExportNetwork">
              <property name="text">
@@ -493,18 +461,11 @@
        <widget class="QTableWidget" name="tableWidget_result"/>
       </item>
       <item>
-       <layout class="QHBoxLayout" name="horizontalLayout_exportResult">
-        <item>
-         <widget class="ctkDirectoryButton" name="DirectoryButton_exportResult" native="true"/>
-        </item>
-        <item>
-         <widget class="QPushButton" name="pushButton_exportResult">
-          <property name="text">
-           <string>Export Result</string>
-          </property>
-         </widget>
-        </item>
-       </layout>
+       <widget class="QPushButton" name="pushButton_exportResult">
+        <property name="text">
+         <string>Export Result</string>
+        </property>
+       </widget>
       </item>
      </layout>
     </widget>

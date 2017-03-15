@@ -82,7 +82,6 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         self.pushButton_addGroup = self.logic.get('pushButton_addGroup')
         self.pushButton_removeGroup = self.logic.get('pushButton_removeGroup')
         self.pushButton_modifyGroup = self.logic.get('pushButton_modifyGroup')
-        self.directoryButton_exportCSVFile = self.logic.get('DirectoryButton_exportCSVFile')
         self.pushButton_exportCSVfile = self.logic.get('pushButton_exportCSVfile')
         #          Tab: Creation of New Classification Groups
         self.collapsibleButton_previewClassificationGroups = self.logic.get('CollapsibleButton_previewClassificationGroups')
@@ -92,7 +91,7 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         self.tableWidget_VTKFiles = self.logic.get('tableWidget_VTKFiles')
         self.pushButton_previewVTKFiles = self.logic.get('pushButton_previewVTKFiles')
         # self.pushButton_compute = self.logic.get('pushButton_compute')
-        self.directoryButton_exportUpdatedClassification = self.logic.get('DirectoryButton_exportUpdatedClassification')
+        
         self.pushButton_exportUpdatedClassification = self.logic.get('pushButton_exportUpdatedClassification')
                  # Tab: Selection Classification Groups
         # self.collapsibleButton_SelectClassificationGroups = self.logic.get('CollapsibleButton_SelectClassificationGroups')
@@ -111,7 +110,6 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         self.pushButton_exportNetwork = self.logic.get('pushButton_ExportNetwork')
         self.pathLineEdit_CSVFileDataset = self.logic.get('pathLineEdit_CSVFileDataset')
         self.pathLineEdit_CSVFileMeansShape = self.logic.get('pathLineEdit_CSVFileMeansShape')
-        self.directoryButton_exportNetwork = self.logic.get('directoryButton_ExportNetwork')
         self.pushButton_preprocessData = self.logic.get('pushButton_preprocessData')
         self.label_stateNetwork = self.logic.get('label_stateNetwork')
 
@@ -123,8 +121,6 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         self.collapsibleButton_Result = self.logic.get('CollapsibleButton_Result')
         self.tableWidget_result = self.logic.get('tableWidget_result')
         self.pushButton_exportResult = self.logic.get('pushButton_exportResult')
-        self.directoryButton_exportResult = self.logic.get('DirectoryButton_exportResult')
-
         
                  # Tab: Compute Average Groups
         self.CollapsibleButton_computeAverageGroups = self.logic.get('CollapsibleButton_computeAverageGroups')
@@ -143,7 +139,6 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         # self.pushButton_previewGroups.setDisabled(True)
         # self.pushButton_compute.setDisabled(True)
         # self.pushButton_compute.setDisabled(True)
-        self.directoryButton_exportUpdatedClassification.setDisabled(True)
         self.pushButton_exportUpdatedClassification.setDisabled(True)
         # self.checkBox_fileInGroups.setDisabled(True)
         # self.checkableComboBox_ChoiceOfGroup.setDisabled(True)
@@ -157,7 +152,6 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
 
         self.pushButton_trainNetwork.setDisabled(True)
         self.pushButton_exportNetwork.setDisabled(True)
-        self.directoryButton_exportNetwork.setDisabled(True)
         self.pushButton_preprocessData.setDisabled(True)
 
         self.label_stateNetwork.hide()
@@ -318,7 +312,6 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         self.tableWidget_VTKFiles.setDisabled(True)
         self.pushButton_previewVTKFiles.setDisabled(True)
         # le bt compute
-        self.directoryButton_exportUpdatedClassification.setDisabled(True)
         self.pushButton_exportUpdatedClassification.setDisabled(True)
 
         # Tab: Selection of Classification Groups
@@ -456,22 +449,11 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
     #    - Load automatically this CSV file in the next tab: "Creation of New Classification Groups"
     def onExportForCreationCSVFile(self):
         # Path of the csv file
-        directory = self.directoryButton_exportCSVFile.directory.encode('utf-8')
-        basename = 'Groups.csv'
-        filepath = directory + "/" + basename
+        dlg = ctk.ctkFileDialog()
+        filepath = dlg.getSaveFileName(None, "Export CSV file for Classification groups", os.path.join(qt.QDir.homePath(), "Desktop"), "CSV File (*.csv)")
 
-        # Message if the csv file already exists
-        messageBox = ctk.ctkMessageBox()
-        messageBox.setWindowTitle(' /!\ WARNING /!\ ')
-        messageBox.setIcon(messageBox.Warning)
-        if os.path.exists(filepath):
-            messageBox.setText('File ' + filepath + ' already exists!')
-            messageBox.setInformativeText('Do you want to replace it ?')
-            messageBox.setStandardButtons( messageBox.No | messageBox.Yes)
-            choice = messageBox.exec_()
-            if choice == messageBox.No:
-
-                return
+        directory = os.path.dirname(filepath)
+        basename = os.path.basename(filepath)
 
         # Save the CSV File
         self.logic.creationCSVFile(directory, basename, self.dictCSVFile, "Groups")
@@ -481,7 +463,6 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         self.spinBox_group.setValue(1)
         self.stackedWidget_manageGroup.setCurrentIndex(0)
         self.directoryButton_creationCSVFile.directory = qt.QDir.homePath() + '/Desktop'
-        self.directoryButton_exportCSVFile.directory = qt.QDir.homePath() + '/Desktop'
 
         # Re-Initialization of:
         #     - the dictionary containing all the paths of the vtk groups
@@ -584,10 +565,9 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         self.onCheckBoxTableValueChanged()
 
         # Enable exportation of the last updated csv file
-        self.directoryButton_exportUpdatedClassification.setEnabled(True)
         self.pushButton_exportUpdatedClassification.setEnabled(True)
         # Default path to override the previous one
-        self.directoryButton_exportUpdatedClassification.directory = os.path.dirname(self.pathLineEdit_previewGroups.currentPath)
+        # self.directoryButton_exportUpdatedClassification.directory = os.path.dirname(self.pathLineEdit_previewGroups.currentPath)
 
 
     # Function to manage the checkbox in the table used to make a preview in SPV
@@ -671,27 +651,6 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
             for value in self.dictVTKFiles.values():
                 self.logic.removeDataVTKFiles(value)
 
-    # Function to compute the new Classification Groups
-    #    - Remove all the arrays of all the vtk files
-    #    - Compute the mean of each group thanks to Statismo
-    # def onComputeNewClassificationGroups(self):
-    #     for key, value in self.dictVTKFiles.items():
-    #         # Delete all the arrays in vtk file
-    #         self.logic.deleteArrays(key, value)
-
-    #         # Compute the shape model of each group
-    #         self.logic.buildShapeModel(key, value)
-
-    #         # Remove the vtk files used to create the shape model of each group
-    #         self.logic.removeDataVTKFiles(value)
-
-    #         # Storage of the shape model for each group
-    #         self.logic.storeShapeModel(self.dictShapeModels, key)
-
-    #     # Enable the option to export the new data
-    #     self.directoryButton_exportUpdatedClassification.setEnabled(True)
-    #     self.pushButton_exportUpdatedClassification.setEnabled(True)
-
     # Function to export the new Classification Groups
     #    - Data saved:
     #           - Save the mean vtk files in the selected directory
@@ -700,48 +659,15 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
     def onExportUpdatedClassificationGroups(self):
         print "--- Export the new Classification Groups ---"
 
-        # Message for the user if files already exist
-        directory = self.directoryButton_exportUpdatedClassification.directory.encode('utf-8')
-        messageBox = ctk.ctkMessageBox()
-        messageBox.setWindowTitle(' /!\ WARNING /!\ ')
-        messageBox.setIcon(messageBox.Warning)
-        filePathExisting = list()
+        dlg = ctk.ctkFileDialog()
+        filepath = dlg.getSaveFileName(None, "Export Updated CSV file", "", "CSV File (*.csv)")
 
-        #   Check if the CSV file exists
-        # CSVfilePath = directory + "/ClassificationGroups.csv"
-        CSVfilePath = directory + "/Groups.csv"
-        if os.path.exists(CSVfilePath):
-            filePathExisting.append(CSVfilePath)
-
-        #   Check if the shape model exist
-        # print "dictshapemodels :: " + str(self.dictShapeModels)
-        for key, value in self.dictVTKFiles.items():
-            for shape in value:
-                modelFilename = os.path.basename(shape)
-                modelFilePath = directory + '/' + modelFilename
-                if os.path.exists(modelFilePath):
-                    filePathExisting.append(modelFilePath)
-
-        #   Write the message for the user
-        if len(filePathExisting) > 0:
-            if len(filePathExisting) == 1:
-                text = 'File ' + filePathExisting[0] + ' already exists!'
-                informativeText = 'Do you want to replace it ?'
-            elif len(filePathExisting) > 1:
-                text = 'These files are already exist: \n'
-                for path in filePathExisting:
-                    text = text + path + '\n'
-                    informativeText = 'Do you want to replace them ?'
-            messageBox.setText(text)
-            messageBox.setInformativeText(informativeText)
-            messageBox.setStandardButtons( messageBox.No | messageBox.Yes)
-            choice = messageBox.exec_()
-            if choice == messageBox.No:
-                return
+        directory = os.path.dirname(filepath)
+        basename = os.path.basename(filepath)
 
         # Save the CSV File and the shape model of each group
         # self.logic.saveNewClassificationGroups('Groups.csv', directory, self.dictShapeModels)
-        self.logic.creationCSVFile(directory, "Groups.csv", self.dictVTKFiles, "Groups")
+        self.logic.creationCSVFile(directory, basename, self.dictVTKFiles, "Groups")
 
 
         # Remove the shape model (GX.h5) of each group
@@ -754,14 +680,13 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         slicer.util.delayDisplay("Files Saved")
 
         # Disable the option to export the new data
-        self.directoryButton_exportUpdatedClassification.setDisabled(True)
         self.pushButton_exportUpdatedClassification.setDisabled(True)
 
         # Load automatically the CSV file in the pathline in the next tab "Selection of Classification Groups"
-        if self.pathLineEdit_selectionClassificationGroups.currentPath == CSVfilePath:
+        if self.pathLineEdit_selectionClassificationGroups.currentPath == filepath:
             self.pathLineEdit_selectionClassificationGroups.setCurrentPath(" ")
-        self.pathLineEdit_selectionClassificationGroups.setCurrentPath(CSVfilePath)
-        self.pathLineEdit_CSVFileDataset.setCurrentPath(CSVfilePath)
+        self.pathLineEdit_selectionClassificationGroups.setCurrentPath(filepath)
+        self.pathLineEdit_CSVFileDataset.setCurrentPath(filepath)
 
     # ---------------------------------------------------- #
     #        Tab: Selection of Classification Groups       #
@@ -1143,7 +1068,7 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
             for shape in listvtk:
                 # print shape
 # >>>>>>> UNCOMMENT HERE !!! FEATURES EXTRACTION
-                # self.logic.extractFeatures(shape, meansList, outputDir)
+                self.logic.extractFeatures(shape, meansList, outputDir)
 
                 # # Storage of the means for each group
                 self.logic.storageFeaturesData(self.dictFeatData, self.dictShapeModels)
@@ -1165,7 +1090,7 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         print ""
         a = 3
         print ""
-        accuracy = self.logic.trainNetworkClassification(self.pickle_file, 'modelCondylesClassification')
+        accuracy = self.logic.trainNetworkClassification(self.pickle_file, 'modelClassification')
         self.label_stateNetwork.hide()
         
         print "ESTIMATED ACCURACY :: " + str(accuracy)
@@ -1174,15 +1099,21 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         self.label_stateNetwork.show()
 
         self.pushButton_exportNetwork.setEnabled(True)
-        self.directoryButton_exportNetwork.setEnabled(True)
         return
 
     def onExportNetwork(self):
         print "----- onExportNetwork -----"
 
-        self.modelName = 'modelCondylesClassification'
-        self.logic.exportModelNetwork(self.modelName, self.directoryButton_exportNetwork.directory)
-        self.pathLineEdit_networkPath.currentPath = self.directoryButton_exportNetwork.directory + "/coucou.zip"
+        # Path of the csv file
+        dlg = ctk.ctkFileDialog()
+        filepath = dlg.getSaveFileName(None, "Export Classification neural network", os.path.join(qt.QDir.homePath(), "Desktop"), "Archive Zip (*.zip)")
+
+        directory = os.path.dirname(filepath)
+        networkpath = filepath.split(".zip",1)[0]
+
+        self.modelName = 'modelClassification'
+        self.logic.exportModelNetwork(self.modelName, networkpath)
+        self.pathLineEdit_networkPath.currentPath = filepath
         self.label_stateNetwork.hide()
         return
 
@@ -1448,24 +1379,13 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
 
     # Function to export the result in a CSV File
     def onExportResult(self):
-        # Directory
-        directory = self.directoryButton_exportResult.directory.encode('utf-8')
-        basename = "OAResult.csv"
-        # Message if the csv file already exists
-        filepath = directory + "/" + basename
-        messageBox = ctk.ctkMessageBox()
-        messageBox.setWindowTitle(' /!\ WARNING /!\ ')
-        messageBox.setIcon(messageBox.Warning)
-        if os.path.exists(filepath):
-            messageBox.setText('File ' + filepath + ' already exists!')
-            messageBox.setInformativeText('Do you want to replace it ?')
-            messageBox.setStandardButtons( messageBox.No | messageBox.Yes)
-            choice = messageBox.exec_()
-            if choice == messageBox.No:
-                return
 
-        # Directory
-        directory = self.directoryButton_exportResult.directory.encode('utf-8')
+        # Path of the csv file
+        dlg = ctk.ctkFileDialog()
+        filepath = dlg.getSaveFileName(None, "Export CSV file for Classification groups", os.path.join(qt.QDir.homePath(), "Desktop"), "CSV File (*.csv)")
+
+        directory = os.path.dirname(filepath)
+        basename = os.path.basename(filepath)
 
         # Store data in a dictionary
         self.logic.creationCSVFileForResult(self.tableWidget_result, directory, basename)
@@ -2089,20 +2009,23 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
         # sys.path.insert(0, libPath)
         # computeMean = os.path.join(scriptedModulesPath, '../hidden-cli-modules/computeMean')
         
-        condylesfeaturesextractor = "/Users/prisgdd/Documents/Projects/CNN/CondylesFeaturesExtractor-build-cmptemean/src/CondylesFeaturesExtractor/bin/condylesfeaturesextractor"
+        condylesfeaturesextractor = "/Users/prisgdd/Documents/Projects/CNN/CondylesFeaturesExtractor-build/src/CondylesFeaturesExtractor/bin/condylesfeaturesextractor"
         
         filename = str(os.path.basename(shape))
         basename, _ = os.path.splitext(filename)
         
 
         arguments = list()
-        arguments.append("--input")
+
+        # Input Mesh
         arguments.append(shape)
 
-        arguments.append("--output")
+        # Output Mesh
         arguments.append(str(os.path.join(outputDir,basename)) + "_ft.vtk")
 
-        arguments.append("--meanGroup")
+        # List of average shapes
+        arguments.append("--distMeshOn")
+        arguments.append("--distMesh")
         arguments.append(str(meansList))
         # print arguments
 
@@ -2162,10 +2085,10 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
 
         for file in os.listdir(tempPath):
             if os.path.splitext(os.path.basename(file))[1] == '.pickle':
-                os.remove(file)
+                os.remove(os.path.join(tempPath,file))
 
         dataset_names = self.input_Data.maybe_pickle(dictFeatData, 3, path=tempPath, force=False)
-        
+
         #
         # Determine dataset size
         #
@@ -2372,7 +2295,7 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
         self.neuralNetwork.learning_rate = 0.0005
         self.neuralNetwork.lambda_reg = 0.01
         self.neuralNetwork.num_epochs = 2
-        self.neuralNetwork.num_steps =  1001
+        self.neuralNetwork.num_steps =  11
         self.neuralNetwork.batch_size = 10
 
         # Set le path pour le network
@@ -2401,13 +2324,13 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
             for file in files:
                 ziph.write(os.path.join(root, file))
 
-    def exportModelNetwork(self, modelName, directory):
+    def exportModelNetwork(self, modelName, filepath):
         
         tempPath = slicer.app.temporaryPath
         networkDir = os.path.join(tempPath, 'Network')
 
         # Zipper tout ca 
-        shutil.make_archive(base_name = os.path.join(directory,'coucou'), format = 'zip', root_dir = tempPath, base_dir = 'Network')
+        shutil.make_archive(base_name = filepath, format = 'zip', root_dir = tempPath, base_dir = 'Network')
         print "jai make_Archiv"
 
         return
@@ -2451,7 +2374,7 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
             print " :: Y a trop de model, il va falloit choisir frere!"
             return modelName
 
-        print modelName
+        print "modelName dezipped :::::: " + str(modelName)
 
 
 # >>>>>> FAIRE UNE FONCTION POUR CA
