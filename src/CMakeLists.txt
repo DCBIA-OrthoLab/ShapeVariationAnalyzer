@@ -1,0 +1,3 @@
+
+add_subdirectory(CLI/CondylesFeaturesExtractor)
+add_subdirectory(Classification)

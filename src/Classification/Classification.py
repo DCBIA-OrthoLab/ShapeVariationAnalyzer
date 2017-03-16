@@ -2007,7 +2007,7 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
         # scriptedModulesPath = os.path.dirname(scriptedModulesPath)
         # libPath = os.path.join(scriptedModulesPath)
         # sys.path.insert(0, libPath)
-        # computeMean = os.path.join(scriptedModulesPath, '../hidden-cli-modules/computeMean')
+        # computeMean = os.path.join(scriptedModulesPath, '../hidden-cli-modules/condylesfeaturesextractor')
         
         condylesfeaturesextractor = "/Users/prisgdd/Documents/Projects/CNN/CondylesFeaturesExtractor-build/src/CondylesFeaturesExtractor/bin/condylesfeaturesextractor"
         

@@ -1,0 +1,3 @@
+[submodule "src/CLI/CondylesFeaturesExtractor"]
+	path = src/CLI/CondylesFeaturesExtractor
+	url = git@github.com:pdedumast/CondylesFeaturesExtractor.git
