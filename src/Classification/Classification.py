@@ -48,6 +48,7 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
 
         # Global Variables
         self.logic = ClassificationLogic(self)
+        
         self.dictVTKFiles = dict()
         self.dictGroups = dict()
         self.dictCSVFile = dict()
@@ -72,6 +73,7 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         self.layout = self.parent.layout()
         self.widget = widget
         self.layout.addWidget(widget)
+
 
         #     global variables of the Interface:
         #          Tab: Creation of CSV File for Classification Groups
@@ -1796,12 +1798,12 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
         #  --shapemodel: Shape model of one group (H5 file path)
 
         #     Creation of the command line
-        # scriptedModulesPath = eval('slicer.modules.%s.path' % self.interface.moduleName.lower())
-        # scriptedModulesPath = os.path.dirname(scriptedModulesPath)
-        # libPath = os.path.join(scriptedModulesPath)
-        # sys.path.insert(0, libPath)
-        # computeMean = os.path.join(scriptedModulesPath, '../hidden-cli-modules/computeMean')
-        computeMean = "/Users/prisgdd/Documents/Projects/CNN/computeMean-build/src/bin/computemean"
+        scriptedModulesPath = eval('slicer.modules.%s.path' % self.interface.moduleName.lower())
+        scriptedModulesPath = os.path.dirname(scriptedModulesPath)
+        libPath = os.path.join(scriptedModulesPath)
+        sys.path.insert(0, libPath)
+        computeMean = os.path.join(scriptedModulesPath, '../hidden-cli-modules/computeMean')
+        # computeMean = "/Users/prisgdd/Documents/Projects/CNN/computeMean-build/src/bin/computemean"
         arguments = list()
         arguments.append("--inputList")
         vtkfilelist = ""
@@ -2003,13 +2005,13 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
         #  --shapemodel: Shape model of one group (H5 file path)
 
         #     Creation of the command line
-        # scriptedModulesPath = eval('slicer.modules.%s.path' % self.interface.moduleName.lower())
-        # scriptedModulesPath = os.path.dirname(scriptedModulesPath)
-        # libPath = os.path.join(scriptedModulesPath)
-        # sys.path.insert(0, libPath)
-        # computeMean = os.path.join(scriptedModulesPath, '../hidden-cli-modules/condylesfeaturesextractor')
+        scriptedModulesPath = eval('slicer.modules.%s.path' % self.interface.moduleName.lower())
+        scriptedModulesPath = os.path.dirname(scriptedModulesPath)
+        libPath = os.path.join(scriptedModulesPath)
+        sys.path.insert(0, libPath)
+        computeMean = os.path.join(scriptedModulesPath, '../hidden-cli-modules/condylesfeaturesextractor')
         
-        condylesfeaturesextractor = "/Users/prisgdd/Documents/Projects/CNN/CondylesFeaturesExtractor-build/src/CondylesFeaturesExtractor/bin/condylesfeaturesextractor"
+        # condylesfeaturesextractor = "/Users/prisgdd/Documents/Projects/CNN/CondylesFeaturesExtractor-build/src/CondylesFeaturesExtractor/bin/condylesfeaturesextractor"
         
         filename = str(os.path.basename(shape))
         basename, _ = os.path.splitext(filename)

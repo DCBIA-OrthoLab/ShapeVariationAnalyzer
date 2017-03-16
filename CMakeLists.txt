@@ -19,7 +19,7 @@ include(${Slicer_USE_FILE})
 
 #-----------------------------------------------------------------------------
 # Extension modules
-add_subdirectory(Classification)
+add_subdirectory(src)
 ## NEXT_MODULE
 
 #-----------------------------------------------------------------------------
