@@ -31,7 +31,7 @@ class inputData():
     #
     # Function load_features(file)
     #   Load the shape stored in the filename "shape" and extract features (normals + mean distances + curvatures), stored in a 2D array (currentData)
-    #   Features are normalized (normals are already done, in previous program CondylesFeaturesExtractor with vtkPolyDataNormals)
+    #   Features are normalized (normals are already done, in previous program SurfaceFeaturesExtractor with vtkPolyDataNormals)
     #
     def load_features(self, shape):
         dataset = np.ndarray(shape=(1, self.NUM_POINTS, self.NUM_FEATURES), dtype=np.float32)

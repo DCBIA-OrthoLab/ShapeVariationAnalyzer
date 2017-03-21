@@ -1056,7 +1056,7 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         os.mkdir(outputDir) 
 
         #
-        # Extract features on shapes, with CondylesFeaturesExtractor
+        # Extract features on shapes, with SurfaceFeaturesExtractor
         meansList = ""
         for k, v in self.dictGroups.items():
             if meansList == "":
@@ -1313,7 +1313,7 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         os.mkdir(outputDir) 
 
         #
-        # Extract features on shapes, with CondylesFeaturesExtractor and get new path (in slicer temp path)
+        # Extract features on shapes, with SurfaceFeaturesExtractor and get new path (in slicer temp path)
         meansList = ""
         for k, v in self.dictGroups.items():
             if meansList == "":
@@ -2009,9 +2009,9 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
         scriptedModulesPath = os.path.dirname(scriptedModulesPath)
         libPath = os.path.join(scriptedModulesPath)
         sys.path.insert(0, libPath)
-        computeMean = os.path.join(scriptedModulesPath, '../hidden-cli-modules/condylesfeaturesextractor')
+        surfacefeaturesextractor = os.path.join(scriptedModulesPath, '../hidden-cli-modules/surfacefeaturesextractor')
         
-        # condylesfeaturesextractor = "/Users/prisgdd/Documents/Projects/CNN/CondylesFeaturesExtractor-build/src/CondylesFeaturesExtractor/bin/condylesfeaturesextractor"
+        # surfacefeaturesextractor = "/Users/prisgdd/Documents/Projects/CNN/SurfaceFeaturesExtractor-build/src/SurfaceFeaturesExtractor/bin/surfacefeaturesextractor"
         
         filename = str(os.path.basename(shape))
         basename, _ = os.path.splitext(filename)
@@ -2036,7 +2036,7 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
         process.setProcessChannelMode(qt.QProcess.MergedChannels)
 
         # print "Calling " + os.path.basename(computeMean)
-        process.start(condylesfeaturesextractor, arguments)
+        process.start(surfacefeaturesextractor, arguments)
         process.waitForStarted()
         # print "state: " + str(process2.state())
         process.waitForFinished()
