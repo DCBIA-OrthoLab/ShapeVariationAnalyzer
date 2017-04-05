@@ -132,7 +132,7 @@ class inputData():
     # Function load_features_classe(folder, min_num_shapes)
     #   Call load_features for an entire folder/classe. Check if there's enough shapes in a classe.
     #
-    def load_features_classe(self, vtklist, min_num_shapes):
+    def load_features_classe(self, vtklist, min_num_shapes=1):
         # vtk_filenames = os.listdir(folder)  # Juste le nom du vtk file
 
         # Delete .DS_Store file if there is one
@@ -161,6 +161,39 @@ class inputData():
         print('Standard deviation:', np.std(dataset))
         print ""
         return dataset
+
+    def load_features_with_names(self, vtklist):
+        # vtk_filenames = os.listdir(folder)  # Juste le nom du vtk file
+
+        # Delete .DS_Store file if there is one
+        # if vtk_filenames.count(".DS_Store"):
+            # vtk_filenames.remove(".DS_Store")
+
+        # vtk_filenames = vtklist
+        allShapes_feat = dict()
+        dataset = np.ndarray(shape=(len(vtklist), self.NUM_POINTS, self.NUM_FEATURES), dtype=np.float32)
+
+        num_shapes = 0
+        for shape in vtklist:
+
+            # Prepare data
+            currentData = self.load_features(shape)
+
+            # Stack the current finished data in dataset
+            dataset[num_shapes, :, :] = currentData
+            allShapes_feat[shape] = currentData
+
+            num_shapes = num_shapes + 1
+
+        dataset = dataset[0:num_shapes, :, :]
+        # if num_shapes < min_num_shapes:
+            # raise Exception('Many fewer images than expected: %d < %d' % (num_shapes, min_num_shapes))
+
+        print('Full dataset tensor:', dataset.shape)
+        print('Mean:', np.mean(dataset))
+        print('Standard deviation:', np.std(dataset))
+        print ""
+        return dataset, allShapes_feat
 
 
     #

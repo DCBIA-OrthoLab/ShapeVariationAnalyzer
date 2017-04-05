@@ -1,9 +1,6 @@
 import os
 import numpy as np
 import pandas as pd
-# import vtk
-# import inputData
-# from six.moves import cPickle as pickle
 import tensorflow as tf
 
 
@@ -13,7 +10,6 @@ class neuralNetwork():
 			parent.title = " "
 
 		self.NUM_HIDDEN_LAYERS = 2
-		# import tensorflow as tf
 		
 		self.NUM_CLASSES = num_classes_param
 		self.NUM_POINTS = num_points_param
@@ -154,8 +150,9 @@ class neuralNetwork():
 	
 	def loss(self, logits, tf_train_labels, lambda_reg, weightsDict):
 		regularization = True
+		print "lama"
 		if not regularization:
-			loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits, tf_train_labels))
+			loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits = logits, labels = tf_train_labels))
 		else:
 			if not self.NUM_HIDDEN_LAYERS:
 				norms = tf.nn.l2_loss(weightsDict['W_fc1']) 
@@ -164,6 +161,8 @@ class neuralNetwork():
 			elif self.NUM_HIDDEN_LAYERS == 2:
 				norms = tf.nn.l2_loss(weightsDict['W_fc1']) + tf.nn.l2_loss(weightsDict['W_fc2']) + tf.nn.l2_loss(weightsDict['W_fc3'])
 
-			loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits, tf_train_labels) + lambda_reg*norms)
+			a = tf.nn.softmax_cross_entropy_with_logits(logits = logits, labels =  tf_train_labels)
+			loss = tf.reduce_mean(a + lambda_reg*norms)
+			# loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits = logits, labels =  tf_train_labels) + lambda_reg*norms)
 		return loss
 

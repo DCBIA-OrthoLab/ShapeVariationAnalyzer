@@ -13,6 +13,7 @@ import neuralNetwork as nn
 import numpy as np
 import tensorflow as tf
 import zipfile
+import json
 
 
 class Classification(ScriptedLoadableModule):
@@ -745,6 +746,7 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
     def onComputeMeanGroup(self):
 
         for group, listvtk in self.dictShapeModels.items():
+            print "\n\nGROUP :: " + str(group) + "\n"
             # Compute the mean of each group thanks to the CLI "computeMean"
             self.logic.computeMean(group, listvtk)
 
@@ -1335,12 +1337,26 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
 
         # For each patient:
         self.dictClassified = dict()
+        self.dictToClassify = dict()
         for patient in self.patientList:
+            self.dictToClassify[patient] = -1
             # Compute the classification
             resultgroup = self.logic.evalClassification(self.dictClassified, os.path.join(networkDir, self.modelName), patient)
 
             # Display the result in the next tab "Result/Analysis"
             self.displayResult(resultgroup, os.path.basename(patient))
+
+        print self.dictToClassify 
+
+        pickleToClassifyyy = self.logic.pickleToClassify(self.dictToClassify, os.path.join(slicer.app.temporaryPath,'Network'))
+
+        shutil.make_archive(base_name = networkDir, format = 'zip', root_dir = tempPath, base_dir = 'Network')
+        print "jai make_Archiv"
+
+        return
+
+
+        # self.logic.evalDictToClassify(self.dictToClassify, os.path.join(networkDir, self.modelName))
 
         # print "\n "
         # print self.dictClassified
@@ -1786,6 +1802,11 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
         process.waitForFinished()
         # print "error: " + str(process.error())
 
+    def printStatus(self, caller, event):
+        print("Got a %s from a %s" % (event, caller.GetClassName()))
+        if caller.IsA('vtkMRMLCommandLineModuleNode'):
+            print("Status is %s" % caller.GetStatusString())
+
     # Function to compute the mean between all the mesh-files contained in one group
     def computeMean(self, numGroup, vtkList):
         
@@ -1798,12 +1819,15 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
         #  --shapemodel: Shape model of one group (H5 file path)
 
         #     Creation of the command line
-        scriptedModulesPath = eval('slicer.modules.%s.path' % self.interface.moduleName.lower())
-        scriptedModulesPath = os.path.dirname(scriptedModulesPath)
-        libPath = os.path.join(scriptedModulesPath)
-        sys.path.insert(0, libPath)
-        computeMean = os.path.join(scriptedModulesPath, '../hidden-cli-modules/computeMean')
+        # scriptedModulesPath = eval('slicer.modules.%s.path' % self.interface.moduleName.lower())
+        # scriptedModulesPath = os.path.dirname(scriptedModulesPath)
+        # libPath = os.path.join(scriptedModulesPath)
+        # sys.path.insert(0, libPath)
+        # computeMean = os.path.join(scriptedModulesPath, '../hidden-cli-modules/computemean')
+        computeMean = "/Users/prisgdd/Documents/Projects/CNN/SurfaceFeaturesExtractor-build/src/ComputeMeanShapes/src/bin/computemean"
         # computeMean = "/Users/prisgdd/Documents/Projects/CNN/computeMean-build/src/bin/computemean"
+
+        ###########
         arguments = list()
         arguments.append("--inputList")
         vtkfilelist = ""
@@ -1814,7 +1838,7 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
         resultdir = slicer.app.temporaryPath
         arguments.append("--outputSurface")
         arguments.append(str(resultdir) + "/meanGroup" + str(numGroup) + ".vtk")
-
+        print arguments
         #     Call the executable
         process = qt.QProcess()
         process.setProcessChannelMode(qt.QProcess.MergedChannels)
@@ -1827,8 +1851,32 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
         # print "error: " + str(process.error())
         
         processOutput = str(process.readAll())
-        # print processOutput
+        print processOutput
 
+        ###########
+        
+        # parameters = {}
+        # parameters["inputList"] = vtkfilelist
+        # parameters["outputSurface"] = str(resultdir) + "/meanGroup" + str(numGroup) + ".vtk"
+
+        # print "\n parameters :: "
+        # print parameters
+        # print ""
+
+        # # # Launch the CLI ShapePopulationViewer
+        # #     parameters = {}
+        # #     parameters["CSVFile"] = filePathCSV
+        # #     launcherSPV = slicer.modules.launcher
+        # #     slicer.cli.run(launcherSPV, None, parameters, wait_for_completion=True)
+
+        # computeMean = slicer.modules.computemean
+        # cliNode = slicer.cli.run(computeMean, None, parameters, wait_for_completion=True)
+
+        # cliNode.AddObserver('ModifiedEvent', self.printStatus)
+
+
+
+        
 
     # Function to remove in the temporary directory all the data used to create the mean for each group
     def removeDataVTKFiles(self, value):
@@ -2005,17 +2053,27 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
         #  --shapemodel: Shape model of one group (H5 file path)
 
         #     Creation of the command line
-        scriptedModulesPath = eval('slicer.modules.%s.path' % self.interface.moduleName.lower())
-        scriptedModulesPath = os.path.dirname(scriptedModulesPath)
-        libPath = os.path.join(scriptedModulesPath)
-        sys.path.insert(0, libPath)
-        surfacefeaturesextractor = os.path.join(scriptedModulesPath, '../hidden-cli-modules/surfacefeaturesextractor')
+        # scriptedModulesPath = eval('slicer.modules.%s.path' % self.interface.moduleName.lower())
+        # scriptedModulesPath = os.path.dirname(scriptedModulesPath)
+        # libPath = os.path.join(scriptedModulesPath)
+        # sys.path.insert(0, libPath)
+        # surfacefeaturesextractor = os.path.join(scriptedModulesPath, '../hidden-cli-modules/surfacefeaturesextractor')
         
-        # surfacefeaturesextractor = "/Users/prisgdd/Documents/Projects/CNN/SurfaceFeaturesExtractor-build/src/SurfaceFeaturesExtractor/bin/surfacefeaturesextractor"
+        surfacefeaturesextractor = "/Users/prisgdd/Documents/Projects/CNN/SurfaceFeaturesExtractor-build/src/SurfaceFeaturesExtractor/bin/surfacefeaturesextractor"
         
+
         filename = str(os.path.basename(shape))
         basename, _ = os.path.splitext(filename)
-        
+
+        # parameters = {}
+        # parameters["InputVolume"] = volumeNode.GetID()
+        # outModel = slicer.vtkMRMLModelNode()
+        # slicer.mrmlScene.AddNode( outModel )
+        # parameters["OutputGeometry"] = outModel.GetID()
+        # grayMaker = slicer.modules.grayscalemodelmaker
+        # return (slicer.cli.run(grayMaker, None, parameters))
+
+
 
         arguments = list()
 
@@ -2029,7 +2087,7 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
         arguments.append("--distMeshOn")
         arguments.append("--distMesh")
         arguments.append(str(meansList))
-        # print arguments
+        print arguments
 
         #     Call the executable
         process = qt.QProcess()
@@ -2038,12 +2096,12 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
         # print "Calling " + os.path.basename(computeMean)
         process.start(surfacefeaturesextractor, arguments)
         process.waitForStarted()
-        # print "state: " + str(process2.state())
+        print "state: " + str(process.state())
         process.waitForFinished()
         # print "error: " + str(process.error())
         
         processOutput = str(process.readAll())
-        # print processOutput
+        print processOutput
 
         return
 
@@ -2055,6 +2113,7 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
                 ftPath = slicer.app.temporaryPath + '/dataFeatures/' + filename + '_ft.vtk'
 
                 newValue.append(ftPath)
+            print "\nkey : " + str(key)
             dictFeatData[key] = newValue
         return
 
@@ -2066,6 +2125,13 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
         return listPatient
 
     def pickleData(self, dictFeatData):
+        tempPath = slicer.app.temporaryPath
+        networkDir = os.path.join(tempPath, "Network")
+        if os.path.isdir(networkDir):
+            shutil.rmtree(networkDir)
+        os.mkdir(networkDir) 
+
+
         # for group, vtklist in dictFeatData.items():
         self.input_Data = inputData.inputData()
         self.neuralNetwork = nn.neuralNetwork()
@@ -2091,6 +2157,18 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
 
         dataset_names = self.input_Data.maybe_pickle(dictFeatData, 3, path=tempPath, force=False)
 
+        # Save info in JSON File
+        network_param = dict()
+        network_param["NUM_CLASSES"] = len(dictFeatData.keys())
+        network_param["NUM_FEATURES"] = len(dictFeatData.keys()) + 3 + 4 
+        network_param["NUM_POINTS"] = reader_poly.GetOutput().GetNumberOfPoints()
+
+        jsonDict = dict()
+        jsonDict["CondylesClassifier"] = network_param
+
+        with open(os.path.join(networkDir,'classifierInfo.json'), 'w') as f:
+            json.dump(jsonDict, f, ensure_ascii=False, indent = 4)
+
         #
         # Determine dataset size
         #
@@ -2115,7 +2193,7 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
         valid_dataset, valid_labels = self.input_Data.randomize(valid_dataset, valid_labels)
         test_dataset, test_labels = self.input_Data.randomize(test_dataset, test_labels)
 
-        pickle_file = os.path.join(tempPath,'condyles.pickle')
+        pickle_file = os.path.join(networkDir,'datasets.pickle')
 
         try:
             f = open(pickle_file, 'wb')
@@ -2136,7 +2214,42 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
         statinfo = os.stat(pickle_file)
         print('Compressed pickle size:', statinfo.st_size)
 
+        #
+        # Zipping JSON + PICKLE files in one ZIP file
+        # 
+        tempPath = slicer.app.temporaryPath
+        networkDir = os.path.join(tempPath, 'Network')
+
+        # Zipper tout ca 
+        shutil.make_archive(base_name = networkDir, format = 'zip', root_dir = tempPath, base_dir = 'Network')
+        print "jai make_Archiv"
+
+
         return pickle_file
+
+
+    def pickleToClassify(self, dictFeatData, path):
+        force = True
+
+        vtkList = dictFeatData.keys()
+        set_filename = os.path.join(path, 'toClassify.pickle')
+
+        if os.path.exists(set_filename) and not force:
+            # You may override by setting force=True.
+            print('%s already present - Skipping pickling.' % set_filename)
+        else:
+            print('Pickling %s.' % set_filename)
+            dataset, allShapes_feat = self.input_Data.load_features_with_names(vtkList)
+            try:
+                with open(set_filename, 'wb') as f:
+                    pickle.dump(allShapes_feat, f, pickle.HIGHEST_PROTOCOL)
+            except Exception as e:
+                print('Unable to save data to', set_filename, ':', e)
+
+        return set_filename
+
+
+
 
         #
         #   Fonctions pour le gros du Neural Network
@@ -2297,7 +2410,7 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
         self.neuralNetwork.learning_rate = 0.0005
         self.neuralNetwork.lambda_reg = 0.01
         self.neuralNetwork.num_epochs = 2
-        self.neuralNetwork.num_steps =  11
+        self.neuralNetwork.num_steps =  101
         self.neuralNetwork.batch_size = 10
 
         # Set le path pour le network
@@ -2306,11 +2419,6 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
         if os.path.isdir(networkDir):
             shutil.rmtree(networkDir)
         os.mkdir(networkDir) 
-
-        # Virer tous les pickle files 
-        for file in os.listdir(tempPath):
-            if os.path.splitext(os.path.basename(file))[1] == 'pickle':
-                os.remove(file)
 
         train_dataset, train_labels, valid_dataset, valid_labels, test_dataset, test_labels = self.get_inputs(pickle_file)
         saveModelPath = os.path.join(networkDir, modelName)
@@ -2326,7 +2434,7 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
             for file in files:
                 ziph.write(os.path.join(root, file))
 
-    def exportModelNetwork(self, modelName, filepath):
+    def exportModelNetwork(self, modelName, filepath):      # Modelname INUTIL
         
         tempPath = slicer.app.temporaryPath
         networkDir = os.path.join(tempPath, 'Network')
@@ -2378,7 +2486,7 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
 
         print "modelName dezipped :::::: " + str(modelName)
 
-
+# LOAD FROM JSON FILE !!!!!
 # >>>>>> FAIRE UNE FONCTION POUR CA
         # La, on set le Neural Network! 
         self.neuralNetwork = nn.neuralNetwork()
