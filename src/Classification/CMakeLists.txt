@@ -5,7 +5,6 @@ set(MODULE_NAME Classification)
 set(MODULE_PYTHON_SCRIPTS
   ${MODULE_NAME}.py
   inputData.py
-  neuralNetwork.py
   )
 
 set(MODULE_PYTHON_RESOURCES

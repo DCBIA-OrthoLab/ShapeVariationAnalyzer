@@ -9,11 +9,10 @@ import shutil
 
 import inputData
 import pickle
-import neuralNetwork as nn
 import numpy as np
-import tensorflow as tf
 import zipfile
 import json
+import subprocess
 
 
 class Classification(ScriptedLoadableModule):
@@ -1081,7 +1080,18 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         # 
         # Pickle the data for the network
         self.pickle_file = self.logic.pickleData(self.dictFeatData)
-        # print self.pickle_file
+        
+
+        #
+        # Zipping JSON + PICKLE files in one ZIP file
+        # 
+        tempPath = slicer.app.temporaryPath
+        networkDir = os.path.join(tempPath, 'Network')
+
+        # Zipper tout ca 
+        self.archiveName = shutil.make_archive(base_name = networkDir, format = 'zip', root_dir = tempPath, base_dir = 'Network')
+        print "jai make_Archiv : " + str(self.archiveName)
+
         self.pushButton_trainNetwork.setEnabled(True)
 
         return
@@ -1094,7 +1104,7 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         print ""
         a = 3
         print ""
-        accuracy = self.logic.trainNetworkClassification(self.pickle_file, 'modelClassification')
+        accuracy = self.logic.trainNetworkClassification(self.archiveName)
         self.label_stateNetwork.hide()
         
         print "ESTIMATED ACCURACY :: " + str(accuracy)
@@ -1115,8 +1125,7 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         directory = os.path.dirname(filepath)
         networkpath = filepath.split(".zip",1)[0]
 
-        self.modelName = 'modelClassification'
-        self.logic.exportModelNetwork(self.modelName, networkpath)
+        self.logic.exportModelNetwork(networkpath)
         self.pathLineEdit_networkPath.currentPath = filepath
         self.label_stateNetwork.hide()
         return
@@ -1173,9 +1182,13 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
 
         # UNZIP FILE DANS LE TEMPPATH
 
-        self.modelName = self.logic.importModelNetwork(self.pathLineEdit_networkPath.currentPath)
+        validModel = self.logic.validModelNetwork(self.pathLineEdit_networkPath.currentPath)
 
-        print "c'est dezipper et le model s'appelle :: " + self.modelName
+        if not validModel:
+            print "Error: Classifier not valid"
+            self.pathLineEdit_networkPath.currentPath = ""
+        else: 
+            print "Network accepted"
 
         return
 
@@ -1308,7 +1321,7 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         self.dictFeatData = dict()
         tempPath = slicer.app.temporaryPath
         networkDir = os.path.join(tempPath, 'Network')
-        
+
         outputDir = os.path.join(tempPath, "dataToClassify")
         if os.path.isdir(outputDir):
             shutil.rmtree(outputDir)
@@ -1323,7 +1336,7 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
             else:
                 meansList = meansList + "," +  str(v)
 
-        # print " :: meansList :: " +  str(meansList)
+        print " :: meansList :: " +  str(meansList)
 
         for shape in self.patientList:
             # Extract features de la/les shapes a classifier
@@ -1332,27 +1345,19 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
 
         # Change paths in patientList to have shape with features
         self.logic.storageDataToClassify(self.dictFeatData, self.patientList, outputDir)
-        # print self.patientList
-
 
         # For each patient:
         self.dictClassified = dict()
         self.dictToClassify = dict()
-        for patient in self.patientList:
-            self.dictToClassify[patient] = -1
-            # Compute the classification
-            resultgroup = self.logic.evalClassification(self.dictClassified, os.path.join(networkDir, self.modelName), patient)
 
-            # Display the result in the next tab "Result/Analysis"
-            self.displayResult(resultgroup, os.path.basename(patient))
-
-        print self.dictToClassify 
-
-        pickleToClassifyyy = self.logic.pickleToClassify(self.dictToClassify, os.path.join(slicer.app.temporaryPath,'Network'))
+        pickleToClassifyyy = self.logic.pickleToClassify(self.patientList, os.path.join(slicer.app.temporaryPath,'Network'))
 
         shutil.make_archive(base_name = networkDir, format = 'zip', root_dir = tempPath, base_dir = 'Network')
         print "jai make_Archiv"
 
+        self.dictResults = dict()
+        self.dictResults = self.logic.evalClassification(networkDir + ".zip")
+        self.displayResult(self.dictResults)
         return
 
 
@@ -1383,17 +1388,18 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
     # ---------------------------------------------------- #
 
     # Function to display the result in a table
-    def displayResult(self, resultGroup, VTKfilename):
-        row = self.tableWidget_result.rowCount
-        self.tableWidget_result.setRowCount(row + 1)
-        # Column 0: VTK file
-        labelVTKFile = qt.QLabel(VTKfilename)
-        labelVTKFile.setAlignment(0x84)
-        self.tableWidget_result.setCellWidget(row, 0, labelVTKFile)
-        # Column 1: Assigned Group
-        labelAssignedGroup = qt.QLabel(resultGroup)
-        labelAssignedGroup.setAlignment(0x84)
-        self.tableWidget_result.setCellWidget(row, 1, labelAssignedGroup)
+    def displayResult(self, dictResults):
+        for VTKfilename, resultGroup in dictResults.items():
+            row = self.tableWidget_result.rowCount
+            self.tableWidget_result.setRowCount(row + 1)
+            # Column 0: VTK file
+            labelVTKFile = qt.QLabel(VTKfilename)
+            labelVTKFile.setAlignment(0x84)
+            self.tableWidget_result.setCellWidget(row, 0, labelVTKFile)
+            # Column 1: Assigned Group
+            labelAssignedGroup = qt.QLabel(resultGroup)
+            labelAssignedGroup.setAlignment(0x84)
+            self.tableWidget_result.setCellWidget(row, 1, labelAssignedGroup)
 
     # Function to export the result in a CSV File
     def onExportResult(self):
@@ -1423,7 +1429,6 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
         self.interface = interface
         self.table = vtk.vtkTable
         self.colorBar = {'Point1': [0, 0, 1, 0], 'Point2': [0.5, 1, 1, 0], 'Point3': [1, 1, 0, 0]}
-        self.neuralNetwork = nn.neuralNetwork()
         self.input_Data = inputData.inputData()
 
     # Functions to recovery the widget in the .ui file
@@ -2081,7 +2086,7 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
         arguments.append(shape)
 
         # Output Mesh
-        arguments.append(str(os.path.join(outputDir,basename)) + "_ft.vtk")
+        arguments.append(str(os.path.join(outputDir,basename)) + "_ft.vtk")         # >>>> Virer le _ft!!
 
         # List of average shapes
         arguments.append("--distMeshOn")
@@ -2133,23 +2138,16 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
 
 
         # for group, vtklist in dictFeatData.items():
+        nbGroups = len(dictFeatData.keys())
         self.input_Data = inputData.inputData()
-        self.neuralNetwork = nn.neuralNetwork()
-
-        self.neuralNetwork.NUM_CLASSES = len(dictFeatData.keys())
-        self.input_Data.NUM_CLASSES = self.neuralNetwork.NUM_CLASSES
-
-        self.neuralNetwork.NUM_FEATURES = self.neuralNetwork.NUM_CLASSES + 3 + 4 
-        self.input_Data.NUM_FEATURES = self.neuralNetwork.NUM_FEATURES
+        self.input_Data.NUM_CLASSES = nbGroups
+        self.input_Data.NUM_FEATURES = nbGroups + 3 + 4 
 
         reader_poly = vtk.vtkPolyDataReader()
         reader_poly.SetFileName(dictFeatData[0][0])
 
         reader_poly.Update()
         self.input_Data.NUM_POINTS = reader_poly.GetOutput().GetNumberOfPoints()
-        self.neuralNetwork.NUM_POINTS = self.input_Data.NUM_POINTS
-
-        tempPath = slicer.app.temporaryPath
 
         for file in os.listdir(tempPath):
             if os.path.splitext(os.path.basename(file))[1] == '.pickle':
@@ -2172,9 +2170,6 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
         #
         # Determine dataset size
         #
-        nbGroups = len(dictFeatData.keys())
-        self.neuralNetwork.NUM_CLASSES = nbGroups
-        self.neuralNetwork.NUM_FEATURES = nbGroups + 3 + 4 
         small_classe = 100000000
         completeDataset = 0
         for key, value in dictFeatData.items():
@@ -2214,32 +2209,19 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
         statinfo = os.stat(pickle_file)
         print('Compressed pickle size:', statinfo.st_size)
 
-        #
-        # Zipping JSON + PICKLE files in one ZIP file
-        # 
-        tempPath = slicer.app.temporaryPath
-        networkDir = os.path.join(tempPath, 'Network')
-
-        # Zipper tout ca 
-        shutil.make_archive(base_name = networkDir, format = 'zip', root_dir = tempPath, base_dir = 'Network')
-        print "jai make_Archiv"
-
-
         return pickle_file
 
 
-    def pickleToClassify(self, dictFeatData, path):
+    def pickleToClassify(self, patientList, path):
         force = True
 
-        vtkList = dictFeatData.keys()
         set_filename = os.path.join(path, 'toClassify.pickle')
-
         if os.path.exists(set_filename) and not force:
             # You may override by setting force=True.
             print('%s already present - Skipping pickling.' % set_filename)
         else:
             print('Pickling %s.' % set_filename)
-            dataset, allShapes_feat = self.input_Data.load_features_with_names(vtkList)
+            dataset, allShapes_feat = self.input_Data.load_features_with_names(patientList)
             try:
                 with open(set_filename, 'wb') as f:
                     pickle.dump(allShapes_feat, f, pickle.HIGHEST_PROTOCOL)
@@ -2274,145 +2256,10 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
     def reformat_data(self, dataset):
         dataset = dataset.reshape((-1, self.neuralNetwork.NUM_POINTS * self.neuralNetwork.NUM_FEATURES)).astype(np.float32)
         return dataset
-        
-    def get_inputs(self, pickle_file):
-
-        # Reoad the data generated in pickleData.py
-        with open(pickle_file, 'rb') as f:
-            save = pickle.load(f)
-            train_dataset = save['train_dataset']
-            train_labels = save['train_labels']
-            valid_dataset = save['valid_dataset']
-            valid_labels = save['valid_labels']
-            test_dataset = save['test_dataset']
-            test_labels = save['test_labels']
-            del save  # hint to help gc free up memory
-            print('Training set', train_dataset.shape, train_labels.shape)
-            print('Validation set', valid_dataset.shape, valid_labels.shape)
-            print('Test set', test_dataset.shape, test_labels.shape)
-
-            train_dataset, train_labels = self.reformat(train_dataset, train_labels)
-            valid_dataset, valid_labels = self.reformat(valid_dataset, valid_labels)
-            test_dataset, test_labels = self.reformat(test_dataset, test_labels)
-            print("\nTraining set", train_dataset.shape, train_labels.shape)
-            print("Validation set", valid_dataset.shape, valid_labels.shape)
-            print("Test set", test_dataset.shape, test_labels.shape)
-
-            return train_dataset, train_labels, valid_dataset, valid_labels, test_dataset, test_labels
-
-
-    def run_training(self, train_dataset, train_labels, valid_dataset, valid_labels, test_dataset, test_labels, saveModelPath):
-
-        #       >>>>>       A RENDRE GENERIQUE !!!!!!!
-        if self.neuralNetwork.NUM_HIDDEN_LAYERS == 1:
-            nb_hidden_nodes_1 = 2048
-        elif self.neuralNetwork.NUM_HIDDEN_LAYERS == 2:
-            nb_hidden_nodes_1, nb_hidden_nodes_2 = 2048, 2048
-
-        # Construct the graph
-        graph = tf.Graph()
-        with graph.as_default():
-            # Input data.
-            with tf.name_scope('Inputs_management'):
-                # tf_train_dataset, tf_train_labels = placeholder_inputs(self.neuralNetwork.batch_size, name='data')
-                tf_train_dataset = tf.placeholder(tf.float32, shape=(self.neuralNetwork.batch_size, self.neuralNetwork.NUM_POINTS * self.neuralNetwork.NUM_FEATURES), name='tf_train_dataset')
-                tf_train_labels = tf.placeholder(tf.int32, shape=(self.neuralNetwork.batch_size, self.neuralNetwork.NUM_CLASSES), name='tf_train_labels')
-
-                keep_prob = tf.placeholder(tf.float32, name='keep_prob')
-
-                tf_valid_dataset = tf.constant(valid_dataset, name="tf_valid_dataset")
-                tf_test_dataset = tf.constant(test_dataset)
-
-                tf_data = tf.placeholder(tf.float32, shape=(1,self.neuralNetwork.NUM_POINTS * self.neuralNetwork.NUM_FEATURES), name="input")
-
-            with tf.name_scope('Bias_and_weights_management'):
-                weightsDict = self.neuralNetwork.bias_weights_creation(nb_hidden_nodes_1, nb_hidden_nodes_2)    
-            
-            # Training computation.
-            with tf.name_scope('Training_computations'):
-                logits, weightsDict = self.neuralNetwork.model(tf_train_dataset, weightsDict)
-                
-            with tf.name_scope('Loss_computation'):
-                loss = self.neuralNetwork.loss(logits, tf_train_labels, self.neuralNetwork.lambda_reg, weightsDict)
-            
-            
-            with tf.name_scope('Optimization'):
-                # Optimizer.
-                optimizer = tf.train.GradientDescentOptimizer(self.neuralNetwork.learning_rate).minimize(loss)
-                # optimizer = tf.train.AdagradOptimizer(self.neuralNetwork.learning_rate).minimize(loss)
-            
-            # tf.tensor_summary("W_fc1", weightsDict['W_fc1'])
-            tf.summary.scalar("Loss", loss)
-            summary_op = tf.summary.merge_all()
-            saver = tf.train.Saver(weightsDict)
-
-                
-            with tf.name_scope('Predictions'):
-                # Predictions for the training, validation, and test data.
-                train_prediction = tf.nn.softmax(logits)
-                valid_prediction = tf.nn.softmax(self.neuralNetwork.model(tf_valid_dataset, weightsDict)[0], name="valid_prediction")
-
-                data_pred = tf.nn.softmax(self.neuralNetwork.model(tf_data, weightsDict)[0], name="output")
-                test_prediction = tf.nn.softmax(self.neuralNetwork.model(tf_test_dataset, weightsDict)[0])
-
-
-            # -------------------------- #
-            #       Let's run it         #
-            # -------------------------- #
-            # 
-            with tf.Session(graph=graph) as session:
-                tf.global_variables_initializer().run()
-                print("Initialized")
-
-                # create log writer object
-                writer = tf.summary.FileWriter('./train', graph=graph)
-
-                for epoch in range(0, self.neuralNetwork.num_epochs):
-                    for step in range(self.neuralNetwork.num_steps):
-                        # Pick an offset within the training data, which has been randomized.
-                        # Note: we could use better randomization across epochs.
-                        offset = (step * self.neuralNetwork.batch_size) % (train_labels.shape[0] - self.neuralNetwork.batch_size)
-                        # Generate a minibatch.
-                        batch_data = train_dataset[offset:(offset + self.neuralNetwork.batch_size), :]
-                        batch_labels = train_labels[offset:(offset + self.neuralNetwork.batch_size), :]
-                        # Prepare a dictionary telling the session where to feed the minibatch.
-                        # The key of the dictionary is the placeholder node of the graph to be fed,
-                        # and the value is the numpy array to feed to it.
-                        feed_dict = {tf_train_dataset : batch_data, tf_train_labels : batch_labels, keep_prob:0.7}
-                        _, l, predictions, summary = session.run([optimizer, loss, train_prediction, summary_op], feed_dict=feed_dict)
-                        # _, l, predictions = session.run([optimizer, loss, train_prediction], feed_dict=feed_dict)
-
-
-                        # write log
-                        batch_count = 20
-                        writer.add_summary(summary, epoch * batch_count + step)
-
-
-                        if (step % 500 == 0):
-                            print("Minibatch loss at step %d: %f" % (step, l))
-                            print("Minibatch accuracy: %.1f%%" % self.neuralNetwork.accuracy(predictions, batch_labels)[0])
-                            print("Validation accuracy: %.1f%%" % self.neuralNetwork.accuracy(valid_prediction.eval(feed_dict = {keep_prob:1.0}), valid_labels)[0])
-
-                finalaccuracy, mat_confusion, PPV, TPR = self.neuralNetwork.accuracy(test_prediction.eval(feed_dict={keep_prob:1.0}), test_labels)
-                print("Test accuracy: %.1f%%" % finalaccuracy)
-                print("\n\nConfusion matrix :\n" + str(mat_confusion))
-                # print "\n PPV : " + str(PPV)
-                # print "\n TPR : " + str(TPR)
-
-                save_path = saver.save(session, saveModelPath, write_meta_graph=True)
-                print("Model saved in file: %s" % save_path)
-        
-        return finalaccuracy
 
 
 
-    def trainNetworkClassification(self, pickle_file, modelName):
-        self.neuralNetwork.learning_rate = 0.0005
-        self.neuralNetwork.lambda_reg = 0.01
-        self.neuralNetwork.num_epochs = 2
-        self.neuralNetwork.num_steps =  101
-        self.neuralNetwork.batch_size = 10
-
+    def trainNetworkClassification(self, archiveName):
         # Set le path pour le network
         tempPath = slicer.app.temporaryPath
         networkDir = os.path.join(tempPath, "Network")
@@ -2420,12 +2267,44 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
             shutil.rmtree(networkDir)
         os.mkdir(networkDir) 
 
-        train_dataset, train_labels, valid_dataset, valid_labels, test_dataset, test_labels = self.get_inputs(pickle_file)
-        saveModelPath = os.path.join(networkDir, modelName)
+        with zipfile.ZipFile(archiveName) as zf:
+            zf.extractall(os.path.dirname(archiveName))
 
-        accuracy = self.run_training(train_dataset, train_labels, valid_dataset, valid_labels, test_dataset, test_labels, saveModelPath)
+        jsonFile = os.path.join(networkDir, 'classifierInfo.json')
 
-        return accuracy
+
+        with open(jsonFile) as f:
+            jsonDict = json.load(f)
+
+        jsonDict['CondylesClassifier']['learning_rate'] = 0.0005
+        jsonDict['CondylesClassifier']['lambda_reg'] = 0.01
+        jsonDict['CondylesClassifier']['num_epochs'] = 2
+        jsonDict['CondylesClassifier']['num_steps'] =  1001
+        jsonDict['CondylesClassifier']['batch_size'] = 10
+
+        with open(os.path.join(networkDir,'classifierInfo.json'), 'w') as f:
+            json.dump(jsonDict, f, ensure_ascii=False, indent = 4)
+
+        shutil.make_archive(base_name = networkDir, format = 'zip', root_dir = tempPath, base_dir = 'Network')
+
+        # Train le network dans le virtualenv
+        command = ["bash", "-c", "source /Users/prisgdd/Desktop/VirtualEnv/tensorflow-python-real/bin/activate; export PYTHONPATH=/Users/prisgdd/Desktop/VirtualEnv/tensorflow-python-real/bin:/Users/prisgdd/Desktop/VirtualEnv/tensorflow-python-real/lib/python2.7:/Users/prisgdd/Desktop/VirtualEnv/tensorflow-python-real/lib/python2.7:/Users/prisgdd/Desktop/VirtualEnv/tensorflow-python-real/lib/python2.7/site-packages; python /Users/prisgdd/Documents/Projects/CNN/CondylesClassification/src/trainCondylesClassification.py -inputZip " + archiveName]
+        p = subprocess.Popen(command, stdout = subprocess.PIPE, stderr = subprocess.PIPE)
+        out, err = p.communicate()
+        print "\n out : " + str(out) + "\n err : " + str(err)
+
+        if os.path.isdir(networkDir):
+            shutil.rmtree(networkDir)
+        os.mkdir(networkDir) 
+
+        with zipfile.ZipFile(archiveName) as zf:
+            zf.extractall(os.path.dirname(archiveName))
+
+        jsonFile = os.path.join(networkDir, 'classifierInfo.json')
+        with open(jsonFile) as f:
+            jsonDict = json.load(f)
+
+        return jsonDict['CondylesClassifier']['accuracy']
 
 
     def zipdir(self, path, ziph):
@@ -2434,7 +2313,7 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
             for file in files:
                 ziph.write(os.path.join(root, file))
 
-    def exportModelNetwork(self, modelName, filepath):      # Modelname INUTIL
+    def exportModelNetwork(self, filepath):      # Modelname INUTIL
         
         tempPath = slicer.app.temporaryPath
         networkDir = os.path.join(tempPath, 'Network')
@@ -2445,12 +2324,10 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
 
         return
 
-    def importModelNetwork(self, archiveName):
+    def validModelNetwork(self, archiveName):
 
         tempPath = slicer.app.temporaryPath
         networkDir = os.path.join(tempPath, 'Network')
-        modelName = ""
-
         # Si y a deja un Network dans le coin, on le degage
         if os.path.isdir(networkDir):
             shutil.rmtree(networkDir)
@@ -2460,55 +2337,39 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
         with zipfile.ZipFile(archiveName) as zf:
             zf.extractall(tempPath)
 
-# >>>>>> FAIRE UNE FONCTION POUR CA
-        # Verify there is one (and ONLY ONE) network in the zip file, and get its name
-        modelFound = list()
-        listContent = os.listdir(networkDir)
+        # check JSON file
+        jsonFile = os.path.join(networkDir, 'classifierInfo.json')
+        saveModelPath = os.path.join(networkDir, 'CondylesClassifier')
 
-        for file in listContent:
-            if os.path.splitext(os.path.basename(file))[1] == ".meta":
-                potentialModel = os.path.splitext(os.path.basename(file))[0]
-                nbPotientalModel = 0
-                for fileBis in listContent:
-                    if os.path.splitext(os.path.basename(fileBis))[0] == potentialModel:
-                        nbPotientalModel = nbPotientalModel + 1
-                if nbPotientalModel == 3:
-                    modelFound.append(potentialModel)
-
-        if len(modelFound) == 1:
-            modelName = modelFound[0]
-        elif len(modelFound) == 0:
-            print " :::: Wallouh y a pas de model dans ton path !!!"
-            return modelName
-        else:
-            print " :: Y a trop de model, il va falloit choisir frere!"
-            return modelName
-
-        print "modelName dezipped :::::: " + str(modelName)
-
-# LOAD FROM JSON FILE !!!!!
-# >>>>>> FAIRE UNE FONCTION POUR CA
-        # La, on set le Neural Network! 
-        self.neuralNetwork = nn.neuralNetwork()
-
-        session = tf.InteractiveSession()
-        new_saver = tf.train.import_meta_graph(os.path.join(networkDir, modelName) + '.meta')
-        new_saver.restore(session, os.path.join(networkDir, modelName))
-        graph = tf.Graph().as_default()
-        
-        # Get useful tensor in the graph
-        tf_train_labels = session.graph.get_tensor_by_name("Inputs_management/tf_train_labels:0")
-        tf_data = session.graph.get_tensor_by_name("Inputs_management/input:0")
+        with open(jsonFile) as f:    
+            jsonDict = json.load(f)
 
 
-        self.neuralNetwork.NUM_CLASSES = tf_train_labels.get_shape()[1]
-        self.input_Data.NUM_CLASSES = self.neuralNetwork.NUM_CLASSES
-        self.neuralNetwork.NUM_FEATURES = 3 + 4 + int(self.neuralNetwork.NUM_CLASSES)
-        self.input_Data.NUM_FEATURES = self.neuralNetwork.NUM_FEATURES
-        self.neuralNetwork.NUM_POINTS = (tf_data.get_shape()[1] / int(self.neuralNetwork.NUM_FEATURES))
-        self.input_Data.NUM_POINTS = self.neuralNetwork.NUM_POINTS
+        # In case our JSON file doesnt contain a valid Classifier
+        if not jsonDict.has_key('CondylesClassifier'):
+            print "No CondylesClassifier containing network parameters"
+            return 0
+        myDict = jsonDict['CondylesClassifier']
+        if not ('NUM_CLASSES' in myDict and 'NUM_FEATURES' in myDict and 'NUM_POINTS' in myDict):
+            print "Missing basics network parameters"
+            return 0
 
-        return modelName
+        self.input_Data = inputData.inputData()
+        self.input_Data.NUM_POINTS = jsonDict['CondylesClassifier']['NUM_POINTS']
+        self.input_Data.NUM_CLASSES = jsonDict['CondylesClassifier']['NUM_CLASSES']
+        self.input_Data.NUM_FEATURES = jsonDict['CondylesClassifier']['NUM_FEATURES']
+
+        numModelFiles = 0
+        strCondClass = 'CondylesClassifier'
+        for f in os.listdir(networkDir):
+            if f[0:len('CondylesClassifier')] == 'CondylesClassifier' : 
+                numModelFiles = numModelFiles + 1
+
+        if numModelFiles < 3 :
+            print "Missing files for this model"
+            return 0
+
+        return 1
 
     def get_input_shape(self,inputFile):
 
@@ -2522,61 +2383,30 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
         return np.argmax(prediction[0,:])
 
     # Function to compute the OA index of a patient
-    def evalClassification(self, dictClassified, model, shape):
-        # Create session, and import existing graph
-        # print shape
-        myData = self.get_input_shape(shape)
-        session = tf.InteractiveSession()
+    def evalClassification(self, archiveName):
+        # Set le path pour le network
+        tempPath = slicer.app.temporaryPath
+        networkDir = os.path.join(tempPath, "Network")
+        if os.path.isdir(networkDir):
+            shutil.rmtree(networkDir)
+        os.mkdir(networkDir) 
 
+        # Train le network dans le virtualenv
+        command = ["bash", "-c", "source /Users/prisgdd/Desktop/VirtualEnv/tensorflow-python-real/bin/activate; export PYTHONPATH=/Users/prisgdd/Desktop/VirtualEnv/tensorflow-python-real/bin:/Users/prisgdd/Desktop/VirtualEnv/tensorflow-python-real/lib/python2.7:/Users/prisgdd/Desktop/VirtualEnv/tensorflow-python-real/lib/python2.7:/Users/prisgdd/Desktop/VirtualEnv/tensorflow-python-real/lib/python2.7/site-packages; python /Users/prisgdd/Documents/Projects/CNN/CondylesClassification/src/evalCondylesClassification.py -inputZip " + archiveName]
+        p = subprocess.Popen(command, stdout = subprocess.PIPE, stderr = subprocess.PIPE)
+        out, err = p.communicate()
+        print "\n out : " + str(out) + "\n err : " + str(err)
 
-        new_saver = tf.train.import_meta_graph(model + '.meta')
-        new_saver.restore(session, model)
-        graph = tf.Graph().as_default()
-        
-        # Get useful tensor in the graph
-        tf_data = session.graph.get_tensor_by_name("Inputs_management/input:0")
-        data_pred = session.graph.get_tensor_by_name("Predictions/output:0")
+        with zipfile.ZipFile(archiveName) as zf:
+            zf.extractall(os.path.dirname(archiveName))
 
-        feed_dict = {tf_data: myData}
-        data_pred = session.run(data_pred, feed_dict=feed_dict)
-        
-        result = self.get_result(data_pred)
-        print "Shape : " + os.path.basename(shape)
-        print "Group predicted :" + str(result) + "\n"
-        
-        # Mise a jour du dictClassified
-        # Est-ce que ce result existe deja comme cle ?
-        listkey = dictClassified.keys()
-        print listkey
+        jsonFile = os.path.join(networkDir, 'results.json')
+        with open(jsonFile) as f:
+            resultsDict = json.load(f)
 
-        if listkey.count(result):       # La key exist
-            valueKey = dictClassified[result]
-            valueKey.append(shape)
-        else:       # la key n'existe pas 
-            valueKey = list()
-            valueKey.append(shape)
-        dictClassified[result] = valueKey
+        print resultsDict
+        return resultsDict
 
-        return result
-
-
-
-        # OAIndexList = list()
-        # for key in keyList:
-        #     ShapeOAVectorLoadsPath = slicer.app.temporaryPath + "/ShapeOAVectorLoadsG" + str(key) + ".csv"
-        #     if not os.path.exists(ShapeOAVectorLoadsPath):
-        #         return
-        #     tableShapeOAVectorLoads = vtk.vtkTable
-        #     tableShapeOAVectorLoads = self.readCSVFile(ShapeOAVectorLoadsPath)
-        #     sum = 0
-        #     for row in range(0, tableShapeOAVectorLoads.GetNumberOfRows()):
-        #         ShapeOALoad = tableShapeOAVectorLoads.GetValue(row, 0).ToDouble()
-        #         sum = sum + math.pow(ShapeOALoad, 2)
-        #     OAIndexList.append(math.sqrt(sum)/tableShapeOAVectorLoads.GetNumberOfRows())
-        # # print OAIndexList
-        # resultGroup = OAIndexList.index(min(OAIndexList)) 
-        # # print "RESULT: " + str(resultGroup)
-        # return resultGroup
 
     # Function to remove the shape model of each group
     def removeShapeOALoadsCSVFile(self, keylist):
