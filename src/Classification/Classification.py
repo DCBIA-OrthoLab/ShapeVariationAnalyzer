@@ -42,7 +42,8 @@ class Classification(ScriptedLoadableModule):
 
 class ClassificationWidget(ScriptedLoadableModuleWidget):
     def setup(self):
-        ScriptedLoadableModuleWidget.setup(self)
+
+        ScriptedLoadableModuleWidget.setup(self)        
 
         # ---- Widget Setup ----
 
@@ -1431,6 +1432,140 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
         self.colorBar = {'Point1': [0, 0, 1, 0], 'Point2': [0.5, 1, 1, 0], 'Point3': [1, 1, 0, 0]}
         self.input_Data = inputData.inputData()
 
+        # 
+        # ----- Virtualenv setup ----- #
+        # 
+        pathSlicerExec = str(os.path.dirname(sys.executable))
+        currentPath = os.path.dirname(os.path.abspath(__file__))
+        dirSitePckgs = os.path.join(pathSlicerExec, "../lib/Python/lib/python2.7/site-packages")
+        # dirBin = os.path.join(pathSlicerExec, "../bin/lib/Python/bin")
+        
+        pathSlicerPython = os.path.join(pathSlicerExec, "../bin/SlicerPython")
+        # pathPythonReal = os.path.join(pathSlicerExec, "../bin/python-real")
+
+        # Check pip installation
+        print "\n\n I. Pip installation"
+        print " ~~~~~~~~~~~~~~~~~~~\n"
+        try:
+            import pip
+            print "\npip path: " + str(pip.__path__)
+            print "===> Pip already installed"
+        except Exception as e: 
+            # ----- Install pip as it's not already done -----
+            print "\nTry to install pip"
+            command = ["bash", "-c", pathSlicerPython + " " + os.path.join(currentPath,'Resources/get-pip.py')]
+            print command
+            p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            out, err = p.communicate()
+            print "out : " + str(out) + "\nerr : " + str(err)
+            import pip
+
+            print "\npip path: " + str(pip.__path__)
+            print "===> Pip now installed to PythonSlicer"
+
+        # Check virtualenv installation
+        print "\n\n II. Virtualenv installation"
+        print " ~~~~~~~~~~~~~~~~~~~~~~~~~~~\n"
+        try:
+            import virtualenv
+            print "virtualenv version: " + str(virtualenv.__version__)
+            print "===> Virtualenv already installed"
+        except Exception as e: 
+            print "\nTry to install virtualenv"
+            print pip.main(['install', 'virtualenv'])
+            import virtualenv
+            print "virtualenv version: " + str(virtualenv.__version__)
+            print "===> Virtualenv now installed with pip.main"
+
+
+        print "\n\n III. Create environment tensorflowSlicer"
+        print " ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ \n"
+        tempPath = slicer.app.temporaryPath
+        env_dir = os.path.join(tempPath, "env-tensorflow") 
+        if not os.path.isdir(env_dir):
+            os.mkdir(env_dir) 
+
+        if os.path.isfile(os.path.join(env_dir, 'bin', 'activate')):
+            print "===> env-tensorflow already exists"
+        else:
+            command = ["bash", "-c", pathSlicerPython + " " + os.path.join(dirSitePckgs, 'virtualenv.py') + " --python=" + pathSlicerPython + " " + env_dir]
+            # print command
+            p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            out, err =  p.communicate()
+            print "out : " + str(out) + "\nerr : " + str(err)
+            print "\n===> Environmnent tensorflowSlicer created"
+
+
+        print "\n\n\n IV. Install tensorflow into tensorflowSlicer"
+        print " ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n"
+        # 
+        #   To install tensorflow in virtualenv, requires:
+        #       - activate environment
+        #       - export PYTHONPATH
+        #       - launch python
+        #               => cmd_setenv
+        #       - add the environment path to sys.path
+        #       - set sys.prefix 
+        #       - pip install tensorflow
+        # 
+          
+        # source path-to-env/bin/activate
+        self.cmd_setenv = "source " + os.path.join(env_dir, 'bin', 'activate') + "; "
+        # construct python path
+        env_pythonpath = os.path.join(env_dir, 'bin') + ":" + os.path.join(env_dir, 'lib', 'python2.7') + ":" + os.path.join(env_dir, 'lib', 'python2.7', 'site-packages')
+        # export python path
+        self.cmd_setenv = self.cmd_setenv + "export PYTHONPATH=" + env_pythonpath +  "; "
+        # call Slicer python
+        self.cmd_setenv = self.cmd_setenv + pathSlicerPython
+
+        # construct sys.path
+        env_syspath = "sys.path.append(\"" + os.path.join(env_dir,'lib','python2.7') + "\"); sys.path.append(\"" + os.path.join(env_dir,'lib','python2.7','site-packages') + "\"); sys.path.append(\"" + os.path.join(env_dir,'lib','python2.7','site-packages','pip','utils') + "\"); "
+        cmd_virtenv = str(' -c ')
+        cmd_virtenv = cmd_virtenv + "\'import sys; " + env_syspath 
+
+        # construct sys.path
+        env_sysprefix = "sys.prefix=\"" + env_dir + "\"; "
+        cmd_virtenv = cmd_virtenv + env_sysprefix
+
+
+        #construct install command
+        env_install = "import pip; print pip.main([\"install\", \"--prefix=" + env_dir + "\", \"tensorflow\"]); print pip.main([\"install\", \"--prefix=" + env_dir + "\", \"pandas\"])\'"
+        cmd_virtenv = cmd_virtenv + env_install
+
+        # google path =:/Users/prisgdd/Desktop/VirtualEnv/tensorflowSlicer/lib/python2.7/site-packages/google
+        bashCommand = self.cmd_setenv + cmd_virtenv
+
+        command = ["bash", "-c", str(bashCommand)]
+        # print "\n" + command + "\n"
+        p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        out, err =  p.communicate()
+        print "\nout : " + str(out) + "\nerr : " + str(err)
+
+        # Tensorflow is now installed but might not work due to a missing file
+        # We create it to avoid the error 'no module named google.protobuf'
+        # -----
+        print "\n\n Create missing __init__.py if doesn't existe yet"
+        google_init = os.path.join(env_dir, 'lib', 'python2.7', 'site-packages', 'google', '__init__.py')
+        if os.path.isfile(google_init):
+            print "-> google/__init__.py already exists"
+        else:
+            fichier = open(google_init, "w")
+            fichier.close()
+            print "-> google/__init__.py created!"
+        
+
+
+        print "\n\n\n V. Check tensorflow is well installed"
+        test_tf = os.path.join(currentPath,'Testing/test-tensorflowinstall.py')
+        bashCommand = self.cmd_setenv + " " + test_tf
+
+        command = ["bash", "-c", bashCommand]
+        p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        out, err =  p.communicate()
+        print "\nout : " + str(out) + "\nerr : " + str(err)
+
+
+
     # Functions to recovery the widget in the .ui file
     def get(self, objectName):
         return self.findWidget(self.interface.widget, objectName)
@@ -2086,7 +2221,7 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
         arguments.append(shape)
 
         # Output Mesh
-        arguments.append(str(os.path.join(outputDir,basename)) + "_ft.vtk")         # >>>> Virer le _ft!!
+        arguments.append(str(os.path.join(outputDir,basename)) + ".vtk")         # >>>> Virer le _ft!!
 
         # List of average shapes
         arguments.append("--distMeshOn")
@@ -2272,7 +2407,6 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
 
         jsonFile = os.path.join(networkDir, 'classifierInfo.json')
 
-
         with open(jsonFile) as f:
             jsonDict = json.load(f)
 
@@ -2288,10 +2422,14 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
         shutil.make_archive(base_name = networkDir, format = 'zip', root_dir = tempPath, base_dir = 'Network')
 
         # Train le network dans le virtualenv
-        command = ["bash", "-c", "source /Users/prisgdd/Desktop/VirtualEnv/tensorflow-python-real/bin/activate; export PYTHONPATH=/Users/prisgdd/Desktop/VirtualEnv/tensorflow-python-real/bin:/Users/prisgdd/Desktop/VirtualEnv/tensorflow-python-real/lib/python2.7:/Users/prisgdd/Desktop/VirtualEnv/tensorflow-python-real/lib/python2.7:/Users/prisgdd/Desktop/VirtualEnv/tensorflow-python-real/lib/python2.7/site-packages; python /Users/prisgdd/Documents/Projects/CNN/CondylesClassification/src/trainCondylesClassification.py -inputZip " + archiveName]
-        p = subprocess.Popen(command, stdout = subprocess.PIPE, stderr = subprocess.PIPE)
-        out, err = p.communicate()
-        print "\n out : " + str(out) + "\n err : " + str(err)
+        currentPath = os.path.dirname(os.path.abspath(__file__))
+        train_file = os.path.join(currentPath,'Resources/trainCondylesClassification.py')
+        bashCommand = self.cmd_setenv + " " + train_file + " -inputZip " + archiveName
+
+        command = ["bash", "-c", bashCommand]
+        p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        out, err =  p.communicate()
+        print "\nout : " + str(out) + "\nerr : " + str(err)
 
         if os.path.isdir(networkDir):
             shutil.rmtree(networkDir)
@@ -2391,11 +2529,15 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
             shutil.rmtree(networkDir)
         os.mkdir(networkDir) 
 
-        # Train le network dans le virtualenv
-        command = ["bash", "-c", "source /Users/prisgdd/Desktop/VirtualEnv/tensorflow-python-real/bin/activate; export PYTHONPATH=/Users/prisgdd/Desktop/VirtualEnv/tensorflow-python-real/bin:/Users/prisgdd/Desktop/VirtualEnv/tensorflow-python-real/lib/python2.7:/Users/prisgdd/Desktop/VirtualEnv/tensorflow-python-real/lib/python2.7:/Users/prisgdd/Desktop/VirtualEnv/tensorflow-python-real/lib/python2.7/site-packages; python /Users/prisgdd/Documents/Projects/CNN/CondylesClassification/src/evalCondylesClassification.py -inputZip " + archiveName]
-        p = subprocess.Popen(command, stdout = subprocess.PIPE, stderr = subprocess.PIPE)
-        out, err = p.communicate()
-        print "\n out : " + str(out) + "\n err : " + str(err)
+        # Classify dans le virtualenv
+        currentPath = os.path.dirname(os.path.abspath(__file__))
+        train_file = os.path.join(currentPath,'Resources/evalCondylesClassification.py')
+        bashCommand = self.cmd_setenv + " " + train_file + " -inputZip " + archiveName
+
+        command = ["bash", "-c", bashCommand]
+        p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        out, err =  p.communicate()
+        print "\nout : " + str(out) + "\nerr : " + str(err)
 
         with zipfile.ZipFile(archiveName) as zf:
             zf.extractall(os.path.dirname(archiveName))
