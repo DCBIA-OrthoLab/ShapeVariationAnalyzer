@@ -57,7 +57,7 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         self.groupSelected = set()
         self.dictShapeModels = dict()
         self.patientList = list()
-        self.dictResult = dict()
+        self.dictResults = dict()
 
         self.dictFeatData = dict()
 
@@ -93,20 +93,15 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         self.checkableComboBox_ChoiceOfGroup = self.logic.get('CheckableComboBox_ChoiceOfGroup')
         self.tableWidget_VTKFiles = self.logic.get('tableWidget_VTKFiles')
         self.pushButton_previewVTKFiles = self.logic.get('pushButton_previewVTKFiles')
-        # self.pushButton_compute = self.logic.get('pushButton_compute')
-        
+
         self.pushButton_exportUpdatedClassification = self.logic.get('pushButton_exportUpdatedClassification')
                  # Tab: Selection Classification Groups
-        # self.collapsibleButton_SelectClassificationGroups = self.logic.get('CollapsibleButton_SelectClassificationGroups')
-        # self.pathLineEdit_selectionClassificationGroups = self.logic.get('PathLineEdit_selectionClassificationGroups')
         self.comboBox_healthyGroup = self.logic.get('comboBox_healthyGroup')
-        # self.pushButton_previewGroups = self.logic.get('pushButton_previewGroups')
-        # self.MRMLTreeView_classificationGroups = self.logic.get('MRMLTreeView_classificationGroups')
+        
         #          Tab: Select Input Data
         self.collapsibleButton_classificationNetwork = self.logic.get('collapsibleButton_classificationNetwork')
         self.MRMLNodeComboBox_VTKInputData = self.logic.get('MRMLNodeComboBox_VTKInputData')
         self.pathLineEdit_CSVInputData = self.logic.get('PathLineEdit_CSVInputData')
-        # self.checkBox_fileInGroups = self.logic.get('checkBox_fileInGroups')
         self.pushButton_classifyIndex = self.logic.get('pushButton_classifyIndex')
 
         self.pushButton_trainNetwork = self.logic.get('pushButton_trainNetwork')
@@ -139,12 +134,8 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
 
         #     disable/enable and hide/show widget
         self.comboBox_healthyGroup.setDisabled(True)
-        # self.pushButton_previewGroups.setDisabled(True)
-        # self.pushButton_compute.setDisabled(True)
-        # self.pushButton_compute.setDisabled(True)
         self.pushButton_exportUpdatedClassification.setDisabled(True)
-        # self.checkBox_fileInGroups.setDisabled(True)
-        # self.checkableComboBox_ChoiceOfGroup.setDisabled(True)
+        self.checkableComboBox_ChoiceOfGroup.setDisabled(True)
         self.tableWidget_VTKFiles.setDisabled(True)
         self.pushButton_previewVTKFiles.setDisabled(True)
 
@@ -196,7 +187,6 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         horizontalHeader.setResizeMode(1,qt.QHeaderView.ResizeToContents)
         horizontalHeader.setResizeMode(2,qt.QHeaderView.ResizeToContents)
         horizontalHeader.setResizeMode(3,qt.QHeaderView.ResizeToContents)
-        # self.tableWidget_VTKFiles.verticalHeader().setVisible(False)
         self.tableWidget_VTKFiles.verticalHeader().setVisible(True)
 
         #     configuration of the table to display the result
@@ -228,21 +218,14 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         self.pushButton_previewVTKFiles.connect('clicked()', self.onPreviewVTKFiles)
         # self.pushButton_compute.connect('clicked()', self.onComputeNewClassificationGroups)
         self.pushButton_exportUpdatedClassification.connect('clicked()', self.onExportUpdatedClassificationGroups)
-        # #          Tab: Selection of Classification Groups
-        # self.collapsibleButton_SelectClassificationGroups.connect('clicked()',
-        #                                                           lambda: self.onSelectedCollapsibleButtonOpen(self.collapsibleButton_SelectClassificationGroups))
-        # self.pathLineEdit_selectionClassificationGroups.connect('currentPathChanged(const QString)', self.onSelectionClassificationGroups)
-        # self.pushButton_previewGroups.connect('clicked()', self.onPreviewGroupMeans)
+       
         #          Tab: Select Input Data
         self.collapsibleButton_classificationNetwork.connect('clicked()',
                                                        lambda: self.onSelectedCollapsibleButtonOpen(self.collapsibleButton_classificationNetwork))
         self.MRMLNodeComboBox_VTKInputData.connect('currentNodeChanged(vtkMRMLNode*)', self.onVTKInputData)
-        # self.checkBox_fileInGroups.connect('clicked()', self.onCheckFileInGroups)
         self.pathLineEdit_CSVInputData.connect('currentPathChanged(const QString)', self.onCSVInputData)
-        
-        
-        
         self.pushButton_classifyIndex.connect('clicked()', self.onClassifyIndex)
+
         #          Tab: Result / Analysis
         self.collapsibleButton_Result.connect('clicked()',
                                               lambda: self.onSelectedCollapsibleButtonOpen(self.collapsibleButton_Result))
@@ -250,6 +233,9 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
 
         slicer.mrmlScene.AddObserver(slicer.mrmlScene.EndCloseEvent, self.onCloseScene)
 
+                 # Tab: Compute Average Groups
+        self.CollapsibleButton_computeAverageGroups.connect('clicked()',
+                                              lambda: self.onSelectedCollapsibleButtonOpen(self.CollapsibleButton_computeAverageGroups))
 
                  
         self.pathLineEdit_selectionClassificationGroups.connect('currentPathChanged(const QString)', self.onComputeAverageClassificationGroups)
@@ -282,9 +268,9 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
     # function called each time that the scene is closed (if Diagnostic Index has been initialized)
     def onCloseScene(self, obj, event):
 
-        # numItem = self.comboBox_healthyGroup.count
-        # for i in range(0, numItem):
-        #     self.comboBox_healthyGroup.removeItem(0)
+        numItem = self.comboBox_healthyGroup.count
+        for i in range(0, numItem):
+            self.comboBox_healthyGroup.removeItem(0)
             
         self.comboBox_healthyGroup.clear()
 
@@ -296,8 +282,9 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         self.groupSelected = set()
         self.dictShapeModels = dict()
         self.patientList = list()
-        self.dictResult = dict()
-
+        self.dictResults = dict()
+        self.dictFeatData = dict()
+        
         # Tab: New Classification Groups
         self.pathLineEdit_previewGroups.setCurrentPath(" ")
         self.checkableComboBox_ChoiceOfGroup.setDisabled(True)
@@ -329,6 +316,26 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
 
         # Tab: Select Input Data
         self.pathLineEdit_CSVInputData.setCurrentPath(" ")
+        self.pathLineEdit_CSVFileDataset.setCurrentPath(" ")
+        self.pathLineEdit_CSVFileMeansShape.setCurrentPath(" ")
+        self.pathLineEdit_networkPath.setCurrentPath(" ")
+        self.pathLineEdit_CSVFileMeansShapeClassify.setCurrentPath(" ")
+
+
+        #          Tab: Result / Analysis
+        self.collapsibleButton_Result = self.logic.get('CollapsibleButton_Result')
+        self.tableWidget_result = self.logic.get('tableWidget_result')
+        self.pushButton_exportResult = self.logic.get('pushButton_exportResult')
+        
+                 # Tab: Compute Average Groups
+        self.CollapsibleButton_computeAverageGroups = self.logic.get('CollapsibleButton_computeAverageGroups')
+        self.pathLineEdit_selectionClassificationGroups = self.logic.get('PathLineEdit_selectionClassificationGroups')
+        self.pushButton_previewGroups = self.logic.get('pushButton_previewGroups')
+        self.MRMLTreeView_classificationGroups = self.logic.get('MRMLTreeView_classificationGroups')
+        self.directoryButton_exportMeanGroups = self.logic.get('directoryButton_exportMeanGroups')
+        self.pushButton_exportMeanGroups = self.logic.get('pushButton_exportMeanGroups')
+        self.pushButton_computeMeanGroup = self.logic.get('pushButton_computeMeanGroup')
+        self.pathLineEdit_meanGroup = self.logic.get('pathLineEdit_meanGroup')
 
         # Tab: Result / Analysis
         self.tableWidget_result.clear()
@@ -341,9 +348,47 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         horizontalHeader.setResizeMode(1,qt.QHeaderView.ResizeToContents)
         self.tableWidget_result.verticalHeader().setVisible(False)
 
+
+        # Enable/disable
+        self.comboBox_healthyGroup.setDisabled(True)
+        self.pushButton_exportUpdatedClassification.setDisabled(True)
+        self.checkableComboBox_ChoiceOfGroup.setDisabled(True)
+        self.tableWidget_VTKFiles.setDisabled(True)
+        self.pushButton_previewVTKFiles.setDisabled(True)
+
+        self.pushButton_previewGroups.setDisabled(True)
+        self.pushButton_computeMeanGroup.setDisabled(True)
+        self.directoryButton_exportMeanGroups.setDisabled(True)
+        self.pushButton_exportMeanGroups.setDisabled(True)
+
+        self.pushButton_trainNetwork.setDisabled(True)
+        self.pushButton_exportNetwork.setDisabled(True)
+        self.pushButton_preprocessData.setDisabled(True)
+        self.label_stateNetwork.hide()
+        self.stateCSVMeansShape = False
+        self.stateCSVDataset = False
+
+        #     qMRMLNodeComboBox configuration
+        self.MRMLNodeComboBox_VTKInputData.setMRMLScene(slicer.mrmlScene)
+
+        #     initialisation of the stackedWidget to display the button "add group"
+        self.stackedWidget_manageGroup.setCurrentIndex(0)
+
+        #     spinbox configuration in the tab "Creation of CSV File for Classification Groups"
+        self.spinBox_group.setMinimum(0)
+        self.spinBox_group.setMaximum(0)
+        self.spinBox_group.setValue(0)
+
+        # Empty the tree view of meanshapes
+        headerTreeView = self.MRMLTreeView_classificationGroups.header()
+        headerTreeView.setVisible(False)
+        self.MRMLTreeView_classificationGroups.setMRMLScene(slicer.app.mrmlScene())
+    
+
     # Only one tab can be display at the same time:
     #   When one tab is opened all the other tabs are closed
     def onSelectedCollapsibleButtonOpen(self, selectedCollapsibleButton):
+        print "selctc collapsible"
         if selectedCollapsibleButton.isChecked():
             collapsibleButtonList = [self.collapsibleButton_creationCSVFile,
                                      self.collapsibleButton_previewClassificationGroups,
@@ -744,7 +789,7 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         # self.comboBox_healthyGroup.setMaximum(len(self.dictShapeModels) - 1)
 
     def onComputeMeanGroup(self):
-
+        print "compute mean group"
         for group, listvtk in self.dictShapeModels.items():
             print "\n\nGROUP :: " + str(group) + "\n"
             # Compute the mean of each group thanks to the CLI "computeMean"
@@ -1099,19 +1144,20 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
 
     def onTrainNetwork(self):
         print "----- onTrainNetwork -----"
-        self.label_stateNetwork.hide()
-        self.label_stateNetwork.text = 'Computation running...'
+        # self.label_stateNetwork.hide()
         self.label_stateNetwork.show()
+        self.label_stateNetwork.text = 'Computation running...'
+        
         print ""
         a = 3
         print ""
         accuracy = self.logic.trainNetworkClassification(self.archiveName)
-        self.label_stateNetwork.hide()
+        # self.label_stateNetwork.hide()
         
         print "ESTIMATED ACCURACY :: " + str(accuracy)
 
         self.label_stateNetwork.text = ("Estimated accuracy: %.1f%%" % accuracy)
-        self.label_stateNetwork.show()
+        # self.label_stateNetwork.show()
 
         self.pushButton_exportNetwork.setEnabled(True)
         return
@@ -1337,11 +1383,9 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
             else:
                 meansList = meansList + "," +  str(v)
 
-        print " :: meansList :: " +  str(meansList)
 
         for shape in self.patientList:
             # Extract features de la/les shapes a classifier
-            # print shape
             self.logic.extractFeatures(shape, meansList, outputDir)
 
         # Change paths in patientList to have shape with features
@@ -1354,35 +1398,11 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         pickleToClassifyyy = self.logic.pickleToClassify(self.patientList, os.path.join(slicer.app.temporaryPath,'Network'))
 
         shutil.make_archive(base_name = networkDir, format = 'zip', root_dir = tempPath, base_dir = 'Network')
-        print "jai make_Archiv"
 
         self.dictResults = dict()
         self.dictResults = self.logic.evalClassification(networkDir + ".zip")
         self.displayResult(self.dictResults)
         return
-
-
-        # self.logic.evalDictToClassify(self.dictToClassify, os.path.join(networkDir, self.modelName))
-
-        # print "\n "
-        # print self.dictClassified
-        # # Remove the CSV file containing the Shape OA Vector Loads
-        # self.logic.removeShapeOALoadsCSVFile(self.dictShapeModels.keys())
-
-        # # **** CROSS VALIDATION ****
-        # # If the selected file is in the groups used to create the classification groups
-        # if self.checkBox_fileInGroups.isChecked():
-        #     #      Add the file previously removed to the dictionary used to create the classification groups
-        #     self.logic.actionOnDictionary(self.dictVTKFiles,
-        #                                   vtkfileToRemove,
-        #                                   listSaveVTKFiles,
-        #                                   'add')
-
-        #     #      Recovery the Classification Groups previously saved
-        #     self.dictShapeModels = dictShapeModelsTemp
-
-        #     #      Remove the data previously created
-        #     self.logic.removeDataAfterNCG(self.dictShapeModels)
 
     # ---------------------------------------------------- #
     #               Tab: Result / Analysis                 #
@@ -1394,13 +1414,17 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
             row = self.tableWidget_result.rowCount
             self.tableWidget_result.setRowCount(row + 1)
             # Column 0: VTK file
-            labelVTKFile = qt.QLabel(VTKfilename)
+            labelVTKFile = qt.QLabel(os.path.basename(VTKfilename))
             labelVTKFile.setAlignment(0x84)
             self.tableWidget_result.setCellWidget(row, 0, labelVTKFile)
             # Column 1: Assigned Group
             labelAssignedGroup = qt.QLabel(resultGroup)
             labelAssignedGroup.setAlignment(0x84)
             self.tableWidget_result.setCellWidget(row, 1, labelAssignedGroup)
+
+        # open the results tab
+        self.collapsibleButton_Result.setChecked(True)
+        self.onSelectedCollapsibleButtonOpen(self.collapsibleButton_Result)
 
     # Function to export the result in a CSV File
     def onExportResult(self):
@@ -1445,41 +1469,30 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
 
         # Check pip installation
         print "\n\n I. Pip installation"
-        print " ~~~~~~~~~~~~~~~~~~~\n"
         try:
             import pip
-            print "\npip path: " + str(pip.__path__)
             print "===> Pip already installed"
         except Exception as e: 
             # ----- Install pip as it's not already done -----
-            print "\nTry to install pip"
             command = ["bash", "-c", pathSlicerPython + " " + os.path.join(currentPath,'Resources/get-pip.py')]
-            print command
             p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             out, err = p.communicate()
-            print "out : " + str(out) + "\nerr : " + str(err)
+            # print "out : " + str(out) + "\nerr : " + str(err)
             import pip
-
-            print "\npip path: " + str(pip.__path__)
             print "===> Pip now installed to PythonSlicer"
 
         # Check virtualenv installation
         print "\n\n II. Virtualenv installation"
-        print " ~~~~~~~~~~~~~~~~~~~~~~~~~~~\n"
         try:
             import virtualenv
-            print "virtualenv version: " + str(virtualenv.__version__)
             print "===> Virtualenv already installed"
         except Exception as e: 
-            print "\nTry to install virtualenv"
-            print pip.main(['install', 'virtualenv'])
+            venv_install = pip.main(['install', 'virtualenv'])
             import virtualenv
-            print "virtualenv version: " + str(virtualenv.__version__)
             print "===> Virtualenv now installed with pip.main"
 
 
         print "\n\n III. Create environment tensorflowSlicer"
-        print " ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ \n"
         tempPath = slicer.app.temporaryPath
         env_dir = os.path.join(tempPath, "env-tensorflow") 
         if not os.path.isdir(env_dir):
@@ -1489,15 +1502,13 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
             print "===> env-tensorflow already exists"
         else:
             command = ["bash", "-c", pathSlicerPython + " " + os.path.join(dirSitePckgs, 'virtualenv.py') + " --python=" + pathSlicerPython + " " + env_dir]
-            # print command
             p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             out, err =  p.communicate()
-            print "out : " + str(out) + "\nerr : " + str(err)
+            # print "out : " + str(out) + "\nerr : " + str(err)
             print "\n===> Environmnent tensorflowSlicer created"
 
 
         print "\n\n\n IV. Install tensorflow into tensorflowSlicer"
-        print " ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n"
         # 
         #   To install tensorflow in virtualenv, requires:
         #       - activate environment
@@ -1527,19 +1538,15 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
         env_sysprefix = "sys.prefix=\"" + env_dir + "\"; "
         cmd_virtenv = cmd_virtenv + env_sysprefix
 
-
         #construct install command
-        env_install = "import pip; print pip.main([\"install\", \"--prefix=" + env_dir + "\", \"tensorflow\"]); print pip.main([\"install\", \"--prefix=" + env_dir + "\", \"pandas\"])\'"
+        env_install = "import pip; pip.main([\"install\", \"--prefix=" + env_dir + "\", \"tensorflow\"]); pip.main([\"install\", \"--prefix=" + env_dir + "\", \"pandas\"])\'"
         cmd_virtenv = cmd_virtenv + env_install
 
-        # google path =:/Users/prisgdd/Desktop/VirtualEnv/tensorflowSlicer/lib/python2.7/site-packages/google
         bashCommand = self.cmd_setenv + cmd_virtenv
-
         command = ["bash", "-c", str(bashCommand)]
-        # print "\n" + command + "\n"
         p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out, err =  p.communicate()
-        print "\nout : " + str(out) + "\nerr : " + str(err)
+        # print "\nout : " + str(out) + "\nerr : " + str(err)
 
         # Tensorflow is now installed but might not work due to a missing file
         # We create it to avoid the error 'no module named google.protobuf'
@@ -1554,15 +1561,14 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
             print "-> google/__init__.py created!"
         
 
+        # print "\n\n\n V. Check tensorflow is well installed"
+        # test_tf = os.path.join(currentPath,'Testing/test-tensorflowinstall.py')
+        # bashCommand = self.cmd_setenv + " " + test_tf
 
-        print "\n\n\n V. Check tensorflow is well installed"
-        test_tf = os.path.join(currentPath,'Testing/test-tensorflowinstall.py')
-        bashCommand = self.cmd_setenv + " " + test_tf
-
-        command = ["bash", "-c", bashCommand]
-        p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        out, err =  p.communicate()
-        print "\nout : " + str(out) + "\nerr : " + str(err)
+        # command = ["bash", "-c", bashCommand]
+        # p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        # out, err =  p.communicate()
+        # # print "\nout : " + str(out) + "\nerr : " + str(err)
 
 
 
@@ -2221,7 +2227,7 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
         arguments.append(shape)
 
         # Output Mesh
-        arguments.append(str(os.path.join(outputDir,basename)) + ".vtk")         # >>>> Virer le _ft!!
+        arguments.append(str(os.path.join(outputDir,basename)) + ".vtk") 
 
         # List of average shapes
         arguments.append("--distMeshOn")
@@ -2250,7 +2256,7 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
             newValue = list()
             for shape in value:
                 filename,_ = os.path.splitext(os.path.basename(shape))
-                ftPath = slicer.app.temporaryPath + '/dataFeatures/' + filename + '_ft.vtk'
+                ftPath = slicer.app.temporaryPath + '/dataFeatures/' + filename + '.vtk'
 
                 newValue.append(ftPath)
             print "\nkey : " + str(key)
@@ -2260,7 +2266,7 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
     def storageDataToClassify(self, dictFeatData, listPatient, outputDir):
         for i in range(0, len(listPatient)):
             filename,_ = os.path.splitext(os.path.basename(listPatient[i]))
-            ftPath = outputDir + "/" + filename + '_ft.vtk'
+            ftPath = outputDir + "/" + filename + '.vtk'
             listPatient[i] = ftPath
         return listPatient
 
