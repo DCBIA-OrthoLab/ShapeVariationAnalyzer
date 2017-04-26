@@ -321,7 +321,6 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         self.pathLineEdit_networkPath.setCurrentPath(" ")
         self.pathLineEdit_CSVFileMeansShapeClassify.setCurrentPath(" ")
 
-
         #          Tab: Result / Analysis
         self.collapsibleButton_Result = self.logic.get('CollapsibleButton_Result')
         self.tableWidget_result = self.logic.get('tableWidget_result')
@@ -380,7 +379,6 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         self.spinBox_group.setValue(0)
 
         # Empty the tree view of meanshapes
-        headerTreeView = self.MRMLTreeView_classificationGroups.header()
         headerTreeView.setVisible(False)
         self.MRMLTreeView_classificationGroups.setMRMLScene(slicer.app.mrmlScene())
     
@@ -714,12 +712,7 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         basename = os.path.basename(filepath)
 
         # Save the CSV File and the shape model of each group
-        # self.logic.saveNewClassificationGroups('Groups.csv', directory, self.dictShapeModels)
         self.logic.creationCSVFile(directory, basename, self.dictVTKFiles, "Groups")
-
-
-        # Remove the shape model (GX.h5) of each group
-        # self.logic.removeDataAfterNCG(self.dictVTKFiles)
 
         # Re-Initialization of the dictionary containing the path of the shape model of each group
         # self.dictVTKFiles = dict()
@@ -855,37 +848,25 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
     def onPreviewGroupMeans(self):
         print "------ Preview of the Group's Mean in Slicer ------"
 
-        # for group, h5path in self.dictShapeModels.items():
-        #     # Compute the mean of each group thanks to Statismo
-        #     self.logic.computeMean(group, h5path)
+        list = slicer.mrmlScene.GetNodesByClass("vtkMRMLModelNode")
+        end = list.GetNumberOfItems()
+        for i in range(0,end):
+            model = list.GetItemAsObject(i)
+            print model.GetName()
+            print 
+            if model.GetName()[:len("meanGroup")] == "meanGroup":
+                print model.GetName()[:len("meanGroup")]
+                hardenModel = slicer.mrmlScene.GetNodesByName(model.GetName()).GetItemAsObject(0)
+                print "model remove : " + str(model.GetName())
+                slicer.mrmlScene.RemoveNode(hardenModel)
 
-        #     # Storage of the means for each group
-        #     self.logic.storageMean(self.dictGroups, group)
-
-        # If the user doesn't specify the healthy group
-        #     error message for the user
-        # Else
-        #     load the Classification Groups in Slicer
-        # if self.spinBox_healthyGroup.value == 0:
-        #     # Error message:
-        #     slicer.util.errorDisplay('Miss the number of the healthy group ')
-        # else:
-
-        # list = slicer.mrmlScene.GetNodesByClass("vtkMRMLModelNode")
-        # end = list.GetNumberOfItems()
-        # for i in range(0,end):
-        #     model = list.GetItemAsObject(i)
-        #     print model.GetName()
-        #     print 
-        #     if model.GetName()[:len("meanGroup")] == "meanGroup":
-        #         hardenModel = slicer.mrmlScene.GetNodesByName(model.GetName()).GetItemAsObject(0)
-        #         slicer.mrmlScene.RemoveNode(hardenModel)
-
-
+        self.MRMLTreeView_classificationGroups.setMRMLScene(slicer.app.mrmlScene())
         self.MRMLTreeView_classificationGroups.setEnabled(True)
+
         for key in self.dictGroups.keys():
             filename = self.dictGroups.get(key, None)
             loader = slicer.util.loadModel
+            print " filename load : " + str(filename)
             loader(filename)
 
     # Change the color and the opacity for each vtk file
@@ -894,6 +875,7 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         for i in range(3,end):
             model = list.GetItemAsObject(i)
             disp = model.GetDisplayNode()
+            print "model adns color : " + str(model.GetName())
             for group in self.dictGroups.keys():
                 filename = self.dictGroups.get(group, None)
                 if os.path.splitext(os.path.basename(filename))[0] == model.GetName():
@@ -1039,7 +1021,6 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         if not condition4: 
             self.pathLineEdit_CSVFileDataset.setCurrentPath(" ")
             return
-        # self.logic.neuralNetwork.NUM_POINTS = condition4
 
         self.stateCSVDataset = True
         self.enableNetwork()
@@ -1111,23 +1092,19 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
             else:
                 meansList = meansList + "," +  str(v)
 
-        print "\n\n Je vais entrer dans la boucle qui extractFeatures + storageFeaturesData \n"
         print self.dictShapeModels
         for group, listvtk in self.dictShapeModels.items():
             for shape in listvtk:
-                # print shape
 # >>>>>>> UNCOMMENT HERE !!! FEATURES EXTRACTION
                 self.logic.extractFeatures(shape, meansList, outputDir)
 
                 # # Storage of the means for each group
                 self.logic.storageFeaturesData(self.dictFeatData, self.dictShapeModels)
 
-        print "\n\n J'ai fini la boucle, et maintenant je vais pickler tout ca \n"
         # 
         # Pickle the data for the network
         self.pickle_file = self.logic.pickleData(self.dictFeatData)
         
-
         #
         # Zipping JSON + PICKLE files in one ZIP file
         # 
@@ -1136,7 +1113,6 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
 
         # Zipper tout ca 
         self.archiveName = shutil.make_archive(base_name = networkDir, format = 'zip', root_dir = tempPath, base_dir = 'Network')
-        print "jai make_Archiv : " + str(self.archiveName)
 
         self.pushButton_trainNetwork.setEnabled(True)
 
@@ -1144,21 +1120,14 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
 
     def onTrainNetwork(self):
         print "----- onTrainNetwork -----"
-        # self.label_stateNetwork.hide()
-        self.label_stateNetwork.show()
         self.label_stateNetwork.text = 'Computation running...'
-        
-        print ""
-        a = 3
-        print ""
+        self.label_stateNetwork.show()
+
         accuracy = self.logic.trainNetworkClassification(self.archiveName)
-        # self.label_stateNetwork.hide()
         
         print "ESTIMATED ACCURACY :: " + str(accuracy)
 
         self.label_stateNetwork.text = ("Estimated accuracy: %.1f%%" % accuracy)
-        # self.label_stateNetwork.show()
-
         self.pushButton_exportNetwork.setEnabled(True)
         return
 
@@ -1214,20 +1183,10 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
 
     def onNetworkPath(self):
         print "----- onNetworkPath -----"
-
-        # Check qu'il y a un bien:
-        #   - modelName.meta
-        #   - modelName.index
-        #   - modelName.data-00000-of-00001 
-        
-        # self.modelName = ""
-
         condition1 = self.logic.checkExtension(self.pathLineEdit_networkPath.currentPath, '.zip')
         if not condition1:
             self.pathLineEdit_networkPath.setCurrentPath(" ")
             return
-
-        # UNZIP FILE DANS LE TEMPPATH
 
         validModel = self.logic.validModelNetwork(self.pathLineEdit_networkPath.currentPath)
 
@@ -1252,9 +1211,6 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         # Re-Initialization of the patient list
         self.patientList = list()
 
-        # Handle checkbox "File already in the groups"
-        # self.enableOption()
-
         # Delete the path in CSV file
         currentNode = self.MRMLNodeComboBox_VTKInputData.currentNode()
         if currentNode == None:
@@ -1271,38 +1227,9 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
             self.patientList.append(vtkfilepath)
         print self.patientList
 
-    # Function to handle the checkbox "File already in the groups"
-    # def enableOption(self):
-    #     # Enable or disable the checkbox "File already in the groups" according to the data previously selected
-    #     currentNode = self.MRMLNodeComboBox_VTKInputData.currentNode()
-    #     if currentNode == None:
-    #         if self.checkBox_fileInGroups.isChecked():
-    #             self.checkBox_fileInGroups.setChecked(False)
-    #         self.checkBox_fileInGroups.setDisabled(True)
-    #     elif os.path.exists(self.pathLineEdit_NewGroups.currentPath):     # changed to pathLineEdit_previewGroups
-    #         self.checkBox_fileInGroups.setEnabled(True)
-
-    #     # Check if the selected file is in the groups used to create the classification groups
-    #     self.onCheckFileInGroups()
-
-    # Function to check if the selected file is in the groups used to create the classification groups
-    #    - If it's not the case:
-    #           - display of a error message
-    #           - deselected checkbox
-    # def onCheckFileInGroups(self):
-    #     if self.checkBox_fileInGroups.isChecked():
-    #         node = self.MRMLNodeComboBox_VTKInputData.currentNode()
-    #         if not node == None:
-    #             vtkfileToFind = node.GetName() + '.vtk'
-    #             find = self.logic.actionOnDictionary(self.dictVTKFiles, vtkfileToFind, None, 'find')
-    #             if find == False:
-    #                 slicer.util.errorDisplay('The selected file is not a file used to create the Classification Groups!')
-    #                 self.checkBox_fileInGroups.setChecked(False)
-
     # Function to select the CSV Input Data
     def onCSVInputData(self):
         self.patientList = list()
-
         # Delete the path in VTK file
         if not os.path.exists(self.pathLineEdit_CSVInputData.currentPath):
             return
@@ -1314,57 +1241,19 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
             patientTable = self.logic.readCSVFile(self.pathLineEdit_CSVInputData.currentPath)
             for i in range(0, patientTable.GetNumberOfRows()):
                 self.patientList.append(patientTable.GetValue(i,0).ToString())
-        # print self.patientList
-
-
-        # Handle checkbox "File already in the groups"
-        # self.enableOption()
-
-    # Function to define the OA index type of the patient
-    #    *** CROSS VALIDATION:
-    #    - If the user specified that the vtk file was in the groups used to create the Classification Groups:
-    #           - Save the current classification groups
-    #           - Re-compute the new classification groups without this file
-    #           - Define the OA index type of a patient
-    #           - Recovery the classification groups
-    #    *** Define the OA index of a patient:
-    #    - Else:
-    #           - Compute the ShapeOALoads for each group
-    #           - Compute the OA index type of a patient
+        
+        
     def onClassifyIndex(self):
         print "------ Compute the OA index Type of a patient ------"
 
         # Check if the user gave all the data used to compute the OA index type of the patient:
         # - VTK input data or CSV input data
         # - Model network!
-        # if not os.path.exists(self.pathLineEdit_selectionClassificationGroups.currentPath):
-        #     slicer.util.errorDisplay('Miss the CSV file containing the Classification Groups')
-        #     return
         if self.MRMLNodeComboBox_VTKInputData.currentNode() == None and not self.pathLineEdit_CSVInputData.currentPath:
             slicer.util.errorDisplay('Miss the Input Data')
             return
 
-        # **** CROSS VALIDATION ****
-        # If the selected file is in the groups used to create the classification groups
-        # if self.checkBox_fileInGroups.isChecked():
-        #     #      Remove the file in the dictionary used to compute the classification groups
-        #     listSaveVTKFiles = list()
-        #     vtkfileToRemove = self.MRMLNodeComboBox_VTKInputData.currentNode().GetName() + '.vtk'
-        #     listSaveVTKFiles = self.logic.actionOnDictionary(self.dictVTKFiles,
-        #                                                      vtkfileToRemove,
-        #                                                      listSaveVTKFiles,
-        #                                                      'remove')
-
-        #     #      Copy the Classification Groups
-        #     dictShapeModelsTemp = dict()
-        #     dictShapeModelsTemp = self.dictShapeModels
-        #     self.dictShapeModels = dict()
-
-        #     #      Re-compute the new classification groups
-        #     self.onComputeNewClassificationGroups()
-
-        # *** Define the OA index type of a patient ***
-
+        # *** Define the group type of a patient ***
         self.dictFeatData = dict()
         tempPath = slicer.app.temporaryPath
         networkDir = os.path.join(tempPath, 'Network')
@@ -1396,7 +1285,6 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         self.dictToClassify = dict()
 
         pickleToClassifyyy = self.logic.pickleToClassify(self.patientList, os.path.join(slicer.app.temporaryPath,'Network'))
-
         shutil.make_archive(base_name = networkDir, format = 'zip', root_dir = tempPath, base_dir = 'Network')
 
         self.dictResults = dict()
@@ -1462,10 +1350,7 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
         pathSlicerExec = str(os.path.dirname(sys.executable))
         currentPath = os.path.dirname(os.path.abspath(__file__))
         dirSitePckgs = os.path.join(pathSlicerExec, "../lib/Python/lib/python2.7/site-packages")
-        # dirBin = os.path.join(pathSlicerExec, "../bin/lib/Python/bin")
-        
         pathSlicerPython = os.path.join(pathSlicerExec, "../bin/SlicerPython")
-        # pathPythonReal = os.path.join(pathSlicerExec, "../bin/python-real")
 
         # Check pip installation
         print "\n\n I. Pip installation"
@@ -1909,45 +1794,6 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
         writer.Update()
         writer.Write()
 
-    # Function to save in the temporary directory of Slicer a shape model file called GX.h5
-    # built with the vtk files contained in the group X
-    def buildShapeModel(self, groupnumber, vtkList):
-        print "--- Build the shape model of the group " + str(groupnumber) + " ---"
-
-        # Call of saveModel used to build a shape model from a given list of meshes
-        # Arguments:
-        #  --groupnumber is the number of the group used to create the shape model
-        #  --vtkfilelist is a list of vtk paths of one group that will be used to create the shape model
-        #  --resultdir is the path where the newly build model should be saved
-
-        #     Creation of the command line
-        scriptedModulesPath = eval('slicer.modules.%s.path' % self.interface.moduleName.lower())
-        scriptedModulesPath = os.path.dirname(scriptedModulesPath)
-        libPath = os.path.join(scriptedModulesPath)
-        sys.path.insert(0, libPath)
-        saveModel = os.path.join(scriptedModulesPath, '../hidden-cli-modules/saveModel')
-        #saveModel = "/Users/lpascal/Desktop/test/ClassificationExtension-build/bin/saveModel"
-        arguments = list()
-        arguments.append("--groupnumber")
-        arguments.append(groupnumber)
-        arguments.append("--vtkfilelist")
-        vtkfilelist = ""
-        for vtkFiles in vtkList:
-            vtkfilelist = vtkfilelist + vtkFiles + ','
-        arguments.append(vtkfilelist)
-        arguments.append("--resultdir")
-        resultdir = slicer.app.temporaryPath
-        arguments.append(resultdir)
-
-        #     Call the CLI
-        process = qt.QProcess()
-        print "Calling " + os.path.basename(saveModel)
-        process.start(saveModel, arguments)
-        process.waitForStarted()
-        # print "state: " + str(process.state())
-        process.waitForFinished()
-        # print "error: " + str(process.error())
-
     def printStatus(self, caller, event):
         print("Got a %s from a %s" % (event, caller.GetClassName()))
         if caller.IsA('vtkMRMLCommandLineModuleNode'):
@@ -2039,12 +1885,6 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
         dictGroups[key] = meanPath
         # print dictGroups
 
-    # Function to storage the shape model of each group in a dictionary
-    def storeShapeModel(self, dictShapeModels, key):
-        filename = "G" + str(key)
-        modelPath = slicer.app.temporaryPath + '/' + filename + '.h5'
-        dictShapeModels[key] = modelPath
-
     # Function to create a CSV file:
     #    - Two columns are always created:
     #          - First column: path of the vtk files
@@ -2098,10 +1938,8 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
     def removeDataAfterNCG(self, dict):
         for key in dict.keys():
             # Remove of the shape model of each group
-            # h5Path = slicer.app.temporaryPath + "/G" + str(key) + ".h5"
             path = dict[key]
             if os.path.exists(path):
-                # print f
                 os.remove(path)
 
     # Function to make some action on a dictionary
@@ -2179,10 +2017,8 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
                             slicer.util.errorDisplay('All the shapes must have the same number of points!')
                             return False
                             # raise Exception('Unexpected number of points in the shape: %s' % str(geometry.GetNumberOfPoints()))
-                
                 except IOError as e:
                     print('Could not read:', shape, ':', e, '- it\'s ok, skipping.')
-
 
         return num_points
 
@@ -2377,11 +2213,6 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
         #
         #   Fonctions pour le gros du Neural Network
         #   
-    #     #
-    # def placeholder_inputs(self, batch_size):
-    #     tf_train_dataset = tf.placeholder(tf.float32, shape=(batch_size, self.neuralNetwork.NUM_POINTS * self.neuralNetwork.NUM_FEATURES))
-    #     tf_train_labels = tf.placeholder(tf.int32, shape=(batch_size, self.neuralNetwork.NUM_CLASSES))
-    #     return tf_train_dataset, tf_train_labels
         
     ## Reformat into a shape that's more adapted to the models we're going to train:
     #   - data as a flat matrix
@@ -2516,7 +2347,6 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
         return 1
 
     def get_input_shape(self,inputFile):
-
         # Get features in a matrix (NUM_FEATURES x NUM_POINTS)
         data = self.input_Data.load_features(inputFile)
         data = data.reshape((-1, self.neuralNetwork.NUM_POINTS * self.neuralNetwork.NUM_FEATURES)).astype(np.float32)
@@ -2543,7 +2373,7 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
         command = ["bash", "-c", bashCommand]
         p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out, err =  p.communicate()
-        print "\nout : " + str(out) + "\nerr : " + str(err)
+        # print "\nout : " + str(out) + "\nerr : " + str(err)
 
         with zipfile.ZipFile(archiveName) as zf:
             zf.extractall(os.path.dirname(archiveName))
@@ -2552,7 +2382,7 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
         with open(jsonFile) as f:
             resultsDict = json.load(f)
 
-        print resultsDict
+        # print resultsDict
         return resultsDict
 
 
