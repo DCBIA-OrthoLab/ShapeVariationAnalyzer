@@ -25,11 +25,10 @@ class Classification(ScriptedLoadableModule):
         parent.title = "Classification"
         parent.categories = ["Quantification"]
         parent.dependencies = []
-        parent.contributors = ["Priscille de Dumast (University of Michigan)"]
+        parent.contributors = ["Laura Pascal (University of Michigan), Priscille de Dumast (University of Michigan)"]
         parent.helpText = """
-            Classification is used to define the OA type of
-            a patient according a Classification Groups that
-            you can create.
+            This tool allows to train a morphological classifier, 
+            based on a neural network. 
             """
         parent.acknowledgementText = """
             This work was supported by the National
@@ -378,10 +377,9 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         self.spinBox_group.setMaximum(0)
         self.spinBox_group.setValue(0)
 
-        # Empty the tree view of meanshapes
-        headerTreeView.setVisible(False)
         self.MRMLTreeView_classificationGroups.setMRMLScene(slicer.app.mrmlScene())
-    
+
+
 
     # Only one tab can be display at the same time:
     #   When one tab is opened all the other tabs are closed
@@ -1494,8 +1492,10 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
 
     # Check if the path given has the right extension
     def checkExtension(self, filename, extension):
-        if os.path.splitext(os.path.basename(filename))[1] == extension:
+        if os.path.splitext(os.path.basename(filename))[1] == extension : 
             return True
+        elif os.path.basename(filename) == "" or os.path.basename(filename) == " " :
+            return False
         slicer.util.errorDisplay('Wrong extension file, a ' + extension + ' file is needed!')
         return False
 
