@@ -215,7 +215,6 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         self.pathLineEdit_previewGroups.connect('currentPathChanged(const QString)', self.onSelectPreviewGroups)
         self.checkableComboBox_ChoiceOfGroup.connect('checkedIndexesChanged()', self.onCheckableComboBoxValueChanged)
         self.pushButton_previewVTKFiles.connect('clicked()', self.onPreviewVTKFiles)
-        # self.pushButton_compute.connect('clicked()', self.onComputeNewClassificationGroups)
         self.pushButton_exportUpdatedClassification.connect('clicked()', self.onExportUpdatedClassificationGroups)
        
         #          Tab: Select Input Data
@@ -1571,16 +1570,7 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
             if not os.path.splitext(os.path.basename(self.table.GetValue(i,0).ToString()))[1] == '.vtk':
                 slicer.util.errorDisplay('Wrong extension file at lign ' + str(i+2) + '. A vtk file is needed!')
                 return False
-            # if self.table.GetValue(i,1).ToInt() in dict:
-            #     slicer.util.errorDisplay('There are more than one shape model (hdf5 file) by groups')
-            #     return False
             dict[self.table.GetValue(i,1).ToInt()] = self.table.GetValue(i,0).ToString()
-
-        # Check
-        # print "Number of Groups in CSV Files: " + str(len(dict))
-        # for key, value in dict.items():
-        #     print "Groupe: " + str(key)
-        #     print "H5 Files: " + str(value)
 
         return True
 
@@ -1681,7 +1671,7 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
                 widget = qt.QWidget()
                 layout = qt.QHBoxLayout(widget)
                 comboBox = qt.QComboBox()
-                comboBox.addItems(dictVTKFiles.keys())          # Baisser de 1
+                comboBox.addItems(dictVTKFiles.keys())        
                 comboBox.setCurrentIndex(key)
                 layout.addWidget(comboBox)
                 layout.setAlignment(0x84)
@@ -1804,11 +1794,11 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
         
         print "--- Compute the mean of all the group ---"
 
-        # Call of computeMean used to compute a mean from a shape model
+        # Call of computeMean : computation of an average shape for a group of shaoes 
         # Arguments:
-        #  --groupnumber is the number of the group used to create the shape model
-        #  --resultdir is the path where the newly build model should be saved
-        #  --shapemodel: Shape model of one group (H5 file path)
+        #  --inputList is the list of vtkfile we want to compute the average
+        #  --outputSurface is the resulting mean shape
+    
 
         #     Creation of the command line
         # scriptedModulesPath = eval('slicer.modules.%s.path' % self.interface.moduleName.lower())
@@ -1817,9 +1807,7 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
         # sys.path.insert(0, libPath)
         # computeMean = os.path.join(scriptedModulesPath, '../hidden-cli-modules/computemean')
         computeMean = "/Users/prisgdd/Documents/Projects/CNN/SurfaceFeaturesExtractor-build/src/ComputeMeanShapes/src/bin/computemean"
-        # computeMean = "/Users/prisgdd/Documents/Projects/CNN/computeMean-build/src/bin/computemean"
 
-        ###########
         arguments = list()
         arguments.append("--inputList")
         vtkfilelist = ""
@@ -1830,7 +1818,7 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
         resultdir = slicer.app.temporaryPath
         arguments.append("--outputSurface")
         arguments.append(str(resultdir) + "/meanGroup" + str(numGroup) + ".vtk")
-        print arguments
+        # print arguments
         #     Call the executable
         process = qt.QProcess()
         process.setProcessChannelMode(qt.QProcess.MergedChannels)
@@ -1843,32 +1831,7 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
         # print "error: " + str(process.error())
         
         processOutput = str(process.readAll())
-        print processOutput
-
-        ###########
-        
-        # parameters = {}
-        # parameters["inputList"] = vtkfilelist
-        # parameters["outputSurface"] = str(resultdir) + "/meanGroup" + str(numGroup) + ".vtk"
-
-        # print "\n parameters :: "
-        # print parameters
-        # print ""
-
-        # # # Launch the CLI ShapePopulationViewer
-        # #     parameters = {}
-        # #     parameters["CSVFile"] = filePathCSV
-        # #     launcherSPV = slicer.modules.launcher
-        # #     slicer.cli.run(launcherSPV, None, parameters, wait_for_completion=True)
-
-        # computeMean = slicer.modules.computemean
-        # cliNode = slicer.cli.run(computeMean, None, parameters, wait_for_completion=True)
-
-        # cliNode.AddObserver('ModifiedEvent', self.printStatus)
-
-
-
-        
+        # print processOutput
 
     # Function to remove in the temporary directory all the data used to create the mean for each group
     def removeDataVTKFiles(self, value):
@@ -2028,11 +1991,7 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
 
         # print "--- Extract features of shape : " + shape + " ---"
 
-        # Call of computeMean used to compute a mean from a shape model
-        # Arguments:
-        #  --groupnumber is the number of the group used to create the shape model
-        #  --resultdir is the path where the newly build model should be saved
-        #  --shapemodel: Shape model of one group (H5 file path)
+        # Call of surfacefeaturesextractor 
 
         #     Creation of the command line
         # scriptedModulesPath = eval('slicer.modules.%s.path' % self.interface.moduleName.lower())
@@ -2045,17 +2004,6 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
         
 
         filename = str(os.path.basename(shape))
-        basename, _ = os.path.splitext(filename)
-
-        # parameters = {}
-        # parameters["InputVolume"] = volumeNode.GetID()
-        # outModel = slicer.vtkMRMLModelNode()
-        # slicer.mrmlScene.AddNode( outModel )
-        # parameters["OutputGeometry"] = outModel.GetID()
-        # grayMaker = slicer.modules.grayscalemodelmaker
-        # return (slicer.cli.run(grayMaker, None, parameters))
-
-
 
         arguments = list()
 
@@ -2063,7 +2011,7 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
         arguments.append(shape)
 
         # Output Mesh
-        arguments.append(str(os.path.join(outputDir,basename)) + ".vtk") 
+        arguments.append(str(os.path.join(outputDir,filename))) 
 
         # List of average shapes
         arguments.append("--distMeshOn")
@@ -2078,12 +2026,12 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
         # print "Calling " + os.path.basename(computeMean)
         process.start(surfacefeaturesextractor, arguments)
         process.waitForStarted()
-        print "state: " + str(process.state())
+        # print "state: " + str(process.state())
         process.waitForFinished()
         # print "error: " + str(process.error())
         
         processOutput = str(process.readAll())
-        print processOutput
+        # print processOutput
 
         return
 
@@ -2113,8 +2061,6 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
             shutil.rmtree(networkDir)
         os.mkdir(networkDir) 
 
-
-        # for group, vtklist in dictFeatData.items():
         nbGroups = len(dictFeatData.keys())
         self.input_Data = inputData.inputData()
         self.input_Data.NUM_CLASSES = nbGroups
@@ -2207,30 +2153,6 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
 
         return set_filename
 
-
-
-
-        #
-        #   Fonctions pour le gros du Neural Network
-        #   
-        
-    ## Reformat into a shape that's more adapted to the models we're going to train:
-    #   - data as a flat matrix
-    #   - labels as float 1-hot encodings
-    def reformat(self, dataset, labels):
-        dataset = dataset.reshape((-1, self.neuralNetwork.NUM_POINTS * self.neuralNetwork.NUM_FEATURES)).astype(np.float32)
-        labels = (np.arange(self.neuralNetwork.NUM_CLASSES) == labels[:, None]).astype(np.float32)
-        return dataset, labels
-
-    ## Reformat into a shape that's more adapted to the models we're going to train:
-    #   - data as a flat matrix
-    #   - labels as float 1-hot encodings
-    def reformat_data(self, dataset):
-        dataset = dataset.reshape((-1, self.neuralNetwork.NUM_POINTS * self.neuralNetwork.NUM_FEATURES)).astype(np.float32)
-        return dataset
-
-
-
     def trainNetworkClassification(self, archiveName):
         # Set le path pour le network
         tempPath = slicer.app.temporaryPath
@@ -2258,7 +2180,9 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
 
         shutil.make_archive(base_name = networkDir, format = 'zip', root_dir = tempPath, base_dir = 'Network')
 
+        # 
         # Train le network dans le virtualenv
+        # 
         currentPath = os.path.dirname(os.path.abspath(__file__))
         train_file = os.path.join(currentPath,'Resources/trainCondylesClassification.py')
         bashCommand = self.cmd_setenv + " " + train_file + " -inputZip " + archiveName
@@ -2288,14 +2212,13 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
             for file in files:
                 ziph.write(os.path.join(root, file))
 
-    def exportModelNetwork(self, filepath):      # Modelname INUTIL
+    def exportModelNetwork(self, filepath):
         
         tempPath = slicer.app.temporaryPath
         networkDir = os.path.join(tempPath, 'Network')
 
         # Zipper tout ca 
         shutil.make_archive(base_name = filepath, format = 'zip', root_dir = tempPath, base_dir = 'Network')
-        print "jai make_Archiv"
 
         return
 
@@ -2318,7 +2241,6 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
 
         with open(jsonFile) as f:    
             jsonDict = json.load(f)
-
 
         # In case our JSON file doesnt contain a valid Classifier
         if not jsonDict.has_key('CondylesClassifier'):
@@ -2345,16 +2267,6 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
             return 0
 
         return 1
-
-    def get_input_shape(self,inputFile):
-        # Get features in a matrix (NUM_FEATURES x NUM_POINTS)
-        data = self.input_Data.load_features(inputFile)
-        data = data.reshape((-1, self.neuralNetwork.NUM_POINTS * self.neuralNetwork.NUM_FEATURES)).astype(np.float32)
-        data = self.reformat_data(data)
-        return data
-
-    def get_result(self,prediction):
-        return np.argmax(prediction[0,:])
 
     # Function to compute the OA index of a patient
     def evalClassification(self, archiveName):
@@ -2384,14 +2296,6 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
 
         # print resultsDict
         return resultsDict
-
-
-    # Function to remove the shape model of each group
-    def removeShapeOALoadsCSVFile(self, keylist):
-        for key in keylist:
-            shapeOALoadsPath = slicer.app.temporaryPath + "/ShapeOAVectorLoadsG" + str(key) + ".csv"
-            if os.path.exists(shapeOALoadsPath):
-                os.remove(shapeOALoadsPath)
 
     def creationCSVFileForResult(self, table, directory, CSVbasename):
         CSVFilePath = directory + "/" + CSVbasename
