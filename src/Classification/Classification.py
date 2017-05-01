@@ -111,7 +111,6 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         self.label_stateNetwork = self.logic.get('label_stateNetwork')
 
         self.pathLineEdit_networkPath = self.logic.get('ctkPathLineEdit_networkPath')
-        self.pathLineEdit_CSVFileMeansShapeClassify = self.logic.get('pathLineEdit_CSVFileMeansShapeClassify')
 
 
         #          Tab: Result / Analysis
@@ -251,7 +250,6 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         self.stateCSVMeansShape = False
         self.stateCSVDataset = False
         self.pathLineEdit_networkPath.connect('currentPathChanged(const QString)', self.onNetworkPath)
-        self.pathLineEdit_CSVFileMeansShapeClassify.connect('currentPathChanged(const QString)', self.onCSVFileMeansShapeClassify)
 
     # function called each time that the user "enter" in Diagnostic Index interface
     def enter(self):
@@ -317,7 +315,6 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         self.pathLineEdit_CSVFileDataset.setCurrentPath(" ")
         self.pathLineEdit_CSVFileMeansShape.setCurrentPath(" ")
         self.pathLineEdit_networkPath.setCurrentPath(" ")
-        self.pathLineEdit_CSVFileMeansShapeClassify.setCurrentPath(" ")
 
         #          Tab: Result / Analysis
         self.collapsibleButton_Result = self.logic.get('CollapsibleButton_Result')
@@ -961,7 +958,6 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
             self.pathLineEdit_meanGroup.setCurrentPath(" ")
         self.pathLineEdit_meanGroup.setCurrentPath(CSVfilePath)
         self.pathLineEdit_CSVFileMeansShape.setCurrentPath(CSVfilePath)
-        self.pathLineEdit_CSVFileMeansShapeClassify.setCurrentPath(CSVfilePath)
 
         return 
 
@@ -1108,6 +1104,17 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         tempPath = slicer.app.temporaryPath
         networkDir = os.path.join(tempPath, 'Network')
 
+        meanGroupsDir = os.path.join(networkDir, 'meanGroups')
+        os.mkdir(meanGroupsDir) 
+        dictMeanGroups = dict()
+        for group, file in self.dictGroups.items():
+            # Copy the meanShapes into the NetworkDir
+            shutil.copyfile(file, os.path.join(meanGroupsDir, os.path.basename(file)))
+            dictMeanGroups[group] = os.path.basename(file)
+
+        with open(os.path.join(meanGroupsDir,'meanGroups.json'), 'w') as f:
+            json.dump(dictMeanGroups, f, ensure_ascii=False, indent = 4)
+
         # Zipper tout ca 
         self.archiveName = shutil.make_archive(base_name = networkDir, format = 'zip', root_dir = tempPath, base_dir = 'Network')
 
@@ -1143,41 +1150,6 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         self.label_stateNetwork.hide()
         return
 
-
-    def onCSVFileMeansShapeClassify(self):
-        # Re-initialization of the dictionary containing the Training dataset
-        self.dictGroups = dict()
-
-        # Check if the path exists:
-        if not os.path.exists(self.pathLineEdit_CSVFileMeansShapeClassify.currentPath):
-            return
-
-        # Check if it's a CSV file
-        condition1 = self.logic.checkExtension(self.pathLineEdit_CSVFileMeansShapeClassify.currentPath, ".csv")
-        if not condition1:
-            self.pathLineEdit_CSVFileMeansShapeClassify.setCurrentPath(" ")
-            return
-
-        # Read CSV File:
-        self.logic.table = self.logic.readCSVFile(self.pathLineEdit_CSVFileMeansShapeClassify.currentPath)
-        condition3 = self.logic.creationDictVTKFiles(self.dictGroups)
-        condition2 = self.logic.checkOneMeshPerGroupInDict(self.dictGroups)
-
-        #    If the file is not conformed:
-        #    Re-initialization of the dictionary containing the Classification Groups
-        if not (condition2 and condition3):
-            self.dictGroups = dict()
-            self.pathLineEdit_CSVFileMeansShapeClassify.setCurrentPath(" ")
-            return
-
-        # First condition : All the shapes should have the same number of points
-        condition4 = self.logic.checkNumberOfPoints(self.dictGroups)
-        if not condition4: 
-            self.pathLineEdit_CSVFileMeansShapeClassify.setCurrentPath(" ")
-            return
-
-        return
-
     def onNetworkPath(self):
         print "----- onNetworkPath -----"
         condition1 = self.logic.checkExtension(self.pathLineEdit_networkPath.currentPath, '.zip')
@@ -1185,8 +1157,10 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
             self.pathLineEdit_networkPath.setCurrentPath(" ")
             return
 
-        validModel = self.logic.validModelNetwork(self.pathLineEdit_networkPath.currentPath)
+        self.dictGroups = dict()
+        validModel = self.logic.validModelNetwork(self.pathLineEdit_networkPath.currentPath, self.dictGroups)
 
+        print self.dictGroups
         if not validModel:
             print "Error: Classifier not valid"
             self.pathLineEdit_networkPath.currentPath = ""
@@ -2100,7 +2074,10 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
                 small_classe = len(value)
             completeDataset = completeDataset + len(value)
 
-        train_size = ( small_classe - 3 ) * nbGroups
+        if small_classe < 4: 
+            train_size = ( small_classe - 1 ) * nbGroups
+        else: 
+            train_size = ( small_classe - 3 ) * nbGroups
         valid_size = 3 * nbGroups
         test_size = completeDataset
 
@@ -2222,7 +2199,7 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
 
         return
 
-    def validModelNetwork(self, archiveName):
+    def validModelNetwork(self, archiveName, dictGroups):
 
         tempPath = slicer.app.temporaryPath
         networkDir = os.path.join(tempPath, 'Network')
@@ -2265,6 +2242,15 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
         if numModelFiles < 3 :
             print "Missing files for this model"
             return 0
+
+        # Get the dict of mean shapes
+        meanGroupsDir = os.path.join(networkDir, 'meanGroups')
+        jsonMeans = os.path.join(meanGroupsDir, 'meanGroups.json')
+        with open(jsonMeans) as f:    
+            meanGroupsDict = json.load(f) 
+            for group, file in meanGroupsDict.items():
+                dictGroups[group] = os.path.join(meanGroupsDir,file)
+
 
         return 1
 
