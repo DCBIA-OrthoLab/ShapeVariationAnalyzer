@@ -102,38 +102,32 @@ class inputData():
             for i in range(0, self.NUM_POINTS):
                 nb_feat = 0
                 if self.featuresList.count('Normals'):
-                    print " * * Normals "
                     # Stock normals in currentData
                     for numComponent in range(0, nbCompNormal):
                         currentData[i, numComponent] = normalArray.GetComponent(i, numComponent)
                     nb_feat += nbCompNormal
 
                 if self.featuresList.count('Distances to average shapes'):
-                    print " * * Distances to average shapes "
                     for numComponent in range(0, self.NUM_CLASSES):
                         currentData[i, numComponent + nb_feat] = listGroupMean[numComponent].GetTuple1(i)
                     nb_feat += self.NUM_CLASSES
 
                 if self.featuresList.count('Mean Curvature'):
-                    print " * * Mean Curvature "
                     value = 2 * (meanCurvArray.GetTuple1(i) - meanCurveMin) / meanCurveDepth - 1
                     currentData[i, nb_feat] = value
                     nb_feat += 1
 
                 if self.featuresList.count('Maximum Curvature'):
-                    print " * * Maximum Curvature "
                     value = 2 * (maxCurvArray.GetTuple1(i) - maxCurveMin) / maxCurveDepth - 1
                     currentData[i, nb_feat] = value
                     nb_feat += 1
 
                 if self.featuresList.count('Minimum Curvature'):
-                    print " * * Minimum Curvature "
                     value = 2 * (minCurvArray.GetTuple1(i) - minCurveMin) / minCurveDepth - 1
                     currentData[i, nb_feat] = value
                     nb_feat += 1
 
                 if self.featuresList.count('Gaussian Curvature'):
-                    print " * * Gaussian Curvature "
                     value = 2 * (gaussCurvArray.GetTuple1(i) - gaussCurveMin) / gaussCurveDepth - 1
                     currentData[i, nb_feat] = value
                     nb_feat += 1

@@ -2296,6 +2296,7 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
         self.input_Data.NUM_POINTS = jsonDict['CondylesClassifier']['NUM_POINTS']
         self.input_Data.NUM_CLASSES = jsonDict['CondylesClassifier']['NUM_CLASSES']
         self.input_Data.NUM_FEATURES = jsonDict['CondylesClassifier']['NUM_FEATURES']
+        self.input_Data.featuresList = jsonDict['CondylesClassifier']['Features']
 
         numModelFiles = 0
         strCondClass = 'CondylesClassifier'
