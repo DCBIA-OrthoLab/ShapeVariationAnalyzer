@@ -6,14 +6,27 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1516</width>
-    <height>1586</height>
+    <width>1616</width>
+    <height>1628</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Form</string>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout_5">
+  <layout class="QVBoxLayout" name="verticalLayout_2">
+   <item>
+    <spacer name="verticalSpacer">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>40</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
    <item>
     <widget class="ctkCollapsibleButton" name="CollapsibleButton_creationCSVFile" native="true">
      <property name="text" stdset="0">
@@ -301,9 +314,44 @@
         <property name="title">
          <string>Create Network</string>
         </property>
-        <layout class="QVBoxLayout" name="verticalLayout_11">
-         <item>
+        <layout class="QGridLayout" name="gridLayout_5">
+         <item row="2" column="0">
+          <layout class="QGridLayout" name="gridLayout_6">
+           <item row="1" column="1">
+            <widget class="QPushButton" name="pushButton_trainNetwork">
+             <property name="text">
+              <string>Train Network</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="QLabel" name="label_stateNetwork">
+             <property name="text">
+              <string>Computing network...</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="1">
+            <widget class="QPushButton" name="pushButton_ExportNetwork">
+             <property name="text">
+              <string>Export Network</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QPushButton" name="pushButton_preprocessData">
+             <property name="text">
+              <string>Preprocess data</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item row="0" column="0">
           <layout class="QGridLayout" name="gridLayout_3">
+           <item row="1" column="1">
+            <widget class="ctkPathLineEdit" name="pathLineEdit_CSVFileMeansShape" native="true"/>
+           </item>
            <item row="0" column="0">
             <widget class="QLabel" name="label_CSVFileDataset">
              <property name="text">
@@ -321,38 +369,29 @@
              </property>
             </widget>
            </item>
-           <item row="1" column="1">
-            <widget class="ctkPathLineEdit" name="pathLineEdit_CSVFileMeansShape" native="true"/>
-           </item>
-           <item row="3" column="1">
-            <widget class="QPushButton" name="pushButton_trainNetwork">
-             <property name="text">
-              <string>Train Network</string>
-             </property>
-            </widget>
-           </item>
-           <item row="5" column="1">
-            <widget class="QPushButton" name="pushButton_ExportNetwork">
-             <property name="text">
-              <string>Export Network</string>
-             </property>
-            </widget>
-           </item>
-           <item row="2" column="1">
-            <widget class="QPushButton" name="pushButton_preprocessData">
-             <property name="text">
-              <string>Preprocess data</string>
-             </property>
-            </widget>
-           </item>
-           <item row="3" column="0">
-            <widget class="QLabel" name="label_stateNetwork">
-             <property name="text">
-              <string>Computing network...</string>
-             </property>
-            </widget>
-           </item>
           </layout>
+         </item>
+         <item row="1" column="0">
+          <widget class="ctkCollapsibleGroupBox" name="collapsibleGroupBox_advancedParameters">
+           <property name="title">
+            <string>Advanced parameters</string>
+           </property>
+           <layout class="QGridLayout" name="gridLayout_7">
+            <item row="0" column="0">
+             <widget class="QLabel" name="label_features">
+              <property name="text">
+               <string>Features</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="1">
+             <widget class="ctkCheckableComboBox" name="checkableComboBox_choiceOfFeatures"/>
+            </item>
+           </layout>
+           <zorder></zorder>
+           <zorder>label_features</zorder>
+           <zorder>checkableComboBox_choiceOfFeatures</zorder>
+          </widget>
          </item>
         </layout>
        </widget>
@@ -439,10 +478,7 @@
      <property name="checked" stdset="0">
       <bool>false</bool>
      </property>
-     <layout class="QVBoxLayout" name="verticalLayout_2">
-      <item>
-       <widget class="QTableWidget" name="tableWidget_result"/>
-      </item>
+     <layout class="QHBoxLayout" name="horizontalLayout_5">
       <item>
        <widget class="QPushButton" name="pushButton_exportResult">
         <property name="text">
@@ -450,21 +486,11 @@
         </property>
        </widget>
       </item>
+      <item>
+       <widget class="QTableWidget" name="tableWidget_result"/>
+      </item>
      </layout>
     </widget>
-   </item>
-   <item>
-    <spacer name="verticalSpacer">
-     <property name="orientation">
-      <enum>Qt::Vertical</enum>
-     </property>
-     <property name="sizeHint" stdset="0">
-      <size>
-       <width>20</width>
-       <height>40</height>
-      </size>
-     </property>
-    </spacer>
    </item>
   </layout>
  </widget>
@@ -499,7 +525,7 @@
   <customwidget>
    <class>ctkCollapsibleGroupBox</class>
    <extends>QGroupBox</extends>
-   <header>ctkCollapsibleGroupBox.h</header>
+   <header location="global">ctkCollapsibleGroupBox.h</header>
    <container>1</container>
   </customwidget>
   <customwidget>

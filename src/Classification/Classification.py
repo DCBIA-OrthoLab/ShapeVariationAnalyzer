@@ -57,8 +57,19 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         self.dictShapeModels = dict()
         self.patientList = list()
         self.dictResults = dict()
-
         self.dictFeatData = dict()
+
+        self.allFeatures = list()
+        # self.allFeatures.append('Curvedness')
+        self.allFeatures.append('Normals')
+        self.allFeatures.append('Maximum Curvature')
+        self.allFeatures.append('Minimum Curvature')
+        self.allFeatures.append('Mean Curvature')
+        self.allFeatures.append('Gaussian Curvature')
+        # self.allFeatures.append('Shape Index')
+        self.allFeatures.append('Distance to average shapes')
+        self.allFeatures.append('Position')
+        self.featuresList = list()
 
         # Interface
         loader = qt.QUiLoader()
@@ -97,7 +108,7 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
                  # Tab: Selection Classification Groups
         self.comboBox_healthyGroup = self.logic.get('comboBox_healthyGroup')
         
-        #          Tab: Select Input Data
+        #          Tab: Classification Network
         self.collapsibleButton_classificationNetwork = self.logic.get('collapsibleButton_classificationNetwork')
         self.MRMLNodeComboBox_VTKInputData = self.logic.get('MRMLNodeComboBox_VTKInputData')
         self.pathLineEdit_CSVInputData = self.logic.get('PathLineEdit_CSVInputData')
@@ -112,6 +123,8 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
 
         self.pathLineEdit_networkPath = self.logic.get('ctkPathLineEdit_networkPath')
 
+        self.collapsibleGroupBox_advancedParameters = self.logic.get('collapsibleGroupBox_advancedParameters')
+        self.checkableComboBox_choiceOfFeatures = self.logic.get('checkableComboBox_choiceOfFeatures')
 
         #          Tab: Result / Analysis
         self.collapsibleButton_Result = self.logic.get('CollapsibleButton_Result')
@@ -147,6 +160,10 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         self.pushButton_preprocessData.setDisabled(True)
 
         self.label_stateNetwork.hide()
+
+        self.collapsibleGroupBox_advancedParameters.setChecked(False)
+        for ft in self.allFeatures:
+            self.checkableComboBox_choiceOfFeatures.addItem(ft)
 
 
         #     qMRMLNodeComboBox configuration
@@ -223,6 +240,9 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         self.pathLineEdit_CSVInputData.connect('currentPathChanged(const QString)', self.onCSVInputData)
         self.pushButton_classifyIndex.connect('clicked()', self.onClassifyIndex)
 
+# onDataChanged (const QModelIndex &topLeft, const QModelIndex &bottomRight)
+        self.checkableComboBox_choiceOfFeatures.connect('checkedIndexesChanged()', self.onCheckableComboBoxFeaturesChanged)
+
         #          Tab: Result / Analysis
         self.collapsibleButton_Result.connect('clicked()',
                                               lambda: self.onSelectedCollapsibleButtonOpen(self.collapsibleButton_Result))
@@ -280,6 +300,8 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         self.patientList = list()
         self.dictResults = dict()
         self.dictFeatData = dict()
+
+        self.featuresList = list()
         
         # Tab: New Classification Groups
         self.pathLineEdit_previewGroups.setCurrentPath(" ")
@@ -361,6 +383,8 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         self.label_stateNetwork.hide()
         self.stateCSVMeansShape = False
         self.stateCSVDataset = False
+
+        self.collapsibleGroupBox_advancedParameters.setChecked(False)
 
         #     qMRMLNodeComboBox configuration
         self.MRMLNodeComboBox_VTKInputData.setMRMLScene(slicer.mrmlScene)
@@ -586,10 +610,10 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
                 item = self.checkableComboBox_ChoiceOfGroup.model().item(index, 0)
                 if item.checkState():
                     checkBox.setChecked(True)
-                    self.groupSelected.add(index + 1)
+                    self.groupSelected.add(index + 1)                           # >>>>> + 1 ?????
                 else:
                     checkBox.setChecked(False)
-                    self.groupSelected.discard(index + 1)
+                    self.groupSelected.discard(index + 1)                           # >>>>> + 1 ?????
                 checkBox.blockSignals(False)
 
         # Update the color in the qtableWidget of each vtk file
@@ -1064,6 +1088,26 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         self.enableNetwork()
         return
 
+
+    def onCheckableComboBoxFeaturesChanged(self):
+        print "----- Features check combo box changed -----"
+        index =  self.checkableComboBox_choiceOfFeatures.currentIndex
+
+        item = self.checkableComboBox_choiceOfFeatures.model().item(index, 0)
+        print str(item.text())
+        if item.checkState():
+            if not self.featuresList.count(item.text()):
+                self.featuresList.append(str(item.text()))
+        else:
+            if self.featuresList.count(item.text()):
+                self.featuresList.remove(item.text())
+
+        print "self.featuresDict : "
+        print str(self.featuresList)
+
+        return
+
+
     def onPreprocessData(self):
         print "----- onPreprocessData -----"
         self.dictFeatData = dict()
@@ -1096,7 +1140,14 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
 
         # 
         # Pickle the data for the network
-        self.pickle_file = self.logic.pickleData(self.dictFeatData)
+        if self.collapsibleGroupBox_advancedParameters.checked:
+            print "ckecked"
+            ft_list = self.featuresList
+        else: 
+            print "pas checked"
+            ft_list = ['Mean Curvature', 'Normals', 'Maximum Curvature']
+        print "\n\nft_list : \n\n" + str(ft_list)
+        self.pickle_file = self.logic.pickleData(self.dictFeatData, ft_list)
         
         #
         # Zipping JSON + PICKLE files in one ZIP file
@@ -1121,6 +1172,8 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         self.pushButton_trainNetwork.setEnabled(True)
 
         return
+
+
 
     def onTrainNetwork(self):
         print "----- onTrainNetwork -----"
@@ -2028,7 +2081,7 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
             listPatient[i] = ftPath
         return listPatient
 
-    def pickleData(self, dictFeatData):
+    def pickleData(self, dictFeatData, featuresList):
         tempPath = slicer.app.temporaryPath
         networkDir = os.path.join(tempPath, "Network")
         if os.path.isdir(networkDir):
@@ -2038,7 +2091,17 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
         nbGroups = len(dictFeatData.keys())
         self.input_Data = inputData.inputData()
         self.input_Data.NUM_CLASSES = nbGroups
-        self.input_Data.NUM_FEATURES = nbGroups + 3 + 4 
+        self.input_Data.featuresList = featuresList
+
+        nb_feat = len(featuresList)
+        if featuresList.count('Normals'): 
+            nb_feat +=2 
+        if featuresList.count('Distance to average shapes'):
+            nb_feat += nbGroups - 1
+
+        self.input_Data.NUM_FEATURES = nb_feat
+        print " nb_feat :: " + str(nb_feat)
+
 
         reader_poly = vtk.vtkPolyDataReader()
         reader_poly.SetFileName(dictFeatData[0][0])
@@ -2054,9 +2117,10 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
 
         # Save info in JSON File
         network_param = dict()
-        network_param["NUM_CLASSES"] = len(dictFeatData.keys())
-        network_param["NUM_FEATURES"] = len(dictFeatData.keys()) + 3 + 4 
-        network_param["NUM_POINTS"] = reader_poly.GetOutput().GetNumberOfPoints()
+        network_param["NUM_CLASSES"] = nbGroups
+        network_param["NUM_FEATURES"] = nb_feat
+        network_param["NUM_POINTS"] = self.input_Data.NUM_POINTS
+        network_param["Features"] = featuresList
 
         jsonDict = dict()
         jsonDict["CondylesClassifier"] = network_param
@@ -2149,7 +2213,7 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
         jsonDict['CondylesClassifier']['learning_rate'] = 0.0005
         jsonDict['CondylesClassifier']['lambda_reg'] = 0.01
         jsonDict['CondylesClassifier']['num_epochs'] = 2
-        jsonDict['CondylesClassifier']['num_steps'] =  1001
+        jsonDict['CondylesClassifier']['num_steps'] =  11
         jsonDict['CondylesClassifier']['batch_size'] = 10
 
         with open(os.path.join(networkDir,'classifierInfo.json'), 'w') as f:

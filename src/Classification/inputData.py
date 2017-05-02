@@ -5,13 +5,14 @@ import pickle
 
 
 class inputData():
-    def __init__(self, parent = None, num_points_param = 0, num_classes_param = 0):
+    def __init__(self, parent = None, num_points_param = 0, num_classes_param = 0, featuresList_param = list()):
         if parent:
             parent.title = " "
 
         self.NUM_POINTS = num_points_param
         self.NUM_CLASSES = num_classes_param
         self.NUM_FEATURES = 3 + self.NUM_CLASSES + 4  # Normals + NUM_CLASSES + curvatures
+        self.featuresList = featuresList_param
 
 
     #
@@ -96,27 +97,49 @@ class inputData():
             gaussCurveDepth = gaussCurveMax - gaussCurveMin
 
             # For each point of the current shape
+            
             currentData = np.ndarray(shape=(self.NUM_POINTS, self.NUM_FEATURES), dtype=np.float32)
             for i in range(0, self.NUM_POINTS):
+                nb_feat = 0
+                if self.featuresList.count('Normals'):
+                    print " * * Normals "
+                    # Stock normals in currentData
+                    for numComponent in range(0, nbCompNormal):
+                        currentData[i, numComponent] = normalArray.GetComponent(i, numComponent)
+                    nb_feat += nbCompNormal
 
-                # Stock normals in currentData
-                for numComponent in range(0, nbCompNormal):
-                    currentData[i, numComponent] = normalArray.GetComponent(i, numComponent)
+                if self.featuresList.count('Distances to average shapes'):
+                    print " * * Distances to average shapes "
+                    for numComponent in range(0, self.NUM_CLASSES):
+                        currentData[i, numComponent + nb_feat] = listGroupMean[numComponent].GetTuple1(i)
+                    nb_feat += self.NUM_CLASSES
 
-                for numComponent in range(0, self.NUM_CLASSES):
-                    currentData[i, numComponent + nbCompNormal] = listGroupMean[numComponent].GetTuple1(i)
+                if self.featuresList.count('Mean Curvature'):
+                    print " * * Mean Curvature "
+                    value = 2 * (meanCurvArray.GetTuple1(i) - meanCurveMin) / meanCurveDepth - 1
+                    currentData[i, nb_feat] = value
+                    nb_feat += 1
 
-                value = 2 * (meanCurvArray.GetTuple1(i) - meanCurveMin) / meanCurveDepth - 1
-                currentData[i, self.NUM_CLASSES + nbCompNormal] = value
+                if self.featuresList.count('Maximum Curvature'):
+                    print " * * Maximum Curvature "
+                    value = 2 * (maxCurvArray.GetTuple1(i) - maxCurveMin) / maxCurveDepth - 1
+                    currentData[i, nb_feat] = value
+                    nb_feat += 1
 
-                value = 2 * (maxCurvArray.GetTuple1(i) - maxCurveMin) / maxCurveDepth - 1
-                currentData[i, self.NUM_CLASSES + nbCompNormal + 1] = value
+                if self.featuresList.count('Minimum Curvature'):
+                    print " * * Minimum Curvature "
+                    value = 2 * (minCurvArray.GetTuple1(i) - minCurveMin) / minCurveDepth - 1
+                    currentData[i, nb_feat] = value
+                    nb_feat += 1
 
-                value = 2 * (minCurvArray.GetTuple1(i) - minCurveMin) / minCurveDepth - 1
-                currentData[i, self.NUM_CLASSES + nbCompNormal + 2] = value
+                if self.featuresList.count('Gaussian Curvature'):
+                    print " * * Gaussian Curvature "
+                    value = 2 * (gaussCurvArray.GetTuple1(i) - gaussCurveMin) / gaussCurveDepth - 1
+                    currentData[i, nb_feat] = value
+                    nb_feat += 1
 
-                value = 2 * (gaussCurvArray.GetTuple1(i) - gaussCurveMin) / gaussCurveDepth - 1
-                currentData[i, self.NUM_CLASSES + nbCompNormal + 3] = value
+                # >> Add Curvedness
+                # >>>> Add Shape_Index 
 
 
         except IOError as e:
@@ -133,12 +156,6 @@ class inputData():
     #   Call load_features for an entire folder/classe. Check if there's enough shapes in a classe.
     #
     def load_features_classe(self, vtklist, min_num_shapes=1):
-        # vtk_filenames = os.listdir(folder)  # Juste le nom du vtk file
-
-        # Delete .DS_Store file if there is one
-        # if vtk_filenames.count(".DS_Store"):
-            # vtk_filenames.remove(".DS_Store")
-
         vtk_filenames = vtklist
         dataset = np.ndarray(shape=(len(vtk_filenames), self.NUM_POINTS, self.NUM_FEATURES), dtype=np.float32)
 
@@ -163,11 +180,6 @@ class inputData():
         return dataset
 
     def load_features_with_names(self, vtklist):
-        # vtk_filenames = os.listdir(folder)  # Juste le nom du vtk file
-
-        # Delete .DS_Store file if there is one
-        # if vtk_filenames.count(".DS_Store"):
-            # vtk_filenames.remove(".DS_Store")
 
         # vtk_filenames = vtklist
         allShapes_feat = dict()
