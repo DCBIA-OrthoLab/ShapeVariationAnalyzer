@@ -144,7 +144,8 @@ def run_training(train_dataset, train_labels, valid_dataset, valid_labels, test_
                         print("Minibatch accuracy: %.1f%%" % classifier.accuracy(predictions, batch_labels)[0])
                         print("Validation accuracy: %.1f%%" % classifier.accuracy(valid_prediction.eval(feed_dict = {keep_prob:1.0}), valid_labels)[0])
 
-            finalaccuracy, mat_confusion, PPV, TPR = classifier.accuracy(test_prediction.eval(feed_dict={keep_prob:1.0}), test_labels)
+            # finalaccuracy, mat_confusion, PPV, TPR = classifier.accuracy(test_prediction.eval(feed_dict={keep_prob:1.0}), test_labels)
+            finalaccuracy, mat_confusion = classifier.accuracy(test_prediction.eval(feed_dict={keep_prob:1.0}), test_labels)
             print("Test accuracy: %.1f%%" % finalaccuracy)
             print("\n\nConfusion matrix :\n" + str(mat_confusion))
             # print "\n PPV : " + str(PPV)

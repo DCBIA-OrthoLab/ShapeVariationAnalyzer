@@ -96,8 +96,25 @@ class inputData():
             gaussCurveMin, gaussCurveMax = gaussCurveRange[0], gaussCurveRange[1]
             gaussCurveDepth = gaussCurveMax - gaussCurveMin
 
+            shapeIndexName = "Shape_Index"
+            shapeIndexArray = geometry.GetPointData().GetScalars(shapeIndexName)
+            shapeIndexRange = shapeIndexArray.GetRange()
+            shapeIndexMin, shapeIndexMax = shapeIndexRange[0], shapeIndexRange[1]
+            shapeIndexDepth = shapeIndexMax - shapeIndexMin
+
+            curvednessName = "Curvedness"
+            curvednessArray = geometry.GetPointData().GetScalars(curvednessName)
+            curvednessRange = curvednessArray.GetRange()
+            curvednessMin, curvednessMax = curvednessRange[0], curvednessRange[1]
+            curvednessDepth = curvednessMax - curvednessMin
+
+            positionName = "Position"
+            positionArray = geometry.GetPointData().GetScalars(positionName)
+            positionRange = positionArray.GetRange()
+            positionMin, positionMax = positionRange[0], positionRange[1]
+            positionDepth = positionMax - positionMin
+
             # For each point of the current shape
-            
             currentData = np.ndarray(shape=(self.NUM_POINTS, self.NUM_FEATURES), dtype=np.float32)
             for i in range(0, self.NUM_POINTS):
                 nb_feat = 0
@@ -132,9 +149,20 @@ class inputData():
                     currentData[i, nb_feat] = value
                     nb_feat += 1
 
-                # >> Add Curvedness
-                # >>>> Add Shape_Index 
+                if self.featuresList.count('Shape Index'):
+                    value = 2 * (shapeIndexArray.GetTuple1(i) - shapeIndexMin) / shapeIndexDepth - 1
+                    currentData[i, nb_feat] = value
+                    nb_feat += 1
 
+                if self.featuresList.count('Curvedness'):
+                    value = 2 * (curvednessArray.GetTuple1(i) - curvednessMin) / curvednessDepth - 1
+                    currentData[i, nb_feat] = value
+                    nb_feat += 1
+
+                if self.featuresList.count('Position'):
+                    value = 2 * (positionArray.GetTuple1(i) - positionMin) / positionDepth - 1
+                    currentData[i, nb_feat] = value
+                    nb_feat += 1
 
         except IOError as e:
             print('Could not read:', shape, ':', e, '- it\'s ok, skipping.')

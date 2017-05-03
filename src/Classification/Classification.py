@@ -60,14 +60,14 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         self.dictFeatData = dict()
 
         self.allFeatures = list()
-        # self.allFeatures.append('Curvedness')
+        self.allFeatures.append('Curvedness')
         self.allFeatures.append('Normals')
         self.allFeatures.append('Maximum Curvature')
         self.allFeatures.append('Minimum Curvature')
         self.allFeatures.append('Mean Curvature')
         self.allFeatures.append('Gaussian Curvature')
-        # self.allFeatures.append('Shape Index')
-        self.allFeatures.append('Distance to average shapes')
+        self.allFeatures.append('Shape Index')
+        self.allFeatures.append('Distances to average shapes')
         self.allFeatures.append('Position')
         self.featuresList = list()
 
@@ -1129,7 +1129,7 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
             else:
                 meansList = meansList + "," +  str(v)
 
-        print self.dictShapeModels
+        # print self.dictShapeModels
         for group, listvtk in self.dictShapeModels.items():
             for shape in listvtk:
 # >>>>>>> UNCOMMENT HERE !!! FEATURES EXTRACTION
@@ -1145,7 +1145,7 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
             ft_list = self.featuresList
         else: 
             print "pas checked"
-            ft_list = ['Mean Curvature', 'Normals', 'Maximum Curvature']
+            ft_list = self.allFeatures
         print "\n\nft_list : \n\n" + str(ft_list)
         self.pickle_file = self.logic.pickleData(self.dictFeatData, ft_list)
         
@@ -2070,7 +2070,7 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
                 ftPath = slicer.app.temporaryPath + '/dataFeatures/' + filename + '.vtk'
 
                 newValue.append(ftPath)
-            print "\nkey : " + str(key)
+            # print "\nkey : " + str(key)
             dictFeatData[key] = newValue
         return
 
@@ -2091,17 +2091,15 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
         nbGroups = len(dictFeatData.keys())
         self.input_Data = inputData.inputData()
         self.input_Data.NUM_CLASSES = nbGroups
-        self.input_Data.featuresList = featuresList
 
         nb_feat = len(featuresList)
         if featuresList.count('Normals'): 
             nb_feat +=2 
-        if featuresList.count('Distance to average shapes'):
-            nb_feat += nbGroups - 1
+        if featuresList.count('Distances to average shapes'):
+            nb_feat = nb_feat + nbGroups - 1
 
+        self.input_Data.featuresList = featuresList
         self.input_Data.NUM_FEATURES = nb_feat
-        print " nb_feat :: " + str(nb_feat)
-
 
         reader_poly = vtk.vtkPolyDataReader()
         reader_poly.SetFileName(dictFeatData[0][0])
@@ -2117,8 +2115,8 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
 
         # Save info in JSON File
         network_param = dict()
-        network_param["NUM_CLASSES"] = nbGroups
-        network_param["NUM_FEATURES"] = nb_feat
+        network_param["NUM_CLASSES"] = self.input_Data.NUM_CLASSES
+        network_param["NUM_FEATURES"] = self.input_Data.NUM_FEATURES
         network_param["NUM_POINTS"] = self.input_Data.NUM_POINTS
         network_param["Features"] = featuresList
 
@@ -2212,8 +2210,8 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
 
         jsonDict['CondylesClassifier']['learning_rate'] = 0.0005
         jsonDict['CondylesClassifier']['lambda_reg'] = 0.01
-        jsonDict['CondylesClassifier']['num_epochs'] = 2
-        jsonDict['CondylesClassifier']['num_steps'] =  11
+        jsonDict['CondylesClassifier']['num_epochs'] = 10
+        jsonDict['CondylesClassifier']['num_steps'] =  1001
         jsonDict['CondylesClassifier']['batch_size'] = 10
 
         with open(os.path.join(networkDir,'classifierInfo.json'), 'w') as f:

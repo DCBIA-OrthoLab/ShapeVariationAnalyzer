@@ -48,21 +48,21 @@ class neuralNetwork():
 		df_confusion = pd.crosstab(y_actu, y_pred)
 
 		# PPV and TPR
-		TruePos_sum = int(np.sum(predictions[:, 1] * labels[:, 1]))
-		PredPos_sum = int(max(np.sum(predictions[:, 1]), 1)) #Max to avoid to divide by 0
-		PredNeg_sum = np.sum(predictions[:, 0])
-		RealPos_sum = int(np.sum(labels[:, 1]))
+		# TruePos_sum = int(np.sum(predictions[:, 1] * labels[:, 1]))
+		# PredPos_sum = int(max(np.sum(predictions[:, 1]), 1)) #Max to avoid to divide by 0
+		# PredNeg_sum = np.sum(predictions[:, 0])
+		# RealPos_sum = int(np.sum(labels[:, 1]))
 
-		if not PredPos_sum :
-			PPV = 0
-		else:
-			PPV = 100.0 *TruePos_sum / PredPos_sum # Positive Predictive Value, Precision
-		if not RealPos_sum:
-			TPR = 0
-		else:
-			TPR = 100.0 *TruePos_sum / RealPos_sum  # True Positive Rate, Sensitivity
+		# if not PredPos_sum :
+		# 	PPV = 0
+		# else:
+		# 	PPV = 100.0 *TruePos_sum / PredPos_sum # Positive Predictive Value, Precision
+		# if not RealPos_sum:
+		# 	TPR = 0
+		# else:
+		# 	TPR = 100.0 *TruePos_sum / RealPos_sum  # True Positive Rate, Sensitivity
 
-		return accuracy, df_confusion, PPV, TPR
+		return accuracy, df_confusion #, PPV, TPR
 
 
 	def weight_variable(self, shape, name=None):
