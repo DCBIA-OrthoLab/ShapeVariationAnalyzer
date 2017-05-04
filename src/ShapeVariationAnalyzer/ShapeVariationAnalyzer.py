@@ -15,20 +15,21 @@ import json
 import subprocess
 
 
-class Classification(ScriptedLoadableModule):
+class ShapeVariationAnalyzer(ScriptedLoadableModule):
     """Uses ScriptedLoadableModule base class, available at:
   https://github.com/Slicer/Slicer/blob/master/Base/Python/slicer/ScriptedLoadableModule.py
   """
 
     def __init__(self, parent):
         ScriptedLoadableModule.__init__(self, parent)
-        parent.title = "Classification"
+        parent.title = "Shape Varation Analyzer"
         parent.categories = ["Quantification"]
         parent.dependencies = []
         parent.contributors = ["Laura Pascal (University of Michigan), Priscille de Dumast (University of Michigan)"]
         parent.helpText = """
-            This tool allows to train a morphological classifier, 
-            based on a neural network. 
+            Shape Variation Analyzer allows the classification of 3D models, 
+            according to their morphological variations. 
+            This tool is based on a deep learning neural network.
             """
         parent.acknowledgementText = """
             This work was supported by the National
@@ -39,7 +40,7 @@ class Classification(ScriptedLoadableModule):
             """
 
 
-class ClassificationWidget(ScriptedLoadableModuleWidget):
+class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
     def setup(self):
 
         ScriptedLoadableModuleWidget.setup(self)        
@@ -47,7 +48,7 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         # ---- Widget Setup ----
 
         # Global Variables
-        self.logic = ClassificationLogic(self)
+        self.logic = ShapeVariationAnalyzerLogic(self)
         
         self.dictVTKFiles = dict()
         self.dictGroups = dict()
@@ -73,7 +74,7 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
 
         # Interface
         loader = qt.QUiLoader()
-        self.moduleName = 'Classification'
+        self.moduleName = 'ShapeVariationAnalyzer'
         scriptedModulesPath = eval('slicer.modules.%s.path' % self.moduleName.lower())
         scriptedModulesPath = os.path.dirname(scriptedModulesPath)
         path = os.path.join(scriptedModulesPath, 'Resources', 'UI', '%s.ui' % self.moduleName)
@@ -468,7 +469,7 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
 
         # Message for the user
         slicer.util.delayDisplay("Group Added")
-        # print self.dictCSVFile
+        
 
     # Function to remove a group of the dictionary
     #    - Remove the paths of all the vtk files corresponding to the selected group
@@ -1132,7 +1133,6 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         # print self.dictShapeModels
         for group, listvtk in self.dictShapeModels.items():
             for shape in listvtk:
-# >>>>>>> UNCOMMENT HERE !!! FEATURES EXTRACTION
                 self.logic.extractFeatures(shape, meansList, outputDir)
 
                 # # Storage of the means for each group
@@ -1141,12 +1141,13 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         # 
         # Pickle the data for the network
         if self.collapsibleGroupBox_advancedParameters.checked:
-            print "ckecked"
             ft_list = self.featuresList
+            if not len(self.featuresList):
+                slicer.util.delayDisplay("Missing features")
+                return
         else: 
-            print "pas checked"
             ft_list = self.allFeatures
-        print "\n\nft_list : \n\n" + str(ft_list)
+        # print "\n\nft_list : \n\n" + str(ft_list)
         self.pickle_file = self.logic.pickleData(self.dictFeatData, ft_list)
         
         #
@@ -1172,7 +1173,6 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
         self.pushButton_trainNetwork.setEnabled(True)
 
         return
-
 
 
     def onTrainNetwork(self):
@@ -1361,7 +1361,7 @@ class ClassificationWidget(ScriptedLoadableModuleWidget):
 # ------------------------------------------------------------------------------------ #
 
 
-class ClassificationLogic(ScriptedLoadableModuleLogic):
+class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
     def __init__(self, interface):
         self.interface = interface
         self.table = vtk.vtkTable
@@ -2044,7 +2044,7 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
         arguments.append("--distMeshOn")
         arguments.append("--distMesh")
         arguments.append(str(meansList))
-        print arguments
+        # print arguments
 
         #     Call the executable
         process = qt.QProcess()
@@ -2210,8 +2210,8 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
 
         jsonDict['CondylesClassifier']['learning_rate'] = 0.0005
         jsonDict['CondylesClassifier']['lambda_reg'] = 0.01
-        jsonDict['CondylesClassifier']['num_epochs'] = 10
-        jsonDict['CondylesClassifier']['num_steps'] =  1001
+        jsonDict['CondylesClassifier']['num_epochs'] = 1
+        jsonDict['CondylesClassifier']['num_steps'] =  11
         jsonDict['CondylesClassifier']['batch_size'] = 10
 
         with open(os.path.join(networkDir,'classifierInfo.json'), 'w') as f:
@@ -2362,5 +2362,5 @@ class ClassificationLogic(ScriptedLoadableModuleLogic):
             # Write the result in the CSV File
             cw.writerow([vtkFile, str(assignedGroup)])
 
-class ClassificationTest(ScriptedLoadableModuleTest):
+class ShapeVariationAnalyzerTest(ScriptedLoadableModuleTest):
     pass

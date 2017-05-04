@@ -1,3 +1,3 @@
 
 add_subdirectory(CLI/SurfaceFeaturesExtractor)
-add_subdirectory(Classification)
+add_subdirectory(ShapeVarationAnalyzer)
