@@ -2232,7 +2232,7 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         # Train le network dans le virtualenv
         # 
         currentPath = os.path.dirname(os.path.abspath(__file__))
-        train_file = os.path.join(currentPath,'Resources/Classifier/trainCondylesClassification.py')
+        train_file = os.path.join(currentPath,'Resources/Classifier/trainNeuralNetwork.py')
         bashCommand = self.cmd_setenv + " " + train_file + " -inputZip " + archiveName
 
         command = ["bash", "-c", bashCommand]
@@ -2337,7 +2337,7 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
 
         # Classify dans le virtualenv
         currentPath = os.path.dirname(os.path.abspath(__file__))
-        train_file = os.path.join(currentPath,'Resources/Classifier/evalCondylesClassification.py')
+        train_file = os.path.join(currentPath,'Resources/Classifier/evalShape.py')
         bashCommand = self.cmd_setenv + " " + train_file + " -inputZip " + archiveName
 
         command = ["bash", "-c", bashCommand]
