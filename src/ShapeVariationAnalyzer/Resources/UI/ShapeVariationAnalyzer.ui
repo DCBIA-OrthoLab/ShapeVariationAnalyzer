@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1616</width>
+    <width>1391</width>
     <height>1662</height>
    </rect>
   </property>
@@ -185,6 +185,9 @@
    </item>
    <item>
     <widget class="ctkCollapsibleButton" name="CollapsibleButton_computeAverageGroups" native="true">
+     <property name="checked" stdset="0">
+      <bool>false</bool>
+     </property>
      <property name="text" stdset="0">
       <string>Computation of mean group</string>
      </property>
@@ -290,7 +293,7 @@
    <item>
     <widget class="ctkCollapsibleButton" name="collapsibleButton_classificationNetwork" native="true">
      <property name="text" stdset="0">
-      <string>Classification Network</string>
+      <string> Morphological classifier</string>
      </property>
      <property name="checked" stdset="0">
       <bool>false</bool>
@@ -375,9 +378,6 @@
              <widget class="ctkCheckableComboBox" name="checkableComboBox_choiceOfFeatures"/>
             </item>
            </layout>
-           <zorder></zorder>
-           <zorder>label_features</zorder>
-           <zorder>checkableComboBox_choiceOfFeatures</zorder>
           </widget>
          </item>
         </layout>
@@ -479,7 +479,7 @@
      </layout>
     </widget>
    </item>
-<item>
+   <item>
     <spacer name="verticalSpacer">
      <property name="orientation">
       <enum>Qt::Vertical</enum>

@@ -162,6 +162,11 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
 
         self.label_stateNetwork.hide()
 
+        self.collapsibleButton_classificationNetwork.setChecked(True)
+        self.collapsibleButton_creationCSVFile.setChecked(False)
+        self.collapsibleButton_previewClassificationGroups.setChecked(False)
+        self.CollapsibleButton_computeAverageGroups.setChecked(False)
+        self.collapsibleButton_Result.setChecked(False)
         self.collapsibleGroupBox_advancedParameters.setChecked(False)
         for ft in self.allFeatures:
             self.checkableComboBox_choiceOfFeatures.addItem(ft)
@@ -385,6 +390,11 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.stateCSVMeansShape = False
         self.stateCSVDataset = False
 
+        self.collapsibleButton_classificationNetwork.setChecked(True)
+        self.collapsibleButton_creationCSVFile.setChecked(False)
+        self.collapsibleButton_previewClassificationGroups.setChecked(False)
+        self.CollapsibleButton_computeAverageGroups.setChecked(False)
+        self.collapsibleButton_Result.setChecked(False)
         self.collapsibleGroupBox_advancedParameters.setChecked(False)
 
         #     qMRMLNodeComboBox configuration
@@ -405,7 +415,6 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
     # Only one tab can be display at the same time:
     #   When one tab is opened all the other tabs are closed
     def onSelectedCollapsibleButtonOpen(self, selectedCollapsibleButton):
-        print "selctc collapsible"
         if selectedCollapsibleButton.isChecked():
             collapsibleButtonList = [self.collapsibleButton_creationCSVFile,
                                      self.collapsibleButton_previewClassificationGroups,
