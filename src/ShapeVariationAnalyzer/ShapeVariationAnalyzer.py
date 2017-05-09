@@ -22,10 +22,10 @@ class ShapeVariationAnalyzer(ScriptedLoadableModule):
 
     def __init__(self, parent):
         ScriptedLoadableModule.__init__(self, parent)
-        parent.title = "Shape Varation Analyzer"
-        parent.categories = ["Quantification"]
+        parent.title = "ShapeVarationAnalyzer"
+        parent.categories = ["Machine Learning"]
         parent.dependencies = []
-        parent.contributors = ["Laura Pascal (University of Michigan), Priscille de Dumast (University of Michigan)"]
+        parent.contributors = ["Priscille de Dumast (University of Michigan), Laura Pascal (University of Michigan)"]
         parent.helpText = """
             Shape Variation Analyzer allows the classification of 3D models, 
             according to their morphological variations. 
@@ -125,7 +125,10 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.pathLineEdit_networkPath = self.logic.get('ctkPathLineEdit_networkPath')
 
         self.collapsibleGroupBox_advancedParameters = self.logic.get('collapsibleGroupBox_advancedParameters')
+        self.checkBox_features = self.logic.get('checkBox_features')
         self.checkableComboBox_choiceOfFeatures = self.logic.get('checkableComboBox_choiceOfFeatures')
+        self.checkBox_numsteps = self.logic.get('checkBox_numsteps')
+        self.spinBox_numsteps = self.logic.get('spinBox_numsteps')
 
         #          Tab: Result / Analysis
         self.collapsibleButton_Result = self.logic.get('CollapsibleButton_Result')
@@ -182,6 +185,11 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.spinBox_group.setMinimum(0)
         self.spinBox_group.setMaximum(0)
         self.spinBox_group.setValue(0)
+
+        #     spinbox configuration in the Advanced parameters
+        self.spinBox_numsteps.setMinimum(10001)
+        self.spinBox_numsteps.setMaximum(11)
+        self.spinBox_numsteps.setValue(1001)
 
         #     tree view configuration
         headerTreeView = self.MRMLTreeView_classificationGroups.header()
@@ -1142,6 +1150,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         # print self.dictShapeModels
         for group, listvtk in self.dictShapeModels.items():
             for shape in listvtk:
+# > > > >  > UNCOMMENT !!!
                 self.logic.extractFeatures(shape, meansList, outputDir)
 
                 # # Storage of the means for each group
@@ -1149,14 +1158,13 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
 
         # 
         # Pickle the data for the network
-        if self.collapsibleGroupBox_advancedParameters.checked:
+        ft_list = self.allFeaturess
+        if self.collapsibleGroupBox_advancedParameters.checked and self.checkBox_features.checked:
             ft_list = self.featuresList
             if not len(self.featuresList):
                 slicer.util.delayDisplay("Missing features")
                 return
-        else: 
-            ft_list = self.allFeatures
-        # print "\n\nft_list : \n\n" + str(ft_list)
+
         self.pickle_file = self.logic.pickleData(self.dictFeatData, ft_list)
         
         #
@@ -1189,7 +1197,12 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.label_stateNetwork.text = 'Computation running...'
         self.label_stateNetwork.show()
 
-        accuracy = self.logic.trainNetworkClassification(self.archiveName)
+        num_steps = 1001
+        if self.collapsibleGroupBox_advancedParameters.checked and self.checkBox_numsteps.checked:
+            print "num_steps checked"
+            num_steps = self.spinBox_numsteps.value
+        
+        accuracy = self.logic.trainNetworkClassification(self.archiveName, num_steps = num_steps)
         
         print "ESTIMATED ACCURACY :: " + str(accuracy)
 
@@ -2103,9 +2116,11 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
 
         nb_feat = len(featuresList)
         if featuresList.count('Normals'): 
-            nb_feat +=2 
+            nb_feat += 2 
         if featuresList.count('Distances to average shapes'):
             nb_feat = nb_feat + nbGroups - 1
+        if featuresList.count('Position'):
+            nb_feat += 2
 
         self.input_Data.featuresList = featuresList
         self.input_Data.NUM_FEATURES = nb_feat
@@ -2201,7 +2216,8 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
 
         return set_filename
 
-    def trainNetworkClassification(self, archiveName):
+    def trainNetworkClassification(self, archiveName, num_steps):
+        print " &&&&&& Train Network Classification &&&&&& "
         # Set le path pour le network
         tempPath = slicer.app.temporaryPath
         networkDir = os.path.join(tempPath, "Network")
@@ -2217,10 +2233,11 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         with open(jsonFile) as f:
             jsonDict = json.load(f)
 
+        print " ^^^^^ " + str(num_steps)
         jsonDict['CondylesClassifier']['learning_rate'] = 0.0005
         jsonDict['CondylesClassifier']['lambda_reg'] = 0.01
-        jsonDict['CondylesClassifier']['num_epochs'] = 1
-        jsonDict['CondylesClassifier']['num_steps'] =  11
+        jsonDict['CondylesClassifier']['num_epochs'] = 2
+        jsonDict['CondylesClassifier']['num_steps'] =  num_steps
         jsonDict['CondylesClassifier']['batch_size'] = 10
 
         with open(os.path.join(networkDir,'classifierInfo.json'), 'w') as f:
@@ -2238,7 +2255,7 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         command = ["bash", "-c", bashCommand]
         p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out, err =  p.communicate()
-        print "\nout : " + str(out) + "\nerr : " + str(err)
+        print "\nout : " + str(out) #+ "\nerr : " + str(err)
 
         if os.path.isdir(networkDir):
             shutil.rmtree(networkDir)

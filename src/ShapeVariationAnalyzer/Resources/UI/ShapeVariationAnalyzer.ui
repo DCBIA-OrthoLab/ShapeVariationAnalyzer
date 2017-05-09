@@ -6,14 +6,27 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1391</width>
-    <height>1662</height>
+    <width>1512</width>
+    <height>1696</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Form</string>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout_10">
+  <layout class="QVBoxLayout" name="verticalLayout_5">
+   <item>
+    <spacer name="verticalSpacer">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>40</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
    <item>
     <widget class="ctkCollapsibleButton" name="CollapsibleButton_creationCSVFile" native="true">
      <property name="text" stdset="0">
@@ -367,15 +380,25 @@
             <string>Advanced parameters</string>
            </property>
            <layout class="QGridLayout" name="gridLayout_7">
+            <item row="0" column="1">
+             <widget class="ctkCheckableComboBox" name="checkableComboBox_choiceOfFeatures"/>
+            </item>
+            <item row="1" column="0">
+             <widget class="QCheckBox" name="checkBox_numsteps">
+              <property name="text">
+               <string>Number of steps</string>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="1">
+             <widget class="QSpinBox" name="spinBox_numsteps"/>
+            </item>
             <item row="0" column="0">
-             <widget class="QLabel" name="label_features">
+             <widget class="QCheckBox" name="checkBox_features">
               <property name="text">
                <string>Features</string>
               </property>
              </widget>
-            </item>
-            <item row="0" column="1">
-             <widget class="ctkCheckableComboBox" name="checkableComboBox_choiceOfFeatures"/>
             </item>
            </layout>
           </widget>
@@ -478,19 +501,6 @@
       </item>
      </layout>
     </widget>
-   </item>
-   <item>
-    <spacer name="verticalSpacer">
-     <property name="orientation">
-      <enum>Qt::Vertical</enum>
-     </property>
-     <property name="sizeHint" stdset="0">
-      <size>
-       <width>20</width>
-       <height>40</height>
-      </size>
-     </property>
-    </spacer>
    </item>
   </layout>
  </widget>
