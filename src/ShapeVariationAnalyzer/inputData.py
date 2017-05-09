@@ -160,9 +160,14 @@ class inputData():
                     nb_feat += 1
 
                 if self.featuresList.count('Position'):
-                    value = 2 * (positionArray.GetTuple1(i) - positionMin) / positionDepth - 1
+                    point = positionArray.GetTuple3(i)
+                    value = 2 * (point[0] - positionMin) / positionDepth - 1
                     currentData[i, nb_feat] = value
-                    nb_feat += 1
+                    value = 2 * (point[1] - positionMin) / positionDepth - 1
+                    currentData[i, nb_feat + 1] = value
+                    value = 2 * (point[2] - positionMin) / positionDepth - 1
+                    currentData[i, nb_feat + 2] = value
+                    nb_feat += 3
 
         except IOError as e:
             print('Could not read:', shape, ':', e, '- it\'s ok, skipping.')
