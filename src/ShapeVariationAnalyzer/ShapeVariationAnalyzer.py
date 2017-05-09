@@ -1158,7 +1158,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
 
         # 
         # Pickle the data for the network
-        ft_list = self.allFeaturess
+        ft_list = self.allFeatures
         if self.collapsibleGroupBox_advancedParameters.checked and self.checkBox_features.checked:
             ft_list = self.featuresList
             if not len(self.featuresList):
@@ -1184,10 +1184,15 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         with open(os.path.join(meanGroupsDir,'meanGroups.json'), 'w') as f:
             json.dump(dictMeanGroups, f, ensure_ascii=False, indent = 4)
 
+        import time
+        start_time = time.time()
         # Zipper tout ca 
         self.archiveName = shutil.make_archive(base_name = networkDir, format = 'zip', root_dir = tempPath, base_dir = 'Network')
 
         self.pushButton_trainNetwork.setEnabled(True)
+        end_time = time.time()
+
+        print "Temps make_archive + enable train_network = " + str(end_time - start_time)
 
         return
 
@@ -2233,7 +2238,6 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         with open(jsonFile) as f:
             jsonDict = json.load(f)
 
-        print " ^^^^^ " + str(num_steps)
         jsonDict['CondylesClassifier']['learning_rate'] = 0.0005
         jsonDict['CondylesClassifier']['lambda_reg'] = 0.01
         jsonDict['CondylesClassifier']['num_epochs'] = 2
@@ -2357,9 +2361,29 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         train_file = os.path.join(currentPath,'Resources/Classifier/evalShape.py')
         bashCommand = self.cmd_setenv + " " + train_file + " -inputZip " + archiveName
 
-        command = ["bash", "-c", bashCommand]
-        p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        out, err =  p.communicate()
+
+
+        arguments = ["-c", bashCommand]
+        #     Call the executable
+        process = qt.QProcess()
+        process.setProcessChannelMode(qt.QProcess.MergedChannels)
+
+        # print "Calling " 
+        process.start("bash", arguments)
+        process.waitForStarted()
+        print "state: " + str(process.state())
+        process.waitForFinished()
+        print "error: " + str(process.error())
+        
+        processOutput = str(process.readAll())
+        print "\n\n PROCESS OUTPUT ===== \n\n"
+        print processOutput
+
+
+
+        # command = ["bash", "-c", bashCommand]
+        # p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        # out, err =  p.communicate()
         # print "\nout : " + str(out) + "\nerr : " + str(err)
 
         with zipfile.ZipFile(archiveName) as zf:
