@@ -10,8 +10,8 @@ set(EXTENSION_CONTRIBUTORS "Priscille de Dumast (University of Michigan), Laura 
 set(EXTENSION_DESCRIPTION "ShapeVariationAnalyzer allows the classification of 3D models, according to their morphological variations. This tool is based on a deep learning neural network.")
 set(EXTENSION_ICONURL "http://www.example.com/Slicer/Extensions/ShapeVarationAnalyzer.png")
 set(EXTENSION_SCREENSHOTURLS "http://www.example.com/Slicer/Extensions/ShapeVarationAnalyzer/Screenshots/1.png")
-set(EXTENSION_DEPENDS "NA") # Specified as a space separated string, a list or 'NA' if any
-# set(EXTENSION_DEPENDS ShapePopulationViewer)
+# set(EXTENSION_DEPENDS "NA") # Specified as a space separated string, a list or 'NA' if any
+set(EXTENSION_DEPENDS ShapePopulationViewer)
 
 #-----------------------------------------------------------------------------
 # Extension dependencies
