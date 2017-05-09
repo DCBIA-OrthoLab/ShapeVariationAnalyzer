@@ -23,7 +23,7 @@ class ShapeVariationAnalyzer(ScriptedLoadableModule):
     def __init__(self, parent):
         ScriptedLoadableModule.__init__(self, parent)
         parent.title = "ShapeVarationAnalyzer"
-        parent.categories = ["Machine Learning"]
+        parent.categories = ["Quantification"]
         parent.dependencies = []
         parent.contributors = ["Priscille de Dumast (University of Michigan), Laura Pascal (University of Michigan)"]
         parent.helpText = """
@@ -820,13 +820,11 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
     def onComputeMeanGroup(self):
         print "compute mean group"
         for group, listvtk in self.dictShapeModels.items():
-            print "\n\nGROUP :: " + str(group) + "\n"
             # Compute the mean of each group thanks to the CLI "computeMean"
             self.logic.computeMean(group, listvtk)
 
             # Storage of the means for each group
             self.logic.storageMean(self.dictGroups, group)
-
 
         self.pushButton_exportMeanGroups.setEnabled(True)
         self.directoryButton_exportMeanGroups.setEnabled(True)
@@ -1158,7 +1156,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
 
         # 
         # Pickle the data for the network
-        ft_list = self.allFeaturess
+        ft_list = self.allFeatures
         if self.collapsibleGroupBox_advancedParameters.checked and self.checkBox_features.checked:
             ft_list = self.featuresList
             if not len(self.featuresList):
@@ -1184,10 +1182,15 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         with open(os.path.join(meanGroupsDir,'meanGroups.json'), 'w') as f:
             json.dump(dictMeanGroups, f, ensure_ascii=False, indent = 4)
 
+        import time
+        start_time = time.time()
         # Zipper tout ca 
         self.archiveName = shutil.make_archive(base_name = networkDir, format = 'zip', root_dir = tempPath, base_dir = 'Network')
 
         self.pushButton_trainNetwork.setEnabled(True)
+        end_time = time.time()
+
+        # print "Temps make_archive + enable train_network = " + str(end_time - start_time)
 
         return
 
@@ -1399,10 +1402,10 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         pathSlicerPython = os.path.join(pathSlicerExec, "../bin/SlicerPython")
 
         # Check pip installation
-        print "\n\n I. Pip installation"
+        # print "\n\n I. Pip installation"
         try:
             import pip
-            print "===> Pip already installed"
+            # print "===> Pip already installed"
         except Exception as e: 
             # ----- Install pip as it's not already done -----
             command = ["bash", "-c", pathSlicerPython + " " + os.path.join(currentPath,'Resources/get-pip.py')]
@@ -1410,36 +1413,36 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
             out, err = p.communicate()
             # print "out : " + str(out) + "\nerr : " + str(err)
             import pip
-            print "===> Pip now installed to PythonSlicer"
+            # print "===> Pip now installed to PythonSlicer"
 
         # Check virtualenv installation
         print "\n\n II. Virtualenv installation"
         try:
             import virtualenv
-            print "===> Virtualenv already installed"
+            # print "===> Virtualenv already installed"
         except Exception as e: 
             venv_install = pip.main(['install', 'virtualenv'])
             import virtualenv
-            print "===> Virtualenv now installed with pip.main"
+            # print "===> Virtualenv now installed with pip.main"
 
 
-        print "\n\n III. Create environment tensorflowSlicer"
+        # print "\n\n III. Create environment tensorflowSlicer"
         tempPath = slicer.app.temporaryPath
         env_dir = os.path.join(tempPath, "env-tensorflow") 
         if not os.path.isdir(env_dir):
             os.mkdir(env_dir) 
 
         if os.path.isfile(os.path.join(env_dir, 'bin', 'activate')):
-            print "===> env-tensorflow already exists"
+            # print "===> env-tensorflow already exists"
         else:
             command = ["bash", "-c", pathSlicerPython + " " + os.path.join(dirSitePckgs, 'virtualenv.py') + " --python=" + pathSlicerPython + " " + env_dir]
             p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             out, err =  p.communicate()
             # print "out : " + str(out) + "\nerr : " + str(err)
-            print "\n===> Environmnent tensorflowSlicer created"
+            # print "\n===> Environmnent tensorflowSlicer created"
 
 
-        print "\n\n\n IV. Install tensorflow into tensorflowSlicer"
+        # print "\n\n\n IV. Install tensorflow into tensorflowSlicer"
         # 
         #   To install tensorflow in virtualenv, requires:
         #       - activate environment
@@ -1482,14 +1485,14 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         # Tensorflow is now installed but might not work due to a missing file
         # We create it to avoid the error 'no module named google.protobuf'
         # -----
-        print "\n\n Create missing __init__.py if doesn't existe yet"
+        # print "\n\n Create missing __init__.py if doesn't existe yet"
         google_init = os.path.join(env_dir, 'lib', 'python2.7', 'site-packages', 'google', '__init__.py')
         if os.path.isfile(google_init):
-            print "-> google/__init__.py already exists"
+            # print "-> google/__init__.py already exists"
         else:
             fichier = open(google_init, "w")
             fichier.close()
-            print "-> google/__init__.py created!"
+            # print "-> google/__init__.py created!"
         
 
         # print "\n\n\n V. Check tensorflow is well installed"
@@ -1850,12 +1853,12 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
     
 
         #     Creation of the command line
-        # scriptedModulesPath = eval('slicer.modules.%s.path' % self.interface.moduleName.lower())
-        # scriptedModulesPath = os.path.dirname(scriptedModulesPath)
-        # libPath = os.path.join(scriptedModulesPath)
-        # sys.path.insert(0, libPath)
-        # computeMean = os.path.join(scriptedModulesPath, '../hidden-cli-modules/computemean')
-        computeMean = "/Users/prisgdd/Documents/Projects/CNN/SurfaceFeaturesExtractor-build/src/ComputeMeanShapes/src/bin/computemean"
+        scriptedModulesPath = eval('slicer.modules.%s.path' % self.interface.moduleName.lower())
+        scriptedModulesPath = os.path.dirname(scriptedModulesPath)
+        libPath = os.path.join(scriptedModulesPath)
+        sys.path.insert(0, libPath)
+        computeMean = os.path.join(scriptedModulesPath, '../hidden-cli-modules/computemean')
+        # computeMean = "/Users/prisgdd/Documents/Projects/CNN/SurfaceFeaturesExtractor-build/src/ComputeMeanShapes/src/bin/computemean"
 
         arguments = list()
         arguments.append("--inputList")
@@ -2043,13 +2046,13 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         # Call of surfacefeaturesextractor 
 
         #     Creation of the command line
-        # scriptedModulesPath = eval('slicer.modules.%s.path' % self.interface.moduleName.lower())
-        # scriptedModulesPath = os.path.dirname(scriptedModulesPath)
-        # libPath = os.path.join(scriptedModulesPath)
-        # sys.path.insert(0, libPath)
-        # surfacefeaturesextractor = os.path.join(scriptedModulesPath, '../hidden-cli-modules/surfacefeaturesextractor')
+        scriptedModulesPath = eval('slicer.modules.%s.path' % self.interface.moduleName.lower())
+        scriptedModulesPath = os.path.dirname(scriptedModulesPath)
+        libPath = os.path.join(scriptedModulesPath)
+        sys.path.insert(0, libPath)
+        surfacefeaturesextractor = os.path.join(scriptedModulesPath, '../hidden-cli-modules/surfacefeaturesextractor')
         
-        surfacefeaturesextractor = "/Users/prisgdd/Documents/Projects/CNN/SurfaceFeaturesExtractor-build/src/SurfaceFeaturesExtractor/bin/surfacefeaturesextractor"
+        # surfacefeaturesextractor = "/Users/prisgdd/Documents/Projects/CNN/SurfaceFeaturesExtractor-build/src/SurfaceFeaturesExtractor/bin/surfacefeaturesextractor"
         
 
         filename = str(os.path.basename(shape))
@@ -2217,7 +2220,7 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         return set_filename
 
     def trainNetworkClassification(self, archiveName, num_steps):
-        print " &&&&&& Train Network Classification &&&&&& "
+        # print " &&&&&& Train Network Classification &&&&&& "
         # Set le path pour le network
         tempPath = slicer.app.temporaryPath
         networkDir = os.path.join(tempPath, "Network")
@@ -2233,7 +2236,6 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         with open(jsonFile) as f:
             jsonDict = json.load(f)
 
-        print " ^^^^^ " + str(num_steps)
         jsonDict['CondylesClassifier']['learning_rate'] = 0.0005
         jsonDict['CondylesClassifier']['lambda_reg'] = 0.01
         jsonDict['CondylesClassifier']['num_epochs'] = 2
@@ -2357,10 +2359,26 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         train_file = os.path.join(currentPath,'Resources/Classifier/evalShape.py')
         bashCommand = self.cmd_setenv + " " + train_file + " -inputZip " + archiveName
 
+        # arguments = ["-c", bashCommand]
+        # #     Call the executable
+        # process = qt.QProcess()
+        # process.setProcessChannelMode(qt.QProcess.MergedChannels)
+
+        # # print "Calling " 
+        # process.start("bash", arguments)
+        # process.waitForStarted()
+        # print "state: " + str(process.state())
+        # process.waitForFinished()
+        # print "error: " + str(process.error())
+        
+        # processOutput = str(process.readAll())
+        # print "\n\n PROCESS OUTPUT ===== \n\n"
+        # print processOutput
+
         command = ["bash", "-c", bashCommand]
         p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out, err =  p.communicate()
-        # print "\nout : " + str(out) + "\nerr : " + str(err)
+        print "\nout : " + str(out) + "\nerr : " + str(err)
 
         with zipfile.ZipFile(archiveName) as zf:
             zf.extractall(os.path.dirname(archiveName))
