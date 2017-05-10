@@ -62,14 +62,15 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
 
         self.allFeatures = list()
         self.allFeatures.append('Curvedness')
-        self.allFeatures.append('Normals')
+        self.allFeatures.append('Distances to average shapes')
+        self.allFeatures.append('Distance to control group')
+        self.allFeatures.append('Gaussian Curvature')
         self.allFeatures.append('Maximum Curvature')
         self.allFeatures.append('Minimum Curvature')
         self.allFeatures.append('Mean Curvature')
-        self.allFeatures.append('Gaussian Curvature')
-        self.allFeatures.append('Shape Index')
-        self.allFeatures.append('Distances to average shapes')
+        self.allFeatures.append('Normals')
         self.allFeatures.append('Position')
+        self.allFeatures.append('Shape Index')
         self.featuresList = list()
 
         # Interface
@@ -129,6 +130,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.checkableComboBox_choiceOfFeatures = self.logic.get('checkableComboBox_choiceOfFeatures')
         self.checkBox_numsteps = self.logic.get('checkBox_numsteps')
         self.spinBox_numsteps = self.logic.get('spinBox_numsteps')
+        self.comboBox_controlGroup_features = self.logic.get('comboBox_controlGroup_features')
 
         #          Tab: Result / Analysis
         self.collapsibleButton_Result = self.logic.get('CollapsibleButton_Result')
@@ -404,6 +406,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.CollapsibleButton_computeAverageGroups.setChecked(False)
         self.collapsibleButton_Result.setChecked(False)
         self.collapsibleGroupBox_advancedParameters.setChecked(False)
+        self.comboBox_healthyGroup_features.clear()
 
         #     qMRMLNodeComboBox configuration
         self.MRMLNodeComboBox_VTKInputData.setMRMLScene(slicer.mrmlScene)
@@ -1101,6 +1104,10 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
             return
 
         self.stateCSVMeansShape = True
+        self.comboBox_controlGroup_features.clear()
+        for key, value in self.dictGroups.items():
+            self.comboBox_controlGroup_features.addItem(str(key))
+
         self.enableNetwork()
         return
 
@@ -1157,13 +1164,20 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         # 
         # Pickle the data for the network
         ft_list = self.allFeatures
+        self.controlAverage = None
         if self.collapsibleGroupBox_advancedParameters.checked and self.checkBox_features.checked:
             ft_list = self.featuresList
-            if not len(self.featuresList):
+            if not len(ft_list):
                 slicer.util.delayDisplay("Missing features")
                 return
 
-        self.pickle_file = self.logic.pickleData(self.dictFeatData, ft_list)
+        if ft_list.count('Distance to control group') and ft_list.count('Distances to average shapes'): 
+        # if both checked, remove distance to control, otherwise the feature will be used twice
+            ft_list.remove('Distance to control group')
+        else:
+            self.controlAverage = int(str(self.comboBox_controlGroup_features.currentText))
+
+        self.pickle_file = self.logic.pickleData(self.dictFeatData, ft_list, self.controlAverage)
         
         #
         # Zipping JSON + PICKLE files in one ZIP file
@@ -1416,7 +1430,7 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
             # print "===> Pip now installed to PythonSlicer"
 
         # Check virtualenv installation
-        print "\n\n II. Virtualenv installation"
+        # print "\n\n II. Virtualenv installation"
         try:
             import virtualenv
             # print "===> Virtualenv already installed"
@@ -1432,9 +1446,7 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         if not os.path.isdir(env_dir):
             os.mkdir(env_dir) 
 
-        if os.path.isfile(os.path.join(env_dir, 'bin', 'activate')):
-            # print "===> env-tensorflow already exists"
-        else:
+        if not os.path.isfile(os.path.join(env_dir, 'bin', 'activate')):
             command = ["bash", "-c", pathSlicerPython + " " + os.path.join(dirSitePckgs, 'virtualenv.py') + " --python=" + pathSlicerPython + " " + env_dir]
             p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             out, err =  p.communicate()
@@ -1487,12 +1499,9 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         # -----
         # print "\n\n Create missing __init__.py if doesn't existe yet"
         google_init = os.path.join(env_dir, 'lib', 'python2.7', 'site-packages', 'google', '__init__.py')
-        if os.path.isfile(google_init):
-            # print "-> google/__init__.py already exists"
-        else:
+        if not os.path.isfile(google_init):
             fichier = open(google_init, "w")
             fichier.close()
-            # print "-> google/__init__.py created!"
         
 
         # print "\n\n\n V. Check tensorflow is well installed"
@@ -1502,7 +1511,7 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         # command = ["bash", "-c", bashCommand]
         # p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         # out, err =  p.communicate()
-        # # print "\nout : " + str(out) + "\nerr : " + str(err)
+        # print "\nout : " + str(out) + "\nerr : " + str(err)
 
 
 
@@ -2106,7 +2115,7 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
             listPatient[i] = ftPath
         return listPatient
 
-    def pickleData(self, dictFeatData, featuresList):
+    def pickleData(self, dictFeatData, featuresList, controlGroup):
         tempPath = slicer.app.temporaryPath
         networkDir = os.path.join(tempPath, "Network")
         if os.path.isdir(networkDir):
@@ -2126,6 +2135,7 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
             nb_feat += 2
 
         self.input_Data.featuresList = featuresList
+        self.input_Data.controlAverage = controlGroup
         self.input_Data.NUM_FEATURES = nb_feat
 
         reader_poly = vtk.vtkPolyDataReader()
@@ -2146,6 +2156,7 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         network_param["NUM_FEATURES"] = self.input_Data.NUM_FEATURES
         network_param["NUM_POINTS"] = self.input_Data.NUM_POINTS
         network_param["Features"] = featuresList
+        network_param["controlAverage"] = self.input_Data.controlAverage 
 
         jsonDict = dict()
         jsonDict["CondylesClassifier"] = network_param
@@ -2323,6 +2334,7 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         self.input_Data.NUM_CLASSES = jsonDict['CondylesClassifier']['NUM_CLASSES']
         self.input_Data.NUM_FEATURES = jsonDict['CondylesClassifier']['NUM_FEATURES']
         self.input_Data.featuresList = jsonDict['CondylesClassifier']['Features']
+        self.input_Data.controlAverage  = jsonDict['controlAverage'] 
 
         numModelFiles = 0
         strCondClass = 'CondylesClassifier'

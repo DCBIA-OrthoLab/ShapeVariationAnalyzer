@@ -5,7 +5,7 @@ import pickle
 
 
 class inputData():
-    def __init__(self, parent = None, num_points_param = 0, num_classes_param = 0, featuresList_param = list()):
+    def __init__(self, parent = None, num_points_param = 0, num_classes_param = 0, featuresList_param = list(), controlAverage_param = None):
         if parent:
             parent.title = " "
 
@@ -13,6 +13,7 @@ class inputData():
         self.NUM_CLASSES = num_classes_param
         self.NUM_FEATURES = 3 + self.NUM_CLASSES + 4  # Normals + NUM_CLASSES + curvatures
         self.featuresList = featuresList_param
+        self.controlAverage = controlAverage_param 
 
 
     #
@@ -35,6 +36,7 @@ class inputData():
     #   Features are normalized (normals are already done, in previous program SurfaceFeaturesExtractor with vtkPolyDataNormals)
     #
     def load_features(self, shape):
+        print shape
         dataset = np.ndarray(shape=(1, self.NUM_POINTS, self.NUM_FEATURES), dtype=np.float32)
 
         try:
@@ -128,6 +130,10 @@ class inputData():
                     for numComponent in range(0, self.NUM_CLASSES):
                         currentData[i, numComponent + nb_feat] = listGroupMean[numComponent].GetTuple1(i)
                     nb_feat += self.NUM_CLASSES
+
+                if self.featuresList.count('Distance to control group'):
+                    currentData[i, nb_feat] = listGroupMean[self.controlAverage].GetTuple1(i)
+                    nb_feat += 1
 
                 if self.featuresList.count('Mean Curvature'):
                     value = 2 * (meanCurvArray.GetTuple1(i) - meanCurveMin) / meanCurveDepth - 1
