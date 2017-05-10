@@ -2156,6 +2156,7 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         network_param["NUM_FEATURES"] = self.input_Data.NUM_FEATURES
         network_param["NUM_POINTS"] = self.input_Data.NUM_POINTS
         network_param["Features"] = featuresList
+        network_param["controlAverage"] = self.input_Data.controlAverage 
 
         jsonDict = dict()
         jsonDict["CondylesClassifier"] = network_param
@@ -2333,6 +2334,7 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         self.input_Data.NUM_CLASSES = jsonDict['CondylesClassifier']['NUM_CLASSES']
         self.input_Data.NUM_FEATURES = jsonDict['CondylesClassifier']['NUM_FEATURES']
         self.input_Data.featuresList = jsonDict['CondylesClassifier']['Features']
+        self.input_Data.controlAverage  = jsonDict['controlAverage'] 
 
         numModelFiles = 0
         strCondClass = 'CondylesClassifier'
