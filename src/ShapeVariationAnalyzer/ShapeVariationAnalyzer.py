@@ -2055,13 +2055,13 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         # Call of surfacefeaturesextractor 
 
         #     Creation of the command line
-        # scriptedModulesPath = eval('slicer.modules.%s.path' % self.interface.moduleName.lower())
-        # scriptedModulesPath = os.path.dirname(scriptedModulesPath)
-        # libPath = os.path.join(scriptedModulesPath)
-        # sys.path.insert(0, libPath)
-        # surfacefeaturesextractor = os.path.join(scriptedModulesPath, '../hidden-cli-modules/surfacefeaturesextractor')
+        scriptedModulesPath = eval('slicer.modules.%s.path' % self.interface.moduleName.lower())
+        scriptedModulesPath = os.path.dirname(scriptedModulesPath)
+        libPath = os.path.join(scriptedModulesPath)
+        sys.path.insert(0, libPath)
+        surfacefeaturesextractor = os.path.join(scriptedModulesPath, '../hidden-cli-modules/surfacefeaturesextractor')
         
-        surfacefeaturesextractor = "/Users/prisgdd/Documents/Projects/CNN/SurfaceFeaturesExtractor-build/src/SurfaceFeaturesExtractor/bin/surfacefeaturesextractor"
+        # surfacefeaturesextractor = "/Users/prisgdd/Documents/Projects/CNN/SurfaceFeaturesExtractor-build/src/SurfaceFeaturesExtractor/bin/surfacefeaturesextractor"
         
 
         filename = str(os.path.basename(shape))
