@@ -1508,17 +1508,7 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
 
     # Functions to recovery the widget in the .ui file
     def get(self, objectName):
-        return self.findWidget(self.interface.widget, objectName)
-
-    def findWidget(self, widget, objectName):
-        if widget.objectName == objectName:
-            return widget
-        else:
-            for w in widget.children():
-                resulting_widget = self.findWidget(w, objectName)
-                if resulting_widget:
-                    return resulting_widget
-            return None
+        return slicer.util.findChild(self.interface.widget, objectName)
 
     # Function to add all the vtk filepaths found in the given directory of a dictionary
     def addGroupToDictionary(self, dictCSVFile, directory, directoryList, group):
