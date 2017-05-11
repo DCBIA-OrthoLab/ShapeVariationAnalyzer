@@ -817,15 +817,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         if not condition4: 
             self.pathLineEdit_CSVFileDataset.setCurrentPath(" ")
             return
-        # Enable/disable buttons
-        # self.comboBox_healthyGroup.setEnabled(True)
-        
-
         self.pushButton_computeMeanGroup.setEnabled(True)
-
-        # Configuration of the spinbox specify the healthy group
-        #      Set the Maximum value of comboBox_healthyGroup at the maximum number groups
-        # self.comboBox_healthyGroup.setMaximum(len(self.dictShapeModels) - 1)
 
     def onComputeMeanGroup(self):
         """ Function to compute the average shape
@@ -910,7 +902,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         for i in range(3,end):
             model = list.GetItemAsObject(i)
             disp = model.GetDisplayNode()
-            # print ("model adns color : " + str(model.GetName()))
+            # print ("model in color : " + str(model.GetName()))
             for group in self.dictGroups.keys():
                 filename = self.dictGroups.get(group, None)
                 if os.path.splitext(os.path.basename(filename))[0] == model.GetName():
@@ -1513,8 +1505,8 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         # print("\n\n Create missing __init__.py if doesn't existe yet")
         google_init = os.path.join(env_dir, 'lib', 'python2.7', 'site-packages', 'google', '__init__.py')
         if not os.path.isfile(google_init):
-            fichier = open(google_init, "w")
-            fichier.close()
+            file = open(google_init, "w")
+            file.close()
         
 
         # print("\n\n\n IV. Check tensorflow is well installed")
@@ -2270,7 +2262,7 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         First creation of a zipfile with updated info
         Return the estimated accuracy of the network
         """
-        # Set the path pour le network
+        # Set path for teh network
         tempPath = slicer.app.temporaryPath
         networkDir = os.path.join(tempPath, "Network")
         if os.path.isdir(networkDir):
@@ -2297,7 +2289,7 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         shutil.make_archive(base_name = networkDir, format = 'zip', root_dir = tempPath, base_dir = 'Network')
 
         # 
-        # Train le network dans le virtualenv
+        # Train network in virtualenv
         # 
         currentPath = os.path.dirname(os.path.abspath(__file__))
         train_file = os.path.join(currentPath,'Resources','Classifier','trainNeuralNetwork.py')
