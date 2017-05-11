@@ -74,19 +74,12 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.featuresList = list()
 
         # Interface
-        loader = qt.QUiLoader()
         self.moduleName = 'ShapeVariationAnalyzer'
         scriptedModulesPath = eval('slicer.modules.%s.path' % self.moduleName.lower())
         scriptedModulesPath = os.path.dirname(scriptedModulesPath)
         path = os.path.join(scriptedModulesPath, 'Resources', 'UI', '%s.ui' % self.moduleName)
-        qfile = qt.QFile(path)
-        qfile.open(qt.QFile.ReadOnly)
-
-        widget = loader.load(qfile, self.parent)
-        self.layout = self.parent.layout()
-        self.widget = widget
-        self.layout.addWidget(widget)
-
+        self.widget = slicer.util.loadUI(path)
+        self.layout.addWidget(self.widget)
 
         #     global variables of the Interface:
         #          Tab: Creation of CSV File for Classification Groups
