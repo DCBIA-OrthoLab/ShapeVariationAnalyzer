@@ -1410,37 +1410,28 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         # 
         # ----- Virtualenv setup ----- #
         # 
+        """ Virtualenv setup with Tensorflow
+        1 - install virtualenv if it's not already
+        2 - create a virtualenv into slicer temporary path
+        3 - install tensorflow into the virtualenv
+        """ 
         pathSlicerExec = str(os.path.dirname(sys.executable))
         currentPath = os.path.dirname(os.path.abspath(__file__))
         dirSitePckgs = os.path.join(pathSlicerExec, "../lib/Python/lib/python2.7/site-packages")
         pathSlicerPython = os.path.join(pathSlicerExec, "../bin/SlicerPython")
 
-        # Check pip installation
-        # print "\n\n I. Pip installation"
-        try:
-            import pip
-            # print "===> Pip already installed"
-        except Exception as e: 
-            # ----- Install pip as it's not already done -----
-            command = ["bash", "-c", pathSlicerPython + " " + os.path.join(currentPath,'Resources/get-pip.py')]
-            p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            out, err = p.communicate()
-            # print "out : " + str(out) + "\nerr : " + str(err)
-            import pip
-            # print "===> Pip now installed to PythonSlicer"
-
         # Check virtualenv installation
-        # print "\n\n II. Virtualenv installation"
+        print "\n\n I. Virtualenv installation"
         try:
             import virtualenv
-            # print "===> Virtualenv already installed"
+            print "===> Virtualenv already installed"
         except Exception as e: 
             venv_install = pip.main(['install', 'virtualenv'])
             import virtualenv
-            # print "===> Virtualenv now installed with pip.main"
+            print "===> Virtualenv now installed with pip.main"
 
 
-        # print "\n\n III. Create environment tensorflowSlicer"
+        print "\n\n II. Create environment tensorflowSlicer"
         tempPath = slicer.app.temporaryPath
         env_dir = os.path.join(tempPath, "env-tensorflow") 
         if not os.path.isdir(env_dir):
@@ -1450,11 +1441,11 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
             command = ["bash", "-c", pathSlicerPython + " " + os.path.join(dirSitePckgs, 'virtualenv.py') + " --python=" + pathSlicerPython + " " + env_dir]
             p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             out, err =  p.communicate()
-            # print "out : " + str(out) + "\nerr : " + str(err)
-            # print "\n===> Environmnent tensorflowSlicer created"
+            print "out : " + str(out) + "\nerr : " + str(err)
+            print "\n===> Environmnent tensorflowSlicer created"
 
 
-        # print "\n\n\n IV. Install tensorflow into tensorflowSlicer"
+        # print "\n\n\n III. Install tensorflow into tensorflowSlicer"
         # 
         #   To install tensorflow in virtualenv, requires:
         #       - activate environment
@@ -1492,19 +1483,19 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         command = ["bash", "-c", str(bashCommand)]
         p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out, err =  p.communicate()
-        # print "\nout : " + str(out) + "\nerr : " + str(err)
+        print "\nout : " + str(out) + "\nerr : " + str(err)
 
         # Tensorflow is now installed but might not work due to a missing file
         # We create it to avoid the error 'no module named google.protobuf'
         # -----
-        # print "\n\n Create missing __init__.py if doesn't existe yet"
+        print "\n\n Create missing __init__.py if doesn't existe yet"
         google_init = os.path.join(env_dir, 'lib', 'python2.7', 'site-packages', 'google', '__init__.py')
         if not os.path.isfile(google_init):
             fichier = open(google_init, "w")
             fichier.close()
         
 
-        # print "\n\n\n V. Check tensorflow is well installed"
+        # print "\n\n\n IV. Check tensorflow is well installed"
         # test_tf = os.path.join(currentPath,'Testing/test-tensorflowinstall.py')
         # bashCommand = self.cmd_setenv + " " + test_tf
 
