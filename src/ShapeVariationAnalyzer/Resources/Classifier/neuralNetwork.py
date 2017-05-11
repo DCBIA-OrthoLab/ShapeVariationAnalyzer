@@ -26,13 +26,14 @@ class neuralNetwork():
 	#                                 Neural Network
 	# ----------------------------------------------------------------------------- #
 
-
-	## Performance measures of the network
-	# Computation of : 	- Accuracy
-	# 					- Precision (PPV)
-	# 					- Sensitivity (TPR)
-	# 					- Confusion matrix
 	def accuracy(self, predictions, labels):
+		""" Performance measures of the network
+			Computation of :
+			- Accuracy
+			- Precision (PPV)
+			- Sensitivity (TPR)
+			- Confusion matrix
+		"""
 		# Accuracy
 		accuracy = (100.0 * np.sum(np.argmax(predictions, 1) == np.argmax(labels, 1)) / predictions.shape[0])
 

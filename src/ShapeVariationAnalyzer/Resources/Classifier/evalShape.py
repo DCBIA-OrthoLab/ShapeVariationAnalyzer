@@ -2,7 +2,6 @@ import os
 import sys
 from six.moves import cPickle as pickle
 import neuralNetwork as nn
-# import inputData
 import numpy as np
 import tensorflow as tf
 
@@ -12,24 +11,18 @@ import shutil
 import json
 
 
-# ----------------------------------------------------------------------------- #
-# 																				#
-# 						   Passons aux choses serieuses							#
-# 																				#
-# ----------------------------------------------------------------------------- #
-# 
-
-## Reformat into a shape that's more adapted to the models we're going to train:
-#   - data as a flat matrix
-#   - labels as float 1-hot encodings
 def reformat_data(dataset, classifier):
+    """ Reformat into a shape that's more adapted to the models we're going to train:
+        - data as a flat matrix
+        - labels as float 1-hot encodings
+    """
     dataset = dataset.reshape((-1, classifier.NUM_POINTS * classifier.NUM_FEATURES)).astype(np.float32)
     return dataset
 
 
 def get_input_shape(data, classifier):
-    # Get features in a matrix (NUM_FEATURES x NUM_POINTS)
-    # data = input_Data.load_features(inputFile)
+    """ Get features in a matrix (NUM_FEATURES x NUM_POINTS)
+    """
     data = data.reshape((-1, classifier.NUM_POINTS * classifier.NUM_FEATURES)).astype(np.float32)
     data = reformat_data(data, classifier)
     return data
@@ -46,8 +39,6 @@ def exportModelNetwork(zipPath):
 
 
 def main(_):
-
-
     # Get the arguments from the command line
     parser = argparse.ArgumentParser()
     parser.add_argument('-inputZip', action='store', dest='inputZip', help='Input zip file which contains the datasets & the parameters for the classifier', 
@@ -133,13 +124,8 @@ def main(_):
 
         result = get_result(data_pred)
         dictClassified[file] = result
-    #     print "Shape : " + os.path.basename(file)
-    #     print "Group predicted :" + str(result) + "\n"
-
-    # print "\n\n" + str(dictClassified)
-
+        
     # Save into a JSON file
-
     with open(os.path.join(networkDir,'results.json'), 'w') as f:
         json.dump(dictClassified, f, ensure_ascii=False, indent = 4)
 

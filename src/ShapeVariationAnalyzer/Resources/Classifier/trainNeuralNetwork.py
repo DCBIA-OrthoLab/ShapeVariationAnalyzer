@@ -16,17 +16,18 @@ import zipfile
 #																				#
 # ----------------------------------------------------------------------------- #
 
-## Reformat into a shape that's more adapted to the models we're going to train:
-#   - data as a flat matrix
-#   - labels as float 1-hot encodings
 def reformat(dataset, labels, classifier):
+    """ Reformat into a shape that's more adapted to the models we're going to train:
+        - data as a flat matrix
+        - labels as float 1-hot encodings
+    """
     dataset = dataset.reshape((-1, classifier.NUM_POINTS * classifier.NUM_FEATURES)).astype(np.float32)
     labels = (np.arange(classifier.NUM_CLASSES) == labels[:, None]).astype(np.float32)
     return dataset, labels
     
 def get_inputs(pickle_file, classifier):
-
-    # Reoad the data generated in pickleData.py
+    """ Reoad the data generated in picklefiel
+    """
     with open(pickle_file, 'rb') as f:
         save = pickle.load(f)
         train_dataset = save['train_dataset']
@@ -52,8 +53,7 @@ def get_inputs(pickle_file, classifier):
 
 
 def run_training(train_dataset, train_labels, valid_dataset, valid_labels, test_dataset, test_labels, saveModelPath, classifier):
-
-    #       >>>>>       A RENDRE GENERIQUE !!!!!!!
+    # TODO: Generic number of layers and their number of nodes
     if classifier.NUM_HIDDEN_LAYERS == 1:
         nb_hidden_nodes_1 = 2048
         nb_hidden_nodes_2 = 0
@@ -92,7 +92,6 @@ def run_training(train_dataset, train_labels, valid_dataset, valid_labels, test_
             optimizer = tf.train.GradientDescentOptimizer(classifier.learning_rate).minimize(loss)
             # optimizer = tf.train.AdagradOptimizer(classifier.learning_rate).minimize(loss)
         
-        # tf.tensor_summary("W_fc1", weightsDict['W_fc1'])
         tf.summary.scalar("Loss", loss)
         summary_op = tf.summary.merge_all()
         saver = tf.train.Saver(weightsDict)
@@ -164,14 +163,6 @@ def exportModelNetwork(zipPath):
 
 	return
 
-
-
-# ----------------------------------------------------------------------------- #
-# 																				#
-# 						   Passons aux choses serieuses							#
-# 																				#
-# ----------------------------------------------------------------------------- #
-# 
 def main(_):
     print "\nTensorFlow current version : " + str(tf.__version__) + "\n"
       
