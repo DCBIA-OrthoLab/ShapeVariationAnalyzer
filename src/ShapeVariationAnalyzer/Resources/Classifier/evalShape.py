@@ -75,8 +75,8 @@ def main(_):
 
     # In case our JSON file doesnt contain a valid Classifier
     if not jsonDict.has_key('CondylesClassifier'):
-        print "Error: Couldn't parameterize the network."
-        print "There is no 'CondylesClassifier' model."
+        print("Error: Couldn't parameterize the network.")
+        print("There is no 'CondylesClassifier' model.")
         return 0
 
 
@@ -87,26 +87,26 @@ def main(_):
     if 'NUM_CLASSES' in jsonDict['CondylesClassifier']:
         classifier.NUM_CLASSES = jsonDict['CondylesClassifier']['NUM_CLASSES'] 
     else:
-        print "Missing NUM_CLASSES"
+        print("Missing NUM_CLASSES")
     
     if 'NUM_POINTS' in jsonDict['CondylesClassifier']:
         classifier.NUM_POINTS = jsonDict['CondylesClassifier']['NUM_POINTS']
     else:
-        print "Missing NUM_POINTS"
+        print("Missing NUM_POINTS")
 
     if 'NUM_FEATURES' in jsonDict['CondylesClassifier']:
         classifier.NUM_FEATURES = jsonDict['CondylesClassifier']['NUM_FEATURES']
     else:
-        print "Missing NUM_FEATURES"
+        print("Missing NUM_FEATURES")
 
 
     dictToClassify = pickle.load( open( pickleToClassify, "rb" ) )
     dictClassified = dict()
 
     for file in dictToClassify.keys():
-        print file
+        # print(file)
         # Create session, and import existing graph
-        # print shape
+        # print(shape)
         myData = get_input_shape(dictToClassify[file], classifier)
         session = tf.InteractiveSession()
 

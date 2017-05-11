@@ -34,13 +34,13 @@ class inputData():
             (those specified in featuresList attribute), stored in a 2D array (currentData)
             Features are normalized (normals are already done, in previous program SurfaceFeaturesExtractor with vtkPolyDataNormals)
         """
-        print shape
+        print(shape)
         dataset = np.ndarray(shape=(1, self.NUM_POINTS, self.NUM_FEATURES), dtype=np.float32)
 
         try:
             reader_poly = vtk.vtkPolyDataReader()
             reader_poly.SetFileName(shape)
-            # print "shape : " + shape
+            # print("shape : " + shape)
 
             reader_poly.Update()
             geometry = reader_poly.GetOutput()
@@ -208,7 +208,6 @@ class inputData():
         print('Full dataset tensor:', dataset.shape)
         print('Mean:', np.mean(dataset))
         print('Standard deviation:', np.std(dataset))
-        print ""
         return dataset
 
     def load_features_with_names(self, vtklist):
@@ -238,7 +237,6 @@ class inputData():
         print('Full dataset tensor:', dataset.shape)
         print('Mean:', np.mean(dataset))
         print('Standard deviation:', np.std(dataset))
-        print ""
         return dataset, allShapes_feat
 
     def maybe_pickle(self, dictFeatData, min_num_shapes_per_class, path, force=False):

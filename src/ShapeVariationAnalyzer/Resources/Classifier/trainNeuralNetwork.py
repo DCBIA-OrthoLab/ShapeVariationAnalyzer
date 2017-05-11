@@ -47,7 +47,6 @@ def get_inputs(pickle_file, classifier):
         print("\nTraining set", train_dataset.shape, train_labels.shape)
         print("Validation set", valid_dataset.shape, valid_labels.shape)
         print("Test set", test_dataset.shape, test_labels.shape)
-        print ""
 
         return train_dataset, train_labels, valid_dataset, valid_labels, test_dataset, test_labels
 
@@ -164,7 +163,7 @@ def exportModelNetwork(zipPath):
 	return
 
 def main(_):
-    print "\nTensorFlow current version : " + str(tf.__version__) + "\n"
+    print("\nTensorFlow current version : " + str(tf.__version__) + "\n")
       
     # Get the arguments from the command line
     parser = argparse.ArgumentParser()
@@ -178,7 +177,7 @@ def main(_):
     nameDir = os.path.splitext(os.path.basename(inputZip))[0]
 
     networkDir = os.path.join(basedir, nameDir)
-    print "networkDir : " + networkDir
+    print("networkDir : " + networkDir)
 
     if os.path.isdir(networkDir):
         shutil.rmtree(networkDir)
@@ -201,8 +200,8 @@ def main(_):
 
     # In case our JSON file doesnt contain a valid Classifier
     if not jsonDict.has_key('CondylesClassifier'):
-        print "Error: Couldn't parameterize the network."
-        print "There is no 'CondylesClassifier' model."
+        print("Error: Couldn't parameterize the network.")
+        print("There is no 'CondylesClassifier' model.")
         return 0
 
     # If we have the Classifier, set all parameters for the network
@@ -212,19 +211,19 @@ def main(_):
     if 'NUM_CLASSES' in jsonDict['CondylesClassifier']:
         classifier.NUM_CLASSES = jsonDict['CondylesClassifier']['NUM_CLASSES'] 
     else:
-        print "Missing NUM_CLASSES"
+        print("Missing NUM_CLASSES")
         accuracy = -1
 
     if 'NUM_POINTS' in jsonDict['CondylesClassifier']:
         classifier.NUM_POINTS = jsonDict['CondylesClassifier']['NUM_POINTS']
     else:
-        print "Missing NUM_POINTS"
+        print("Missing NUM_POINTS")
         accuracy = -1
 
     if 'NUM_FEATURES' in jsonDict['CondylesClassifier']:
         classifier.NUM_FEATURES = jsonDict['CondylesClassifier']['NUM_FEATURES']
     else:
-        print "Missing NUM_FEATURES"
+        print("Missing NUM_FEATURES")
         accuracy = -1
 
     # TODO: Manage case with incomplete parameterization of the classifier network
