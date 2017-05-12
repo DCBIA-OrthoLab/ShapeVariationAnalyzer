@@ -1432,10 +1432,18 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         3 - install tensorflow into the virtualenv
         """ 
         pathSlicerExec = str(os.path.dirname(sys.executable))
+        if sys.platform == 'win32':
+            pathSlicerExec.replace("/","\\")
         currentPath = os.path.dirname(os.path.abspath(__file__))
-        dirSitePckgs = os.path.join(pathSlicerExec, "../lib/Python/lib/python2.7/site-packages")
-        pathSlicerPython = os.path.join(pathSlicerExec, "../bin/SlicerPython")
 
+        if sys.platform == 'win32': 
+            dirSitePckgs = os.path.join(pathSlicerExec, "lib", "Python", "Lib", "site-packages")
+            pathSlicerPython = os.path.join(pathSlicerExec, "bin", "SlicerPython")
+        else: 
+            dirSitePckgs = os.path.join(pathSlicerExec, "..", "lib", "Python", "lib",'python%s' % sys.version[:3], "site-packages")
+            pathSlicerPython = os.path.join(pathSlicerExec, "..", "bin", "SlicerPython")
+
+        import pip
         # Check virtualenv installation
         # print("\n\n I. Virtualenv installation")
         try:
@@ -1472,16 +1480,19 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
             - pip install tensorflow
           """
         # source path-to-env/bin/activate
-        self.cmd_setenv = "source " + os.path.join(env_dir, 'bin', 'activate') + "; "
+        if sys.platform == 'win32': 
+            self.cmd_setenv = os.path.join(env_dir, 'Scripts', 'activate') + "; "
+        else:
+            self.cmd_setenv = "source " + os.path.join(env_dir, 'bin', 'activate') + "; "
         # construct python path
-        env_pythonpath = os.path.join(env_dir, 'bin') + ":" + os.path.join(env_dir, 'lib', 'python2.7') + ":" + os.path.join(env_dir, 'lib', 'python2.7', 'site-packages')
+        env_pythonpath = os.path.join(env_dir, 'bin') + ":" + os.path.join(env_dir, 'lib', 'python%s' % sys.version[:3]) + ":" + os.path.join(env_dir, 'lib', 'python%s' % sys.version[:3], 'site-packages')
         # export python path
         self.cmd_setenv = self.cmd_setenv + "export PYTHONPATH=" + env_pythonpath +  "; "
         # call Slicer python
         self.cmd_setenv = self.cmd_setenv + pathSlicerPython
 
         # construct sys.path
-        env_syspath = "sys.path.append(\"" + os.path.join(env_dir,'lib','python2.7') + "\"); sys.path.append(\"" + os.path.join(env_dir,'lib','python2.7','site-packages') + "\"); sys.path.append(\"" + os.path.join(env_dir,'lib','python2.7','site-packages','pip','utils') + "\"); "
+        env_syspath = "sys.path.append(\"" + os.path.join(env_dir,'lib', 'python%s' % sys.version[:3]) + "\"); sys.path.append(\"" + os.path.join(env_dir,'lib','python%s' % sys.version[:3], 'site-packages') + "\"); sys.path.append(\"" + os.path.join(env_dir,'lib','python%s' % sys.version[:3], 'site-packages','pip','utils') + "\"); "
         cmd_virtenv = str(' -c ')
         cmd_virtenv = cmd_virtenv + "\'import sys; " + env_syspath 
 
@@ -1489,7 +1500,7 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         env_sysprefix = "sys.prefix=\"" + env_dir + "\"; "
         cmd_virtenv = cmd_virtenv + env_sysprefix
 
-        #construct install command
+        # construct install command
         env_install = "import pip; pip.main([\"install\", \"--prefix=" + env_dir + "\", \"tensorflow\"]); pip.main([\"install\", \"--prefix=" + env_dir + "\", \"pandas\"])\'"
         cmd_virtenv = cmd_virtenv + env_install
 
@@ -1503,20 +1514,21 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         # We create it to avoid the error 'no module named google.protobuf'
         # -----
         # print("\n\n Create missing __init__.py if doesn't existe yet")
-        google_init = os.path.join(env_dir, 'lib', 'python2.7', 'site-packages', 'google', '__init__.py')
+        
+        google_init = os.path.join(env_dir, 'lib', 'python%s' % sys.version[:3], 'site-packages', 'google', '__init__.py')
         if not os.path.isfile(google_init):
             file = open(google_init, "w")
             file.close()
         
 
-        # print("\n\n\n IV. Check tensorflow is well installed")
-        # test_tf = os.path.join(currentPath,'Testing/test-tensorflowinstall.py')
-        # bashCommand = self.cmd_setenv + " " + test_tf
+        print("\n\n\n IV. Check tensorflow is well installed")
+        test_tf = os.path.join(currentPath, "Testing", "test-tensorflowinstall.py")
+        bashCommand = self.cmd_setenv + " " + test_tf
 
-        # command = ["bash", "-c", bashCommand]
-        # p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        # out, err =  p.communicate()
-        # print("\nout : " + str(out) + "\nerr : " + str(err))
+        command = ["bash", "-c", bashCommand]
+        p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        out, err =  p.communicate()
+        print("\nout : " + str(out) + "\nerr : " + str(err))
 
 
 
@@ -1878,7 +1890,7 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         libPath = os.path.join(scriptedModulesPath)
         sys.path.insert(0, libPath)
         computeMean = os.path.join(scriptedModulesPath, '../hidden-cli-modules/computemean')
-        # computeMean = "/Users/prisgdd/Documents/Projects/CNN/SurfaceFeaturesExtractor-build/src/ComputeMeanShapes/src/bin/computemean"
+        computeMean = "/Users/prisgdd/Documents/Projects/CNN/SurfaceFeaturesExtractor-build/src/ComputeMeanShapes/src/bin/computemean"
 
         arguments = list()
         arguments.append("--inputList")
