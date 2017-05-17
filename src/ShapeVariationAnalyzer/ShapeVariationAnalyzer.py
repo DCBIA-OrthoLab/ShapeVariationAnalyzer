@@ -1130,9 +1130,6 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
             if self.featuresList.count(item.text()):
                 self.featuresList.remove(item.text())
 
-        # print("self.featuresDict : ")
-        # print(str(self.featuresList))
-
         return
 
 
@@ -2090,7 +2087,7 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         sys.path.insert(0, libPath)
         surfacefeaturesextractor = os.path.join(scriptedModulesPath, '../hidden-cli-modules/surfacefeaturesextractor')
         
-        # surfacefeaturesextractor = "/Users/prisgdd/Documents/Projects/CNN/SurfaceFeaturesExtractor-build/src/SurfaceFeaturesExtractor/bin/surfacefeaturesextractor"
+        surfacefeaturesextractor = "/Users/prisgdd/Documents/Projects/CNN/SurfaceFeaturesExtractor-build/src/SurfaceFeaturesExtractor/bin/surfacefeaturesextractor"
         
         filename = str(os.path.basename(shape))
 
@@ -2310,7 +2307,8 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         command = ["bash", "-c", bashCommand]
         p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out, err =  p.communicate()
-        print("\nout : " + str(out)) #+ "\nerr : " + str(err)
+        # print("\nout : " + str(out)) 
+        print("\nout : " + str(out) + "\nerr : " + str(err))
 
         if os.path.isdir(networkDir):
             shutil.rmtree(networkDir)
@@ -2378,7 +2376,7 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         self.input_Data.NUM_CLASSES = jsonDict['CondylesClassifier']['NUM_CLASSES']
         self.input_Data.NUM_FEATURES = jsonDict['CondylesClassifier']['NUM_FEATURES']
         self.input_Data.featuresList = jsonDict['CondylesClassifier']['Features']
-        self.input_Data.controlAverage  = jsonDict['controlAverage'] 
+        self.input_Data.controlAverage  = jsonDict['CondylesClassifier']['controlAverage'] 
 
         numModelFiles = 0
         strCondClass = 'CondylesClassifier'
@@ -2450,3 +2448,37 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
 
 class ShapeVariationAnalyzerTest(ScriptedLoadableModuleTest):
     pass
+    # def setUp(self):
+    #     slicer.mrmlScene.Clear(0)
+
+    #     # 
+    #     # download data
+    #     testDir = ""
+
+    # def runTest(self):
+    #     self.setUp()
+    #     self.delayDisplay(' Starting tests ')
+        
+    #     self.delayDisplay(' Test Min Max Mean Functions ')
+    #     self.assertTrue(self.testMinMaxMeanFunctions())
+        
+    #     self.delayDisplay(' Test Percentile Function ')
+    #     self.assertTrue(self.testPercentileFunction())
+        
+    #     self.delayDisplay(' Test storage of Values Function ')
+    #     self.assertTrue(self.testStorageValue())
+        
+    #     self.assertTrue(self.testOnMesh())
+    #     self.delayDisplay(' Tests Passed! ')
+    
+
+
+    # def testStorageValue(self):
+    #     logic = MeshStatisticsLogic()
+        
+    #         if arrayValue.GetValue(i) != array[a]:
+    #             print '        Failed', a, array[a], i, arrayValue.GetValue(i)
+    #             return False
+    #         a += 1
+    #     print '         Passed'
+    #     return True

@@ -8,8 +8,6 @@ class neuralNetwork():
 	def __init__(self, parent=None, num_classes_param=0, num_points_param=0, num_features_param = 0):
 		if parent:
 			parent.title = " "
-
-		self.NUM_HIDDEN_LAYERS = 2
 		
 		self.NUM_CLASSES = num_classes_param
 		self.NUM_POINTS = num_points_param
@@ -19,7 +17,7 @@ class neuralNetwork():
 		self.num_epochs = 0
 		self.num_steps =  0
 		self.batch_size = 0
-		self.NUM_HIDDEN_LAYERS = 2
+		self.NUM_HIDDEN_LAYERS = 1
 
 
 	# ----------------------------------------------------------------------------- #
@@ -90,9 +88,9 @@ class neuralNetwork():
 
 			W_fc2 = self.weight_variable([nb_hidden_nodes_1, self.NUM_CLASSES], "W_fc2")
 			b_fc2 = self.bias_variable([self.NUM_CLASSES],"b_fc2")
-
-
+			
 			weightsDict = {"W_fc1": W_fc1, "b_fc1": b_fc1, "W_fc2": W_fc2, "b_fc2": b_fc2}
+
 		elif self.NUM_HIDDEN_LAYERS == 2:
 			W_fc1 = self.weight_variable([self.NUM_POINTS * self.NUM_FEATURES, nb_hidden_nodes_1], "W_fc1")
 			b_fc1 = self.bias_variable([nb_hidden_nodes_1],"b_fc1")
@@ -103,7 +101,6 @@ class neuralNetwork():
 			W_fc3 = self.weight_variable([nb_hidden_nodes_2, self.NUM_CLASSES], "W_fc3")
 			b_fc3 = self.bias_variable([self.NUM_CLASSES],"b_fc3")
 
-			weightsDict = dict()
 			weightsDict = {"W_fc1": W_fc1, "b_fc1": b_fc1, "W_fc2": W_fc2, "b_fc2": b_fc2, "W_fc3": W_fc3, "b_fc3": b_fc3}
 
 		return weightsDict
@@ -114,18 +111,18 @@ class neuralNetwork():
 
 		if not self.NUM_HIDDEN_LAYERS:
 			with tf.name_scope('FullyConnected1'):
-				h_fc1 = tf.matmul(data, W_fc1) + b_fc1
+				h_fc1 = tf.matmul(data, weightsDict['W_fc1']) + weightsDict['b_fc1']
 				valren = h_fc1
 
 		elif self.NUM_HIDDEN_LAYERS == 1:
 			with tf.name_scope('FullyConnected1'):
 
-				h_fc1 = tf.matmul(data, W_fc1) + b_fc1
+				h_fc1 = tf.matmul(data, weightsDict['W_fc1']) + weightsDict['b_fc1']
 				h_relu1 = tf.nn.relu(h_fc1)
 
 			with tf.name_scope('FullyConnected2'):
 
-				h_fc2 = tf.matmul(h_relu1, W_fc2) + b_fc2
+				h_fc2 = tf.matmul(h_relu1, weightsDict['W_fc2']) + weightsDict['b_fc2']
 				valren = h_fc2
 
 		elif self.NUM_HIDDEN_LAYERS == 2:
