@@ -10,7 +10,10 @@ def printXML(cliPath):
 def main ():
     for path in sys.path:
         if "Slicer" in path and path.endswith("bin"):
-            pathSlicerPython = os.path.join(path, "SlicerPython")
+            if _platform == "linux" or _platform == "linux2" or _platform == "darwin":
+                pathSlicerPython = os.path.join(path, "SlicerPython")
+            elif _platform == "win32":
+                pathSlicerPython = os.path.join(path, "SlicerPython.exe")
     currentPath = os.path.dirname(os.path.abspath(__file__))
     remainingArgs = [pathSlicerPython, os.path.join(currentPath ,"Wrapper","envTensorFlowWrapper.py"), os.path.join(currentPath,"Resources", "Classifier","evalShape.py")]
     for arg in sys.argv[1:]:
