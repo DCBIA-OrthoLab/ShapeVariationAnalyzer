@@ -182,8 +182,8 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.spinBox_group.setValue(0)
 
         #     spinbox configuration in the Advanced parameters
-        self.spinBox_numsteps.setMinimum(10001)
-        self.spinBox_numsteps.setMaximum(11)
+        self.spinBox_numsteps.setMinimum(11)
+        self.spinBox_numsteps.setMaximum(10001)
         self.spinBox_numsteps.setValue(1001)
 
         #     tree view configuration
@@ -371,7 +371,6 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         horizontalHeader.setResizeMode(0,qt.QHeaderView.Stretch)
         horizontalHeader.setResizeMode(1,qt.QHeaderView.ResizeToContents)
         self.tableWidget_result.verticalHeader().setVisible(False)
-
 
         # Enable/disable
         self.comboBox_healthyGroup.setDisabled(True)
@@ -2288,9 +2287,11 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
 
         jsonDict['CondylesClassifier']['learning_rate'] = 0.0005
         jsonDict['CondylesClassifier']['lambda_reg'] = 0.01
-        jsonDict['CondylesClassifier']['num_epochs'] = 2
+        jsonDict['CondylesClassifier']['num_epochs'] = 50
         jsonDict['CondylesClassifier']['num_steps'] =  num_steps
+        # jsonDict['CondylesClassifier']['num_steps'] =  2001
         jsonDict['CondylesClassifier']['batch_size'] = 10
+        jsonDict['CondylesClassifier']['NUM_HIDDEN_LAYERS'] = 2
 
         with open(os.path.join(networkDir,'classifierInfo.json'), 'w') as f:
             json.dump(jsonDict, f, ensure_ascii=False, indent = 4)
@@ -2448,37 +2449,3 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
 
 class ShapeVariationAnalyzerTest(ScriptedLoadableModuleTest):
     pass
-    # def setUp(self):
-    #     slicer.mrmlScene.Clear(0)
-
-    #     # 
-    #     # download data
-    #     testDir = ""
-
-    # def runTest(self):
-    #     self.setUp()
-    #     self.delayDisplay(' Starting tests ')
-        
-    #     self.delayDisplay(' Test Min Max Mean Functions ')
-    #     self.assertTrue(self.testMinMaxMeanFunctions())
-        
-    #     self.delayDisplay(' Test Percentile Function ')
-    #     self.assertTrue(self.testPercentileFunction())
-        
-    #     self.delayDisplay(' Test storage of Values Function ')
-    #     self.assertTrue(self.testStorageValue())
-        
-    #     self.assertTrue(self.testOnMesh())
-    #     self.delayDisplay(' Tests Passed! ')
-    
-
-
-    # def testStorageValue(self):
-    #     logic = MeshStatisticsLogic()
-        
-    #         if arrayValue.GetValue(i) != array[a]:
-    #             print '        Failed', a, array[a], i, arrayValue.GetValue(i)
-    #             return False
-    #         a += 1
-    #     print '         Passed'
-    #     return True
