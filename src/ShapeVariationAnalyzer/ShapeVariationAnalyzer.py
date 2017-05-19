@@ -1419,115 +1419,6 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         self.colorBar = {'Point1': [0, 0, 1, 0], 'Point2': [0.5, 1, 1, 0], 'Point3': [1, 1, 0, 0]}
         self.input_Data = inputData.inputData()
 
-        # 
-        # ----- Virtualenv setup ----- #
-        # 
-        """ Virtualenv setup with Tensorflow
-        1 - install virtualenv if it's not already
-        2 - create a virtualenv into slicer temporary path
-        3 - install tensorflow into the virtualenv
-        """ 
-        pathSlicerExec = str(os.path.dirname(sys.executable))
-        if sys.platform == 'win32':
-            pathSlicerExec.replace("/","\\")
-        currentPath = os.path.dirname(os.path.abspath(__file__))
-
-        if sys.platform == 'win32': 
-            dirSitePckgs = os.path.join(pathSlicerExec, "lib", "Python", "Lib", "site-packages")
-            pathSlicerPython = os.path.join(pathSlicerExec, "bin", "SlicerPython")
-        else: 
-            dirSitePckgs = os.path.join(pathSlicerExec, "..", "lib", "Python", "lib",'python%s' % sys.version[:3], "site-packages")
-            pathSlicerPython = os.path.join(pathSlicerExec, "..", "bin", "SlicerPython")
-
-        import pip
-        # Check virtualenv installation
-        # print("\n\n I. Virtualenv installation")
-        try:
-            import virtualenv
-            # print("===> Virtualenv already installed")
-        except Exception as e: 
-            venv_install = pip.main(['install', 'virtualenv'])
-            import virtualenv
-            # print("===> Virtualenv now installed with pip.main")
-
-
-        # print("\n\n II. Create environment tensorflowSlicer")
-        tempPath = slicer.app.temporaryPath
-        env_dir = os.path.join(tempPath, "env-tensorflow") 
-        if not os.path.isdir(env_dir):
-            os.mkdir(env_dir) 
-
-        if not os.path.isfile(os.path.join(env_dir, 'bin', 'activate')):
-            command = ["bash", "-c", pathSlicerPython + " " + os.path.join(dirSitePckgs, 'virtualenv.py') + " --python=" + pathSlicerPython + " " + env_dir]
-            p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            out, err =  p.communicate()
-            # print("out : " + str(out) + "\nerr : " + str(err))
-            # print("\n===> Environmnent tensorflowSlicer created")
-
-
-        # print("\n\n\n III. Install tensorflow into tensorflowSlicer")
-        """ To install tensorflow in virtualenv, requires:
-            - activate environment
-            - export PYTHONPATH
-            - launch python
-                => cmd_setenv
-            - add the environment path to sys.path
-            - set sys.prefix 
-            - pip install tensorflow
-          """
-        # source path-to-env/bin/activate
-        if sys.platform == 'win32': 
-            self.cmd_setenv = os.path.join(env_dir, 'Scripts', 'activate') + "; "
-        else:
-            self.cmd_setenv = "source " + os.path.join(env_dir, 'bin', 'activate') + "; "
-        # construct python path
-        env_pythonpath = os.path.join(env_dir, 'bin') + ":" + os.path.join(env_dir, 'lib', 'python%s' % sys.version[:3]) + ":" + os.path.join(env_dir, 'lib', 'python%s' % sys.version[:3], 'site-packages')
-        # export python path
-        self.cmd_setenv = self.cmd_setenv + "export PYTHONPATH=" + env_pythonpath +  "; "
-        # call Slicer python
-        self.cmd_setenv = self.cmd_setenv + pathSlicerPython
-
-        # construct sys.path
-        env_syspath = "sys.path.append(\"" + os.path.join(env_dir,'lib', 'python%s' % sys.version[:3]) + "\"); sys.path.append(\"" + os.path.join(env_dir,'lib','python%s' % sys.version[:3], 'site-packages') + "\"); sys.path.append(\"" + os.path.join(env_dir,'lib','python%s' % sys.version[:3], 'site-packages','pip','utils') + "\"); "
-        cmd_virtenv = str(' -c ')
-        cmd_virtenv = cmd_virtenv + "\'import sys; " + env_syspath 
-
-        # construct sys.path
-        env_sysprefix = "sys.prefix=\"" + env_dir + "\"; "
-        cmd_virtenv = cmd_virtenv + env_sysprefix
-
-        # construct install command
-        env_install = "import pip; pip.main([\"install\", \"--prefix=" + env_dir + "\", \"tensorflow\"]); pip.main([\"install\", \"--prefix=" + env_dir + "\", \"pandas\"])\'"
-        cmd_virtenv = cmd_virtenv + env_install
-
-        bashCommand = self.cmd_setenv + cmd_virtenv
-        command = ["bash", "-c", str(bashCommand)]
-        p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        out, err =  p.communicate()
-        # print("\nout : " + str(out) + "\nerr : " + str(err))
-
-        # Tensorflow is now installed but might not work due to a missing file
-        # We create it to avoid the error 'no module named google.protobuf'
-        # -----
-        # print("\n\n Create missing __init__.py if doesn't existe yet")
-        
-        google_init = os.path.join(env_dir, 'lib', 'python%s' % sys.version[:3], 'site-packages', 'google', '__init__.py')
-        if not os.path.isfile(google_init):
-            file = open(google_init, "w")
-            file.close()
-        
-
-        print("\n\n\n IV. Check tensorflow is well installed")
-        test_tf = os.path.join(currentPath, "Testing", "test-tensorflowinstall.py")
-        bashCommand = self.cmd_setenv + " " + test_tf
-
-        command = ["bash", "-c", bashCommand]
-        p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        out, err =  p.communicate()
-        print("\nout : " + str(out) + "\nerr : " + str(err))
-
-
-
     
     def get(self, objectName):
         """ Functions to recovery the widget in the .ui file
@@ -2303,12 +2194,15 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         # 
         currentPath = os.path.dirname(os.path.abspath(__file__))
         train_file = os.path.join(currentPath,'Resources','Classifier','trainNeuralNetwork.py')
-        bashCommand = self.cmd_setenv + " " + train_file + " -inputZip " + archiveName
+        envWrapper_file = os.path.join(currentPath,'Wrapper','envTensorFlowWrapper.py')
+        
+        pathSlicerExec = str(os.path.dirname(sys.executable))
+        pathSlicerPython = os.path.join(pathSlicerExec, "..", "bin", "SlicerPython")
 
-        command = ["bash", "-c", bashCommand]
+        command = [pathSlicerPython, envWrapper_file, "-pgm", train_file, "-args", "{'--inputZip': '" + archiveName + "'}" ]
+
         p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out, err =  p.communicate()
-        # print("\nout : " + str(out)) 
         print("\nout : " + str(out) + "\nerr : " + str(err))
 
         if os.path.isdir(networkDir):
@@ -2411,9 +2305,13 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         # Classify dans le virtualenv
         currentPath = os.path.dirname(os.path.abspath(__file__))
         train_file = os.path.join(currentPath,'Resources','Classifier','evalShape.py')
-        bashCommand = self.cmd_setenv + " " + train_file + " -inputZip " + archiveName
+        envWrapper_file = os.path.join(currentPath,'Wrapper','envTensorFlowWrapper.py')
+        
+        pathSlicerExec = str(os.path.dirname(sys.executable))
+        pathSlicerPython = os.path.join(pathSlicerExec, "..", "bin", "SlicerPython")
 
-        command = ["bash", "-c", bashCommand]
+        command = [pathSlicerPython, envWrapper_file, "-pgm", train_file, "-args", "{'--inputZip': '" + archiveName + "'}" ]
+
         p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out, err =  p.communicate()
         print("\nout : " + str(out) + "\nerr : " + str(err))
