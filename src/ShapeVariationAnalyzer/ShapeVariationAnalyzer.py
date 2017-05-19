@@ -1149,10 +1149,10 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
 
         tempPath = slicer.app.temporaryPath
         
-        # outputDir = os.path.join(tempPath, "dataFeatures")
-        # if os.path.isdir(outputDir):
-        #     shutil.rmtree(outputDir)
-        # os.mkdir(outputDir) 
+        outputDir = os.path.join(tempPath, "dataFeatures")
+        if os.path.isdir(outputDir):
+            shutil.rmtree(outputDir)
+        os.mkdir(outputDir) 
 
         #
         # Extract features on shapes, with SurfaceFeaturesExtractor
@@ -1166,7 +1166,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         # print(self.dictShapeModels)
         for group, listvtk in self.dictShapeModels.items():
             for shape in listvtk:
-                # self.logic.extractFeatures(shape, meansList, outputDir)
+                self.logic.extractFeatures(shape, meansList, outputDir)
 
                 # # Storage of the means for each group
                 self.logic.storageFeaturesData(self.dictFeatData, self.dictShapeModels)
@@ -1981,7 +1981,7 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         sys.path.insert(0, libPath)
         surfacefeaturesextractor = os.path.join(scriptedModulesPath, '../hidden-cli-modules/surfacefeaturesextractor')
         
-        surfacefeaturesextractor = "/Users/mirclem/Desktop/work/ShapeVariationAnalyzer/src/CLI/SurfaceFeaturesExtractor-build/src/SurfaceFeaturesExtractor/bin/surfacefeaturesextractor"
+        # surfacefeaturesextractor = "/Users/prisgdd/Documents/Projects/CNN/SurfaceFeaturesExtractor-build/src/SurfaceFeaturesExtractor/bin/surfacefeaturesextractor"
         
         filename = str(os.path.basename(shape))
 
@@ -2205,7 +2205,7 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
 
         p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out, err =  p.communicate()
-        print("\nout : " + str(out) + "\nerr : " + str(err) )
+        print("\nout : " + str(out) + "\nerr : " + str(err))
 
         if os.path.isdir(networkDir):
             shutil.rmtree(networkDir)
@@ -2316,7 +2316,7 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
 
         p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out, err =  p.communicate()
-        print("\nout : " + str(out) + "\nerr : " + str(err) )
+        print("\nout : " + str(out) + "\nerr : " + str(err))
 
         with zipfile.ZipFile(archiveName) as zf:
             zf.extractall(os.path.dirname(archiveName))
