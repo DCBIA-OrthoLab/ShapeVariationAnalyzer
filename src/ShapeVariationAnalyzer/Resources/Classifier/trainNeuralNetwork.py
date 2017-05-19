@@ -167,7 +167,7 @@ def main(_):
       
     # Get the arguments from the command line
     parser = argparse.ArgumentParser()
-    parser.add_argument('-inputZip', action='store', dest='inputZip', help='Input zip file which contains the datasets & the parameters for the classifier', 
+    parser.add_argument('--inputZip', action='store', dest='inputZip', help='Input zip file which contains the datasets & the parameters for the classifier', 
                         default = "")
 
     args = parser.parse_args()
