@@ -9,6 +9,7 @@ import argparse
 import json
 import shutil
 import zipfile
+import math
 
 # ----------------------------------------------------------------------------- #
 #																				#
@@ -54,10 +55,18 @@ def get_inputs(pickle_file, classifier):
 def run_training(train_dataset, train_labels, valid_dataset, valid_labels, test_dataset, test_labels, saveModelPath, classifier):
     # TODO: Generic number of layers and their number of nodes
     if classifier.NUM_HIDDEN_LAYERS == 1:
-        nb_hidden_nodes_1 = 2048
+        # nb_hidden_nodes_1 = 2048
+        # nb_hidden_nodes_1 = ( classifier.NUM_POINTS * classifier.NUM_FEATURES + classifier.NUM_CLASSES ) // 2
+        nb_hidden_nodes_1 = int ( math.sqrt ( classifier.NUM_POINTS * classifier.NUM_FEATURES * classifier.NUM_CLASSES ))
         nb_hidden_nodes_2 = 0
     elif classifier.NUM_HIDDEN_LAYERS == 2:
-        nb_hidden_nodes_1, nb_hidden_nodes_2 = 2048, 2048
+        # nb_hidden_nodes_1, nb_hidden_nodes_2 = 2048, 2048
+        r = math.pow( classifier.NUM_POINTS * classifier.NUM_FEATURES / classifier.NUM_CLASSES, 1/3)
+        nb_hidden_nodes_1 = int ( classifier.NUM_CLASSES * math.pow ( r, 2 ))
+        nb_hidden_nodes_2 =int ( classifier.NUM_POINTS * classifier.NUM_FEATURES * r )
+
+    print("nb_hidden_nodes_1 : " + str(nb_hidden_nodes_1))
+    print("nb_hidden_nodes_2 : " + str(nb_hidden_nodes_2))
 
     # Construct the graph
     graph = tf.Graph()
@@ -85,7 +94,7 @@ def run_training(train_dataset, train_labels, valid_dataset, valid_labels, test_
         with tf.name_scope('Loss_computation'):
             loss = classifier.loss(logits, tf_train_labels, classifier.lambda_reg, weightsDict)
         
-        
+        print "Loss computation"
         with tf.name_scope('Optimization'):
             # Optimizer.
             optimizer = tf.train.GradientDescentOptimizer(classifier.learning_rate).minimize(loss)
@@ -265,8 +274,7 @@ def main(_):
     if 'NUM_HIDDEN_LAYERS' in jsonDict['CondylesClassifier']:
         classifier.NUM_HIDDEN_LAYERS = jsonDict['CondylesClassifier']['NUM_HIDDEN_LAYERS']
     else:
-        classifier.NUM_HIDDEN_LAYERS = 2
-
+        classifier.NUM_HIDDEN_LAYERS = 1
 
     train_dataset, train_labels, valid_dataset, valid_labels, test_dataset, test_labels = get_inputs(pickle_file, classifier)
 
