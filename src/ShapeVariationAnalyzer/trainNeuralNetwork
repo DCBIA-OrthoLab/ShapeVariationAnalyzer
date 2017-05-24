@@ -25,7 +25,7 @@ def main ():
             remainingArgs.append(arg)
 
     print remainingArgs
-    command = "%s %s -pgm %s -args \"{'%s': '%s'}\"" % tuple(remainingArgs)
+    command = "%s %s -pgm %s -args \"{'%s': '%s', '%s': '%s'}\"" % tuple(remainingArgs)
 
     exit(os.system(command))
 

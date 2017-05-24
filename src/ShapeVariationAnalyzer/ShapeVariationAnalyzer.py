@@ -1280,7 +1280,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         # Remove the old vtk file in the temporary directory of slicer if it exists
         if self.patientList:
             print("onVTKInputData remove old vtk file")
-            oldVTKPath = slicer.app.temporaryPath + "/" + os.path.basename(self.patientList[0])
+            oldVTKPath = os.path.join(slicer.app.temporaryPath,os.path.basename(self.patientList[0]))
             if os.path.exists(oldVTKPath):
                 os.remove(oldVTKPath)
         # print(self.patientList)
@@ -1297,7 +1297,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         currentNode = self.MRMLNodeComboBox_VTKInputData.currentNode()
         if not currentNode == None:
             #     Save the selected node in the temporary directory of slicer
-            vtkfilepath = slicer.app.temporaryPath + "/" + self.MRMLNodeComboBox_VTKInputData.currentNode().GetName() + ".vtk"
+            vtkfilepath = os.path.join(slicer.app.temporaryPath, self.MRMLNodeComboBox_VTKInputData.currentNode().GetName() + ".vtk")
             self.logic.saveVTKFile(self.MRMLNodeComboBox_VTKInputData.currentNode().GetPolyData(), vtkfilepath)
             #     Adding to the list
             self.patientList.append(vtkfilepath)
@@ -1781,7 +1781,7 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         libPath = os.path.join(scriptedModulesPath)
         sys.path.insert(0, libPath)
         computeMean = os.path.join(scriptedModulesPath, '../hidden-cli-modules/computemean')
-        computeMean = "/Users/prisgdd/Documents/Projects/CNN/SurfaceFeaturesExtractor-build/src/ComputeMeanShapes/src/bin/computemean"
+        computeMean = "/Users/mirclem/Desktop/work/ShapeVariationAnalyzer/src/CLI/SurfaceFeaturesExtractor-build/src/ComputeMeanShapes/src/bin/computemeanshapes"
 
         arguments = list()
         arguments.append("--inputList")
@@ -1981,7 +1981,7 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         sys.path.insert(0, libPath)
         surfacefeaturesextractor = os.path.join(scriptedModulesPath, '../hidden-cli-modules/surfacefeaturesextractor')
         
-        # surfacefeaturesextractor = "/Users/prisgdd/Documents/Projects/CNN/SurfaceFeaturesExtractor-build/src/SurfaceFeaturesExtractor/bin/surfacefeaturesextractor"
+        surfacefeaturesextractor = "/Users/mirclem/Desktop/work/ShapeVariationAnalyzer/src/CLI/SurfaceFeaturesExtractor-build/src/SurfaceFeaturesExtractor/bin/surfacefeaturesextractor"
         
         filename = str(os.path.basename(shape))
 
@@ -2011,7 +2011,7 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         # print("error: " + str(process.error()))
         
         processOutput = str(process.readAll())
-        # print(processOutput)
+        print(processOutput)
 
         return
 
@@ -2035,7 +2035,7 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         """
         for i in range(0, len(listPatient)):
             filename,_ = os.path.splitext(os.path.basename(listPatient[i]))
-            ftPath = os.path.join(outputDir,filename + '.vtk')
+            ftPath = os.path.join(outputDir, filename + '.vtk')
             listPatient[i] = ftPath
         return listPatient
 

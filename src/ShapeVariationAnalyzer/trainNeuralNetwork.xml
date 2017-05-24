@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <executable>
   <category>Quantification</category>
-  <title>trainNeuralNetwork</title>
+  <title>Train Neural Network</title>
   <description><![CDATA[Train a neural network.]]></description>
   <version>1.0.$Revision$</version>
   <documentation-url></documentation-url>
@@ -19,12 +19,13 @@
       <index>0</index>
       <description><![CDATA[Input zip file]]></description>
     </file>
-<!--     <file fileExtensions=".zip">
+    <file fileExtensions=".zip">
       <name>outputZip</name>
       <label>Output Zip</label>
+      <longflag>--outputZip</longflag>
       <channel>output</channel>
       <index>1</index>
       <description><![CDATA[Output zip]]></description>
-    </file> -->
+    </file>
   </parameters>
 </executable>
