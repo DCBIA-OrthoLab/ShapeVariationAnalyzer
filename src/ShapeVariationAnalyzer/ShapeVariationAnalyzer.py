@@ -1777,7 +1777,8 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         libPath = os.path.join(scriptedModulesPath)
         sys.path.insert(0, libPath)
         computeMean = os.path.join(scriptedModulesPath, '../hidden-cli-modules/computemean')
-        computeMean = "/Users/mirclem/Desktop/work/ShapeVariationAnalyzer/src/CLI/SurfaceFeaturesExtractor-build/src/ComputeMeanShapes/src/bin/computemeanshapes"
+        # computeMean = "/Users/mirclem/Desktop/work/ShapeVariationAnalyzer/src/CLI/SurfaceFeaturesExtractor-build/src/ComputeMeanShapes/src/bin/computemeanshapes"
+        # computeMean = "/Users/prisgdd/Documents/Projects/CNN/SurfaceFeaturesExtractor-build/src/ComputeMeanShapes/src/bin/computemean"
 
         arguments = list()
         arguments.append("--inputList")
@@ -1977,7 +1978,8 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         sys.path.insert(0, libPath)
         surfacefeaturesextractor = os.path.join(scriptedModulesPath, '../hidden-cli-modules/surfacefeaturesextractor')
         
-        surfacefeaturesextractor = "/Users/mirclem/Desktop/work/ShapeVariationAnalyzer/src/CLI/SurfaceFeaturesExtractor-build/src/SurfaceFeaturesExtractor/bin/surfacefeaturesextractor"
+        # surfacefeaturesextractor = "/Users/mirclem/Desktop/work/ShapeVariationAnalyzer/src/CLI/SurfaceFeaturesExtractor-build/src/SurfaceFeaturesExtractor/bin/surfacefeaturesextractor"
+        # surfacefeaturesextractor = "/Users/prisgdd/Documents/Projects/CNN/SurfaceFeaturesExtractor-build/src/SurfaceFeaturesExtractor/bin/surfacefeaturesextractor"
         
         filename = str(os.path.basename(shape))
 
@@ -2199,8 +2201,9 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         pathSlicerExec = str(os.path.dirname(sys.executable))
         pathSlicerPython = os.path.join(pathSlicerExec, "..", "bin", "SlicerPython")
 
-        command = [pathSlicerPython, envWrapper_file, "-pgm", train_file, "-args", "{'--inputZip': '" + archiveName + "'}" ]
+        command = [pathSlicerPython, envWrapper_file, "-pgm", train_file, "-args", "{'--inputZip': '" + archiveName + "', '--outputZip': '" + archiveName + "'}" ]
 
+        print command
         p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out, err =  p.communicate()
         print("\nout : " + str(out) + "\nerr : " + str(err))
@@ -2310,7 +2313,7 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         pathSlicerExec = str(os.path.dirname(sys.executable))
         pathSlicerPython = os.path.join(pathSlicerExec, "..", "bin", "SlicerPython")
 
-        command = [pathSlicerPython, envWrapper_file, "-pgm", train_file, "-args", "{'--inputZip': '" + archiveName + "'}" ]
+        command = [pathSlicerPython, envWrapper_file, "-pgm", train_file, "-args", "{'--inputZip': '" + archiveName + "', '--outputZip': '" + archiveName + "'}" ]
 
         p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out, err =  p.communicate()
