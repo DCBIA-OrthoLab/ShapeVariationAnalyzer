@@ -50,8 +50,8 @@ def config_env():
 
 
     print("\n\n II. Create environment tensorflowSlicer")
-    # tempPath = slicer.app.temporaryPath
-    tempPath = "/Users/mirclem/Desktop/"
+    currentPath = os.path.dirname(os.path.abspath(__file__))
+    tempPath = os.path.join(currentPath, '..', 'Resources')
     env_dir = os.path.join(tempPath, "env-tensorflow") 
     if not os.path.isdir(env_dir):
         os.mkdir(env_dir) 
@@ -129,6 +129,7 @@ def config_env():
 
 def main():
     cmd_setenv = config_env()
+
     import argparse
     parser = argparse.ArgumentParser()
 
@@ -136,7 +137,6 @@ def main():
     parser.add_argument('-args', action='store', dest='args')
 
     args = parser.parse_args()
-
     wrap(cmd_setenv, args.program, ast.literal_eval(args.args))
 
 
