@@ -164,10 +164,11 @@ def run_training(train_dataset, train_labels, valid_dataset, valid_labels, test_
     
     return finalaccuracy
 
-def exportModelNetwork(zipPath):
+def exportModelNetwork(zipPath, outputPath):
 
 	# Zipper tout ca :: base_name = la ou on veut zipper+zipname
-	shutil.make_archive(base_name = zipPath, format = 'zip', root_dir = os.path.dirname(zipPath), base_dir = os.path.basename(zipPath))
+
+	shutil.make_archive(base_name = outputPath, format = 'zip', root_dir = os.path.dirname(zipPath), base_dir = os.path.basename(zipPath))
 
 	return
 
@@ -178,13 +179,19 @@ def main(_):
     parser = argparse.ArgumentParser()
     parser.add_argument('--inputZip', action='store', dest='inputZip', help='Input zip file which contains the datasets & the parameters for the classifier', 
                         default = "")
+    parser.add_argument('--outputZip', action='store', dest='outputZip', help='Output zip file which will contain the neural netowrk trained', 
+                        default = "")
 
     args = parser.parse_args()
 
     inputZip = args.inputZip
+    outputZip = args.outputZip
     basedir = os.path.dirname(inputZip)
     nameDir = os.path.splitext(os.path.basename(inputZip))[0]
+    outputdir = os.path.dirname(outputZip)
+    nameOuput = os.path.splitext(os.path.basename(outputZip))[0]
 
+    outputPath = os.path.join(outputdir, nameOuput)
     networkDir = os.path.join(basedir, nameDir)
     print("networkDir : " + networkDir)
 
@@ -278,7 +285,7 @@ def main(_):
 
     # Zip all those files together
     zipPath = networkDir
-    exportModelNetwork(zipPath)
+    exportModelNetwork(zipPath, outputPath)
 
     return 
 

@@ -33,8 +33,8 @@ def get_input_shape(data, classifier):
 def get_result(prediction):
     return np.argmax(prediction[0,:])
 
-def exportModelNetwork(zipPath):
-    shutil.make_archive(base_name = zipPath, format = 'zip', root_dir = os.path.dirname(zipPath), base_dir = os.path.basename(zipPath))
+def exportModelNetwork(zipPath, outputPath):
+    shutil.make_archive(base_name = outputPath, format = 'zip', root_dir = os.path.dirname(zipPath), base_dir = os.path.basename(zipPath))
     return
 
 
@@ -43,17 +43,24 @@ def main(_):
     parser = argparse.ArgumentParser()
     parser.add_argument('--inputZip', action='store', dest='inputZip', help='Input zip file which contains the datasets & the parameters for the classifier', 
                         default = "")
+    parser.add_argument('--outputZip', action='store', dest='outputZip', help='Input zip file which the network trained and the results of the classification', 
+                        default = "")
 
     # parser.add_argument('-inputFile', action='store', dest='inputFile', help='Input file to classify', default = "")
 
     args = parser.parse_args()
 
     inputZip = args.inputZip
+    outputZip = args.outputZip
     # inputFile = args.inputFile
 
     basedir = os.path.dirname(inputZip)
     nameDir = os.path.splitext(os.path.basename(inputZip))[0]
     networkDir = os.path.join(basedir, nameDir)
+
+    ouputbaseDir = os.path.dirname(outputZip)
+    outputName = os.path.splitext(os.path.basename(outputZip))[0]
+    outputPath = os.path.join(ouputbaseDir, outputName)
 
     if os.path.isdir(networkDir):
         shutil.rmtree(networkDir)
@@ -131,7 +138,7 @@ def main(_):
 
     # Zip all those files together
     zipPath = networkDir
-    exportModelNetwork(zipPath)
+    exportModelNetwork(zipPath, outputPath)
 
     return True
 
