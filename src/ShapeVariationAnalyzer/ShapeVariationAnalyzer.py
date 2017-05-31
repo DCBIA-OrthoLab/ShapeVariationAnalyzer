@@ -108,6 +108,8 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.MRMLNodeComboBox_VTKInputData = self.logic.get('MRMLNodeComboBox_VTKInputData')
         self.pathLineEdit_CSVInputData = self.logic.get('PathLineEdit_CSVInputData')
         self.pushButton_classifyIndex = self.logic.get('pushButton_classifyIndex')
+        self.pushButton_preprocessNewData = self.logic.get('pushButton_preprocessNewData')
+        self.pushButton_exportToClassify = self.logic.get('pushButton_exportToClassify')
 
         self.pushButton_trainNetwork = self.logic.get('pushButton_trainNetwork')
         self.pushButton_exportUntrainedNetwork = self.logic.get('pushButton_ExportUntrainedNetwork')
@@ -159,6 +161,9 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.pushButton_exportNetwork.setDisabled(True)
         self.pushButton_exportUntrainedNetwork.setDisabled(True)
         self.pushButton_preprocessData.setDisabled(True)
+
+        self.pushButton_exportToClassify.setDisabled(True)
+        self.pushButton_classifyIndex.setDisabled(True)
 
         self.label_stateNetwork.hide()
 
@@ -250,6 +255,8 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.MRMLNodeComboBox_VTKInputData.connect('currentNodeChanged(vtkMRMLNode*)', self.onVTKInputData)
         self.pathLineEdit_CSVInputData.connect('currentPathChanged(const QString)', self.onCSVInputData)
         self.pushButton_classifyIndex.connect('clicked()', self.onClassifyIndex)
+        self.pushButton_preprocessNewData.connect('clicked()', self.onPreprocessNewData)
+        self.pushButton_exportToClassify.connect('clicked()', self.onExportToClassify)
 
         self.checkableComboBox_choiceOfFeatures.connect('checkedIndexesChanged()', self.onCheckableComboBoxFeaturesChanged)
 
@@ -391,6 +398,9 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.pushButton_exportNetwork.setDisabled(True)
         self.pushButton_exportUntrainedNetwork.setDisabled(True)
         self.pushButton_preprocessData.setDisabled(True)
+        self.pushButton_exportToClassify.setDisabled(True)
+        self.pushButton_classifyIndex.setDisabled(True)
+
         self.label_stateNetwork.hide()
         self.stateCSVMeansShape = False
         self.stateCSVDataset = False
@@ -1338,13 +1348,8 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
             for i in range(0, patientTable.GetNumberOfRows()):
                 self.patientList.append(patientTable.GetValue(i,0).ToString())
         
-        
-    def onClassifyIndex(self):
-        """ Function classify shapes
-            - preprocess (extract features) the data
-            - generate a complete zipfile for the network
-        """
-        print("------ Compute the OA index Type of a patient ------")
+    def onPreprocessNewData(self):
+        print("------ Preprocess New Data ------")
         if self.MRMLNodeComboBox_VTKInputData.currentNode() == None and not self.pathLineEdit_CSVInputData.currentPath:
             slicer.util.errorDisplay('Miss the Input Data')
             return
@@ -1376,12 +1381,35 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         # Change paths in patientList to have shape with features
         self.logic.storageDataToClassify(self.dictFeatData, self.patientList, outputDir)
 
-        # For each patient:
-        self.dictClassified = dict()
-        self.dictToClassify = dict()
-
         pickleToClassifyyy = self.logic.pickleToClassify(self.patientList, os.path.join(slicer.app.temporaryPath,'Network'))
-        shutil.make_archive(base_name = networkDir, format = 'zip', root_dir = tempPath, base_dir = 'Network')
+        self.archiveName = shutil.make_archive(base_name = networkDir, format = 'zip', root_dir = tempPath, base_dir = 'Network')
+
+        self.pushButton_exportToClassify.setEnabled(True)
+        self.pushButton_classifyIndex.setEnabled(True)
+        return
+
+
+    def onExportToClassify(self):
+        tempPath = slicer.app.temporaryPath
+        networkDir = os.path.join(tempPath, 'Network')
+
+        dlg = ctk.ctkFileDialog()
+        filepath = dlg.getSaveFileName(None, "Export Network and shapes to classify", os.path.join(qt.QDir.homePath(), "Desktop"), "Archive Zip (*.zip)")
+
+        directory = os.path.dirname(filepath)
+        path = filepath.split(".zip",1)[0]
+
+        shutil.make_archive(path, 'zip', networkDir)
+
+        return
+        
+    def onClassifyIndex(self):
+        """ Function classify shapes
+            - preprocess (extract features) the data
+            - generate a complete zipfile for the network
+        """
+        print("------ Compute the OA index Type of a patient ------")
+        
 
         self.dictResults = dict()
         self.dictResults = self.logic.evalClassification(networkDir + ".zip")

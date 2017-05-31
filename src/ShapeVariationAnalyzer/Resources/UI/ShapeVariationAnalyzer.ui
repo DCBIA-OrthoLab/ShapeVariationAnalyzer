@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1588</width>
-    <height>1725</height>
+    <width>1391</width>
+    <height>1764</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -338,7 +338,7 @@
            <item row="1" column="1">
             <widget class="QPushButton" name="pushButton_ExportNetwork">
              <property name="text">
-              <string>Export Trained Network</string>
+              <string>Export Classifier</string>
              </property>
             </widget>
            </item>
@@ -463,13 +463,6 @@
              </property>
             </widget>
            </item>
-           <item row="3" column="1">
-            <widget class="QPushButton" name="pushButton_classifyIndex">
-             <property name="text">
-              <string>Classify</string>
-             </property>
-            </widget>
-           </item>
            <item row="0" column="1">
             <widget class="ctkPathLineEdit" name="ctkPathLineEdit_networkPath" native="true"/>
            </item>
@@ -477,6 +470,31 @@
             <widget class="QLabel" name="label_NetworkPath">
              <property name="text">
               <string>Network path</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <widget class="QPushButton" name="pushButton_preprocessNewData">
+           <property name="text">
+            <string>Preprocess new data</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <layout class="QGridLayout" name="gridLayout_8">
+           <item row="0" column="0">
+            <widget class="QPushButton" name="pushButton_exportToClassify">
+             <property name="text">
+              <string>Export to classify</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QPushButton" name="pushButton_classifyIndex">
+             <property name="text">
+              <string>Classify</string>
              </property>
             </widget>
            </item>
