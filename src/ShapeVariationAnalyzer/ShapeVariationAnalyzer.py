@@ -110,6 +110,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.pushButton_classifyIndex = self.logic.get('pushButton_classifyIndex')
 
         self.pushButton_trainNetwork = self.logic.get('pushButton_trainNetwork')
+        self.pushButton_exportUntrainedNetwork = self.logic.get('pushButton_ExportUntrainedNetwork')
         self.pushButton_exportNetwork = self.logic.get('pushButton_ExportNetwork')
         self.pathLineEdit_CSVFileDataset = self.logic.get('pathLineEdit_CSVFileDataset')
         self.pathLineEdit_CSVFileMeansShape = self.logic.get('pathLineEdit_CSVFileMeansShape')
@@ -156,6 +157,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
 
         self.pushButton_trainNetwork.setDisabled(True)
         self.pushButton_exportNetwork.setDisabled(True)
+        self.pushButton_exportUntrainedNetwork.setDisabled(True)
         self.pushButton_preprocessData.setDisabled(True)
 
         self.label_stateNetwork.hide()
@@ -272,6 +274,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
                 # Tab: Classification Network
         self.pushButton_trainNetwork.connect('clicked()', self.onTrainNetwork)
         self.pushButton_exportNetwork.connect('clicked()', self.onExportNetwork)
+        self.pushButton_exportUntrainedNetwork.connect('clicked()', self.onExportUntrainedNetwork)
         self.pathLineEdit_CSVFileDataset.connect('currentPathChanged(const QString)', self.onCSVFileDataset)
         self.pathLineEdit_CSVFileMeansShape.connect('currentPathChanged(const QString)', self.onCSVFileMeansShape)
         self.pushButton_preprocessData.connect('clicked()', self.onPreprocessData)
@@ -386,6 +389,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
 
         self.pushButton_trainNetwork.setDisabled(True)
         self.pushButton_exportNetwork.setDisabled(True)
+        self.pushButton_exportUntrainedNetwork.setDisabled(True)
         self.pushButton_preprocessData.setDisabled(True)
         self.label_stateNetwork.hide()
         self.stateCSVMeansShape = False
@@ -1205,7 +1209,24 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         # Zipper tout ca 
         self.archiveName = shutil.make_archive(base_name = networkDir, format = 'zip', root_dir = tempPath, base_dir = 'Network')
         self.pushButton_trainNetwork.setEnabled(True)
+        self.pushButton_exportUntrainedNetwork.setEnabled(True)
 
+        return
+
+    def onExportUntrainedNetwork(self):
+        """ Function to export the neural netowrk as
+        a zipfile for later reuse
+        """
+        print("----- onExportUntrainedNetwork -----")
+
+        num_steps = 1001
+        if self.collapsibleGroupBox_advancedParameters.checked and self.checkBox_numsteps.checked:
+            num_steps = self.spinBox_numsteps.value
+        # Path of the csv file
+        dlg = ctk.ctkFileDialog()
+        filepath = dlg.getSaveFileName(None, "Export Classification neural network", os.path.join(qt.QDir.homePath(), "Desktop"), "Archive Zip (*.zip)")
+
+        self.logic.exportUntrainedNetwork(self.archiveName, filepath, num_steps = num_steps)
         return
 
 
@@ -1227,6 +1248,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
 
         self.label_stateNetwork.text = ("Estimated accuracy: %.1f%%" % accuracy)
         self.pushButton_exportNetwork.setEnabled(True)
+
         return
 
     def onExportNetwork(self):
@@ -2156,6 +2178,42 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
                 print('Unable to save data to', set_filename, ':', e)
 
         return set_filename
+
+    def exportUntrainedNetwork(self, archiveName, zipPath, num_steps):
+        """ Funciton to compress/zip everything needed to 
+        export the Classifier BEFORE training 
+        Useful for remote training 
+        """
+        # Set path for teh network
+        tempPath = slicer.app.temporaryPath
+        networkDir = os.path.join(tempPath, "Network")
+        if os.path.isdir(networkDir):
+            shutil.rmtree(networkDir)
+        os.mkdir(networkDir) 
+
+        with zipfile.ZipFile(archiveName) as zf:
+            zf.extractall(os.path.dirname(archiveName))
+            
+        jsonFile = os.path.join(networkDir, 'classifierInfo.json')
+
+        with open(jsonFile) as f:
+            jsonDict = json.load(f)
+
+        jsonDict['CondylesClassifier']['learning_rate'] = 0.0005
+        jsonDict['CondylesClassifier']['lambda_reg'] = 0.01
+        jsonDict['CondylesClassifier']['num_epochs'] = 50
+        jsonDict['CondylesClassifier']['num_steps'] =  num_steps
+        jsonDict['CondylesClassifier']['batch_size'] = 10
+        jsonDict['CondylesClassifier']['NUM_HIDDEN_LAYERS'] = 2
+
+        with open(os.path.join(networkDir,'classifierInfo.json'), 'w') as f:
+            json.dump(jsonDict, f, ensure_ascii=False, indent = 4)
+
+        path = zipPath.split(".zip",1)[0]
+        shutil.make_archive(path, 'zip', networkDir)
+
+        return 
+
 
     def trainNetworkClassification(self, archiveName, num_steps):
         """ Funciton to train the Neural Network 

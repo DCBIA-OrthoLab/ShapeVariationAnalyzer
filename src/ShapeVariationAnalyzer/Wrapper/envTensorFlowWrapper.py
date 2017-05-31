@@ -80,14 +80,20 @@ def config_env():
     else:
         cmd_setenv = "source " + os.path.join(env_dir, 'bin', 'activate') + "; "
     # construct python path
-    env_pythonpath = os.path.join(env_dir, 'bin') + ":" + os.path.join(env_dir, 'lib', 'python%s' % sys.version[:3]) + ":" + os.path.join(env_dir, 'lib', 'python%s' % sys.version[:3], 'site-packages')
+    if sys.platform == 'win32': 
+        env_pythonpath = os.path.join(env_dir, 'bin') + ":" + os.path.join(env_dir, 'lib', 'Python') + ":" + os.path.join(env_dir, 'lib', 'Python', 'Lib', 'site-packages')
+    else:
+        env_pythonpath = os.path.join(env_dir, 'bin') + ":" + os.path.join(env_dir, 'lib', 'python%s' % sys.version[:3]) + ":" + os.path.join(env_dir, 'lib', 'python%s' % sys.version[:3], 'site-packages')
     # export python path
     cmd_setenv = cmd_setenv + "export PYTHONPATH=" + env_pythonpath +  "; "
     # call Slicer python
     cmd_setenv = cmd_setenv + pathSlicerPython
 
     # construct sys.path
-    env_syspath = "sys.path.append(\"" + os.path.join(env_dir,'lib', 'python%s' % sys.version[:3]) + "\"); sys.path.append(\"" + os.path.join(env_dir,'lib','python%s' % sys.version[:3], 'site-packages') + "\"); sys.path.append(\"" + os.path.join(env_dir,'lib','python%s' % sys.version[:3], 'site-packages','pip','utils') + "\"); "
+    if sys.platform == 'win32': 
+        env_syspath = "sys.path.append(\"" + os.path.join(env_dir,'lib', 'Python') + "\"); sys.path.append(\"" + os.path.join(env_dir,'lib','Python', 'Lib', 'site-packages') + "\"); sys.path.append(\"" + os.path.join(env_dir,'lib','python%s' % sys.version[:3], 'site-packages','pip','utils') + "\"); "
+    else:
+        env_syspath = "sys.path.append(\"" + os.path.join(env_dir,'lib', 'python%s' % sys.version[:3]) + "\"); sys.path.append(\"" + os.path.join(env_dir,'lib','python%s' % sys.version[:3], 'site-packages') + "\"); sys.path.append(\"" + os.path.join(env_dir,'lib','python%s' % sys.version[:3], 'site-packages','pip','utils') + "\"); "
     cmd_virtenv = str(' -c ')
     cmd_virtenv = cmd_virtenv + "\'import sys; " + env_syspath 
 
@@ -109,8 +115,10 @@ def config_env():
     # We create it to avoid the error 'no module named google.protobuf'
     # -----
     print("\n\n Create missing __init__.py if doesn't existe yet")
-    
-    google_init = os.path.join(env_dir, 'lib', 'python%s' % sys.version[:3], 'site-packages', 'google', '__init__.py')
+    if sys.platform == 'win32': 
+        google_init = os.path.join(env_dir, 'lib', 'Python', 'Lib', 'site-packages', 'google', '__init__.py')
+    else:
+        google_init = os.path.join(env_dir, 'lib', 'python%s' % sys.version[:3], 'site-packages', 'google', '__init__.py')
     if not os.path.isfile(google_init):
         file = open(google_init, "w")
         file.close()
