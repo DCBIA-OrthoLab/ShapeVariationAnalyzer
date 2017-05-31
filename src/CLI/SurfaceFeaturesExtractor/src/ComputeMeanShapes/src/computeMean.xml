@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<executable>
+  <category></category>
+  <title>computeMean</title>
+  <description>Compute mean shape for a group of shapes</description>
+  <contributor>Priscille de Dumast (UofM)</contributor>
+
+  <parameters>
+    <label>Input parameters</label>
+    <description><![CDATA[Input parameters]]></description>
+
+    <geometry fileExtensions=".vtk" multiple="true">
+      <name>inputList</name>
+      <label>Input shapes</label>
+      <longflag>inputList</longflag>
+      <flag>i</flag>
+      <!-- <flag>i</flag> -->
+      <description><![CDATA[List of the input shapes]]></description>
+    </geometry>
+
+   <!--  <directory>
+      <name>inputDir</name>
+      <label>Input shapes</label>
+      <longflag>inputDir</longflag>
+      <flag>i</flag>
+      <description><![CDATA[List of the input shapes]]></description>
+    </directory> -->
+
+    <geometry fileExtensions=".vtk" multiple="false">
+      <name>outputSurface</name>
+      <label>Output Surface</label>
+      <longflag>outputSurface</longflag>
+      <flag>o</flag>
+      <!-- <flag>o</flag> -->
+      <description><![CDATA[Surface where the result will be saved]]></description>
+    </geometry>
+
+  </parameters>
+</executable>

@@ -1,3 +1,0 @@
-[submodule "src/CLI/SurfaceFeaturesExtractor"]
-	path = src/CLI/SurfaceFeaturesExtractor
-	url = git@github.com:pdedumast/SurfaceFeaturesExtractor.git
