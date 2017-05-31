@@ -1979,7 +1979,7 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         surfacefeaturesextractor = os.path.join(scriptedModulesPath, '../hidden-cli-modules/surfacefeaturesextractor')
         
         # surfacefeaturesextractor = "/Users/mirclem/Desktop/work/ShapeVariationAnalyzer/src/CLI/SurfaceFeaturesExtractor-build/src/SurfaceFeaturesExtractor/bin/surfacefeaturesextractor"
-        # surfacefeaturesextractor = "/Users/prisgdd/Documents/Projects/CNN/SurfaceFeaturesExtractor-build/src/SurfaceFeaturesExtractor/bin/surfacefeaturesextractor"
+        surfacefeaturesextractor = "/Users/prisgdd/Documents/Projects/CNN/SurfaceFeaturesExtractor-build/src/SurfaceFeaturesExtractor/bin/surfacefeaturesextractor"
         
         filename = str(os.path.basename(shape))
 
@@ -2009,7 +2009,7 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         # print("error: " + str(process.error()))
         
         processOutput = str(process.readAll())
-        print(processOutput)
+        # print(processOutput)
 
         return
 
