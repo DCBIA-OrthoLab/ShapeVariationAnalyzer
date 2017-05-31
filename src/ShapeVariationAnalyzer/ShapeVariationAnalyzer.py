@@ -587,7 +587,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         if not os.path.exists(self.pathLineEdit_previewGroups.currentPath):
             return
 
-        print("------ Creation of a new Classification Groups ------")
+        # print("------ Creation of a new Classification Groups ------")
         # Check if it's a CSV file
         condition1 = self.logic.checkExtension(self.pathLineEdit_previewGroups.currentPath, ".csv")
         if not condition1:
@@ -736,7 +736,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
             - Add a color map "DisplayClassificationGroup"
             - Launch the CLI ShapePopulationViewer
         """
-        print("--- Preview VTK Files in ShapePopulationViewer ---")
+        # print("--- Preview VTK Files in ShapePopulationViewer ---")
         if os.path.exists(self.pathLineEdit_previewGroups.currentPath):
             # Creation of a color map to visualize each group with a different color in ShapePopulationViewer
             self.logic.addColorMap(self.tableWidget_VTKFiles, self.dictVTKFiles)
@@ -762,7 +762,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
                 - Save the CSV file in the selected directory
             - Load automatically the CSV file in the next tab: "Selection of Classification Groups"
         """
-        print("--- Export the new Classification Groups ---")
+        # print("--- Export the new Classification Groups ---")
 
         dlg = ctk.ctkFileDialog()
         filepath = dlg.getSaveFileName(None, "Export Updated CSV file", "", "CSV File (*.csv)")
@@ -806,7 +806,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         if not os.path.exists(self.pathLineEdit_selectionClassificationGroups.currentPath):
             return
 
-        print("------ Selection of a Classification Groups ------")
+        # print("------ Selection of a Classification Groups ------")
         # Check if it's a CSV file
         condition1 = self.logic.checkExtension(self.pathLineEdit_selectionClassificationGroups.currentPath, ".csv")
         if not condition1:
@@ -836,7 +836,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         """ Function to compute the average shape
         for each present group
         """
-        print("compute mean group")
+        # print("compute mean group")
         for group, listvtk in self.dictShapeModels.items():
             # Compute the mean of each group thanks to the CLI "computeMean"
             self.logic.computeMean(group, listvtk)
@@ -856,7 +856,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
 
     def onMeanGroupCSV(self):
         
-        print("------ onMeanGroupCSV ------")
+        # print("------ onMeanGroupCSV ------")
         self.dictGroups = dict()
 
         # Check if it's a CSV file
@@ -891,7 +891,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
             - The opacity of all the vtk files is set to 0.8
             - The healthy group is white and the others are red
         """
-        print("------ Preview of the Group's Mean in Slicer ------")
+        # print("------ Preview of the Group's Mean in Slicer ------")
 
         list = slicer.mrmlScene.GetNodesByClass("vtkMRMLModelNode")
         end = list.GetNumberOfItems()
@@ -940,7 +940,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         """ Function to export the computed average shapes 
         (VTK files) + a CSV file listing them 
         """
-        print("--- Export all the mean shapes + csv file ---")
+        # print("--- Export all the mean shapes + csv file ---")
 
         # Message for the user if files already exist
         directory = self.directoryButton_exportMeanGroups.directory.encode('utf-8')
@@ -1041,7 +1041,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
             self.enableNetwork()
             return
 
-        print("------ Selection of a Dataset ------")
+        # print("------ Selection of a Dataset ------")
         # Check if it's a CSV file
         condition1 = self.logic.checkExtension(self.pathLineEdit_CSVFileDataset.currentPath, ".csv")
         if not condition1:
@@ -1089,7 +1089,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
             self.enableNetwork()
             return
 
-        print("------ Selection of a Dataset ------")
+        # print("------ Selection of a Dataset ------")
         # Check if it's a CSV file
         condition1 = self.logic.checkExtension(self.pathLineEdit_CSVFileMeansShape.currentPath, ".csv")
         if not condition1:
@@ -1131,7 +1131,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         """ Function to manage the features choosen by the user
         to base the neural network on
         """
-        print("----- Features check combo box changed -----")
+        # print("----- Features check combo box changed -----")
         index =  self.checkableComboBox_choiceOfFeatures.currentIndex
 
         item = self.checkableComboBox_choiceOfFeatures.model().item(index, 0)
@@ -1153,7 +1153,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
             - pickle all the dataset for the network
             - Create a zipfile with every file needed for the network
         """
-        print("----- onPreprocessData -----")
+        # print("----- onPreprocessData -----")
         self.dictFeatData = dict()
         self.pickle_file = ""
 
@@ -1227,7 +1227,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         """ Function to export the neural netowrk as
         a zipfile for later reuse
         """
-        print("----- onExportUntrainedNetwork -----")
+        # print("----- onExportUntrainedNetwork -----")
 
         num_steps = 1001
         if self.collapsibleGroupBox_advancedParameters.checked and self.checkBox_numsteps.checked:
@@ -1244,7 +1244,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         """ Function to call the logic function related 
         to the training of the neural network
         """
-        print("----- onTrainNetwork -----")
+        # print("----- onTrainNetwork -----")
         self.label_stateNetwork.text = 'Computation running...'
         self.label_stateNetwork.show()
 
@@ -1265,7 +1265,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         """ Function to export the neural netowrk as
         a zipfile for later reuse
         """
-        print("----- onExportNetwork -----")
+        # print("----- onExportNetwork -----")
 
         # Path of the csv file
         dlg = ctk.ctkFileDialog()
@@ -1283,7 +1283,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         """ Function to launch the network loading 
         when specifying the path to the zipfile
         """
-        print("----- onNetworkPath -----")
+        # print("----- onNetworkPath -----")
         condition1 = self.logic.checkExtension(self.pathLineEdit_networkPath.currentPath, '.zip')
         if not condition1:
             self.pathLineEdit_networkPath.setCurrentPath(" ")
@@ -1349,7 +1349,12 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
                 self.patientList.append(patientTable.GetValue(i,0).ToString())
         
     def onPreprocessNewData(self):
-        print("------ Preprocess New Data ------")
+        """ Function to preprocess the data to classify,
+        independently of the classification. 
+        - Extract Features
+        - Pickle data
+        """
+        # print("------ Preprocess New Data ------")
         if self.MRMLNodeComboBox_VTKInputData.currentNode() == None and not self.pathLineEdit_CSVInputData.currentPath:
             slicer.util.errorDisplay('Miss the Input Data')
             return
@@ -1373,7 +1378,6 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
             else:
                 meansList = meansList + "," +  str(v)
 
-
         for shape in self.patientList:
             # Extract features de la/les shapes a classifier
             self.logic.extractFeatures(shape, meansList, outputDir)
@@ -1390,6 +1394,9 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
 
 
     def onExportToClassify(self):
+        """ Function to extract the classifier and the data to classify
+        Possibility to run remotely with this zip file 
+        """
         tempPath = slicer.app.temporaryPath
         networkDir = os.path.join(tempPath, 'Network')
 
@@ -1408,9 +1415,8 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
             - preprocess (extract features) the data
             - generate a complete zipfile for the network
         """
-        print("------ Compute the OA index Type of a patient ------")
+        # print("------ Compute the OA index Type of a patient ------")
         
-
         self.dictResults = dict()
         self.dictResults = self.logic.evalClassification(networkDir + ".zip")
         self.displayResult(self.dictResults)
@@ -2029,7 +2035,7 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         surfacefeaturesextractor = os.path.join(scriptedModulesPath, '../hidden-cli-modules/surfacefeaturesextractor')
         
         # surfacefeaturesextractor = "/Users/mirclem/Desktop/work/ShapeVariationAnalyzer/src/CLI/SurfaceFeaturesExtractor-build/src/SurfaceFeaturesExtractor/bin/surfacefeaturesextractor"
-        surfacefeaturesextractor = "/Users/prisgdd/Documents/Projects/CNN/SurfaceFeaturesExtractor-build/src/SurfaceFeaturesExtractor/bin/surfacefeaturesextractor"
+        # surfacefeaturesextractor = "/Users/prisgdd/Documents/Projects/CNN/SurfaceFeaturesExtractor-build/src/SurfaceFeaturesExtractor/bin/surfacefeaturesextractor"
         
         filename = str(os.path.basename(shape))
 

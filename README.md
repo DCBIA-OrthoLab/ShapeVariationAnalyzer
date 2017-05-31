@@ -1,4 +1,4 @@
-# Shape Varation Analyzer
+# Shape Variation Analyzer
 
 
 ## What is it?
