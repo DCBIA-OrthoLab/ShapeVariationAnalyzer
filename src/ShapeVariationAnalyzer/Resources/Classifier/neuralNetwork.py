@@ -18,6 +18,9 @@ class neuralNetwork():
 		self.num_steps =  0
 		self.batch_size = 0
 		self.NUM_HIDDEN_LAYERS = 1
+		self.nb_hidden_nodes_1 = 0
+		self.nb_hidden_nodes_2 = 0
+		self.nb_hidden_nodes_3 = 0
 
 
 	# ----------------------------------------------------------------------------- #

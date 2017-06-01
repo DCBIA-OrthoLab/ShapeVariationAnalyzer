@@ -1416,7 +1416,9 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
             - generate a complete zipfile for the network
         """
         # print("------ Compute the OA index Type of a patient ------")
-        
+        tempPath = slicer.app.temporaryPath
+        networkDir = os.path.join(tempPath, 'Network')
+
         self.dictResults = dict()
         self.dictResults = self.logic.evalClassification(networkDir + ".zip")
         self.displayResult(self.dictResults)
@@ -1834,7 +1836,7 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         sys.path.insert(0, libPath)
         computeMean = os.path.join(scriptedModulesPath, '../hidden-cli-modules/computemean')
         # computeMean = "/Users/mirclem/Desktop/work/ShapeVariationAnalyzer/src/CLI/SurfaceFeaturesExtractor-build/src/ComputeMeanShapes/src/bin/computemeanshapes"
-        # computeMean = "/Users/prisgdd/Documents/Projects/CNN/SurfaceFeaturesExtractor-build/src/ComputeMeanShapes/src/bin/computemean"
+        computeMean = "/Users/prisgdd/Documents/Projects/CNN/SurfaceFeaturesExtractor-build/src/ComputeMeanShapes/src/bin/computemean"
 
         arguments = list()
         arguments.append("--inputList")
@@ -2035,7 +2037,7 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         surfacefeaturesextractor = os.path.join(scriptedModulesPath, '../hidden-cli-modules/surfacefeaturesextractor')
         
         # surfacefeaturesextractor = "/Users/mirclem/Desktop/work/ShapeVariationAnalyzer/src/CLI/SurfaceFeaturesExtractor-build/src/SurfaceFeaturesExtractor/bin/surfacefeaturesextractor"
-        # surfacefeaturesextractor = "/Users/prisgdd/Documents/Projects/CNN/SurfaceFeaturesExtractor-build/src/SurfaceFeaturesExtractor/bin/surfacefeaturesextractor"
+        surfacefeaturesextractor = "/Users/prisgdd/Documents/Projects/CNN/SurfaceFeaturesExtractor-build/src/SurfaceFeaturesExtractor/bin/surfacefeaturesextractor"
         
         filename = str(os.path.basename(shape))
 
@@ -2239,6 +2241,15 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         jsonDict['CondylesClassifier']['num_steps'] =  num_steps
         jsonDict['CondylesClassifier']['batch_size'] = 10
         jsonDict['CondylesClassifier']['NUM_HIDDEN_LAYERS'] = 2
+        
+        if jsonDict['CondylesClassifier']['NUM_HIDDEN_LAYERS'] == 1:
+            jsonDict['CondylesClassifier']['nb_hidden_nodes_1'] = int ( math.sqrt ( jsonDict['CondylesClassifier']['NUM_POINTS'] * jsonDict['CondylesClassifier']['NUM_FEATURES'] * jsonDict['CondylesClassifier']['NUM_CLASSES'] ))
+            jsonDict['CondylesClassifier']['nb_hidden_nodes_2'] = 0
+        
+        elif jsonDict['CondylesClassifier']['NUM_HIDDEN_LAYERS'] == 2:
+            r = math.pow( jsonDict['CondylesClassifier']['NUM_POINTS'] * jsonDict['CondylesClassifier']['NUM_FEATURES'] / jsonDict['CondylesClassifier']['NUM_CLASSES'], 1/3)
+            jsonDict['CondylesClassifier']['nb_hidden_nodes_1'] = int ( jsonDict['CondylesClassifier']['NUM_CLASSES'] * math.pow ( r, 2 ))
+            jsonDict['CondylesClassifier']['nb_hidden_nodes_2'] =int ( jsonDict['CondylesClassifier']['NUM_POINTS'] * jsonDict['CondylesClassifier']['NUM_FEATURES'] * r )
 
         with open(os.path.join(networkDir,'classifierInfo.json'), 'w') as f:
             json.dump(jsonDict, f, ensure_ascii=False, indent = 4)
@@ -2277,6 +2288,15 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         # jsonDict['CondylesClassifier']['num_steps'] =  2001
         jsonDict['CondylesClassifier']['batch_size'] = 10
         jsonDict['CondylesClassifier']['NUM_HIDDEN_LAYERS'] = 2
+        
+        if jsonDict['CondylesClassifier']['NUM_HIDDEN_LAYERS'] == 1:
+            jsonDict['CondylesClassifier']['nb_hidden_nodes_1'] = int ( math.sqrt ( jsonDict['CondylesClassifier']['NUM_POINTS'] * jsonDict['CondylesClassifier']['NUM_FEATURES'] * jsonDict['CondylesClassifier']['NUM_CLASSES'] ))
+            jsonDict['CondylesClassifier']['nb_hidden_nodes_2'] = 0
+        
+        elif jsonDict['CondylesClassifier']['NUM_HIDDEN_LAYERS'] == 2:
+            r = math.pow( jsonDict['CondylesClassifier']['NUM_POINTS'] * jsonDict['CondylesClassifier']['NUM_FEATURES'] / jsonDict['CondylesClassifier']['NUM_CLASSES'], 1/3)
+            jsonDict['CondylesClassifier']['nb_hidden_nodes_1'] = int ( jsonDict['CondylesClassifier']['NUM_CLASSES'] * math.pow ( r, 2 ))
+            jsonDict['CondylesClassifier']['nb_hidden_nodes_2'] =int ( jsonDict['CondylesClassifier']['NUM_POINTS'] * jsonDict['CondylesClassifier']['NUM_FEATURES'] * r )
 
         with open(os.path.join(networkDir,'classifierInfo.json'), 'w') as f:
             json.dump(jsonDict, f, ensure_ascii=False, indent = 4)

@@ -54,19 +54,19 @@ def get_inputs(pickle_file, classifier):
 
 def run_training(train_dataset, train_labels, valid_dataset, valid_labels, test_dataset, test_labels, saveModelPath, classifier):
     # TODO: Generic number of layers and their number of nodes
-    if classifier.NUM_HIDDEN_LAYERS == 1:
-        # nb_hidden_nodes_1 = 2048
-        # nb_hidden_nodes_1 = ( classifier.NUM_POINTS * classifier.NUM_FEATURES + classifier.NUM_CLASSES ) // 2
-        nb_hidden_nodes_1 = int ( math.sqrt ( classifier.NUM_POINTS * classifier.NUM_FEATURES * classifier.NUM_CLASSES ))
-        nb_hidden_nodes_2 = 0
-    elif classifier.NUM_HIDDEN_LAYERS == 2:
-        # nb_hidden_nodes_1, nb_hidden_nodes_2 = 2048, 2048
-        r = math.pow( classifier.NUM_POINTS * classifier.NUM_FEATURES / classifier.NUM_CLASSES, 1/3)
-        nb_hidden_nodes_1 = int ( classifier.NUM_CLASSES * math.pow ( r, 2 ))
-        nb_hidden_nodes_2 =int ( classifier.NUM_POINTS * classifier.NUM_FEATURES * r )
+    # if classifier.NUM_HIDDEN_LAYERS == 1:
+    #     # nb_hidden_nodes_1 = 2048
+    #     # nb_hidden_nodes_1 = ( classifier.NUM_POINTS * classifier.NUM_FEATURES + classifier.NUM_CLASSES ) // 2
+    #     nb_hidden_nodes_1 = int ( math.sqrt ( classifier.NUM_POINTS * classifier.NUM_FEATURES * classifier.NUM_CLASSES ))
+    #     nb_hidden_nodes_2 = 0
+    # elif classifier.NUM_HIDDEN_LAYERS == 2:
+    #     # nb_hidden_nodes_1, nb_hidden_nodes_2 = 2048, 2048
+    #     r = math.pow( classifier.NUM_POINTS * classifier.NUM_FEATURES / classifier.NUM_CLASSES, 1/3)
+    #     nb_hidden_nodes_1 = int ( classifier.NUM_CLASSES * math.pow ( r, 2 ))
+    #     nb_hidden_nodes_2 =int ( classifier.NUM_POINTS * classifier.NUM_FEATURES * r )
 
-    print("nb_hidden_nodes_1 : " + str(nb_hidden_nodes_1))
-    print("nb_hidden_nodes_2 : " + str(nb_hidden_nodes_2))
+    # print("nb_hidden_nodes_1 : " + str(classifier.nb_hidden_nodes_1))
+    # print("nb_hidden_nodes_2 : " + str(classifier.nb_hidden_nodes_2))
 
     # Construct the graph
     graph = tf.Graph()
@@ -85,7 +85,7 @@ def run_training(train_dataset, train_labels, valid_dataset, valid_labels, test_
             tf_data = tf.placeholder(tf.float32, shape=(1,classifier.NUM_POINTS * classifier.NUM_FEATURES), name="input")
 
         with tf.name_scope('Bias_and_weights_management'):
-            weightsDict = classifier.bias_weights_creation(nb_hidden_nodes_1, nb_hidden_nodes_2)    
+            weightsDict = classifier.bias_weights_creation(nb_hidden_nodes_1 = classifier.nb_hidden_nodes_1, nb_hidden_nodes_2 = classifier.nb_hidden_nodes_2)    
         
         # Training computation.
         with tf.name_scope('Training_computations'):
@@ -273,8 +273,16 @@ def main(_):
 
     if 'NUM_HIDDEN_LAYERS' in jsonDict['CondylesClassifier']:
         classifier.NUM_HIDDEN_LAYERS = jsonDict['CondylesClassifier']['NUM_HIDDEN_LAYERS']
+        if classifier.NUM_HIDDEN_LAYERS:
+            classifier.nb_hidden_nodes_1 = jsonDict['CondylesClassifier']['nb_hidden_nodes_1']
+        if classifier.NUM_HIDDEN_LAYERS > 1:
+            classifier.nb_hidden_nodes_1 = jsonDict['CondylesClassifier']['nb_hidden_nodes_2']
+        # if classifier.NUM_HIDDEN_LAYERS > 2:
+        #     classifier.nb_hidden_nodes_1 = jsonDict['CondylesClassifier']['nb_hidden_nodes_3']
     else:
         classifier.NUM_HIDDEN_LAYERS = 1
+        classifier.nb_hidden_nodes_1 = ( classifier.NUM_POINTS * classifier.NUM_FEATURES + classifier.NUM_CLASSES ) // 2
+        
 
     train_dataset, train_labels, valid_dataset, valid_labels, test_dataset, test_labels = get_inputs(pickle_file, classifier)
 
