@@ -127,6 +127,8 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.checkBox_numsteps = self.logic.get('checkBox_numsteps')
         self.spinBox_numsteps = self.logic.get('spinBox_numsteps')
         self.comboBox_controlGroup_features = self.logic.get('comboBox_controlGroup_features')
+        self.checkBox_numberOfLayers = self.logic.get('checkBox_numberOfLayers')
+        self.spinBox_numberOfLayers = self.logic.get('spinBox_numberOfLayers')
 
         #          Tab: Result / Analysis
         self.collapsibleButton_Result = self.logic.get('CollapsibleButton_Result')
@@ -192,6 +194,10 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.spinBox_numsteps.setMinimum(11)
         self.spinBox_numsteps.setMaximum(10001)
         self.spinBox_numsteps.setValue(1001)
+
+        self.spinBox_numberOfLayers.setMinimum(1)
+        self.spinBox_numberOfLayers.setMaximum(2)
+        self.spinBox_numberOfLayers.setValue(2)
 
         #     tree view configuration
         headerTreeView = self.MRMLTreeView_classificationGroups.header()
@@ -1249,10 +1255,15 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.label_stateNetwork.show()
 
         num_steps = 1001
-        if self.collapsibleGroupBox_advancedParameters.checked and self.checkBox_numsteps.checked:
-            num_steps = self.spinBox_numsteps.value
+        num_layers = 2
+
+        if self.collapsibleGroupBox_advancedParameters.checked:
+            if self.checkBox_numsteps.checked:
+                num_steps = self.spinBox_numsteps.value
+            if self.checkBox_numberOfLayers.checked:
+                num_layers = self.spinBox_numberOfLayers.value
         
-        accuracy = self.logic.trainNetworkClassification(self.archiveName, num_steps = num_steps)
+        accuracy = self.logic.trainNetworkClassification(self.archiveName, num_steps = num_steps, num_layers = num_layers)
         
         print("ESTIMATED ACCURACY :: " + str(accuracy))
 
@@ -2260,7 +2271,7 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         return 
 
 
-    def trainNetworkClassification(self, archiveName, num_steps):
+    def trainNetworkClassification(self, archiveName, num_steps, num_layers):
         """ Funciton to train the Neural Network 
         within the virtualenv containing tensorflow
         First creation of a zipfile with updated info
@@ -2287,7 +2298,7 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         jsonDict['CondylesClassifier']['num_steps'] =  num_steps
         # jsonDict['CondylesClassifier']['num_steps'] =  2001
         jsonDict['CondylesClassifier']['batch_size'] = 10
-        jsonDict['CondylesClassifier']['NUM_HIDDEN_LAYERS'] = 2
+        jsonDict['CondylesClassifier']['NUM_HIDDEN_LAYERS'] = num_layers
         
         if jsonDict['CondylesClassifier']['NUM_HIDDEN_LAYERS'] == 1:
             jsonDict['CondylesClassifier']['nb_hidden_nodes_1'] = int ( math.sqrt ( jsonDict['CondylesClassifier']['NUM_POINTS'] * jsonDict['CondylesClassifier']['NUM_FEATURES'] * jsonDict['CondylesClassifier']['NUM_CLASSES'] ))

@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1391</width>
-    <height>1764</height>
+    <width>1600</width>
+    <height>1798</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -407,6 +407,16 @@
                <widget class="QComboBox" name="comboBox_controlGroup_features"/>
               </item>
              </layout>
+            </item>
+            <item row="3" column="0">
+             <widget class="QCheckBox" name="checkBox_numberOfLayers">
+              <property name="text">
+               <string>Number of hidden layers</string>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="1">
+             <widget class="QSpinBox" name="spinBox_numberOfLayers"/>
             </item>
            </layout>
           </widget>
