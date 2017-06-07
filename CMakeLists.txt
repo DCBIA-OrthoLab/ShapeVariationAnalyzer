@@ -2,6 +2,12 @@ cmake_minimum_required(VERSION 2.8.9)
 
 project(ShapeVariationAnalyzer)
 
+
+set(ShapeVariationAnalyzer_VERSION_MAJOR 1)
+set(ShapeVariationAnalyzer_VERSION_MINOR 0)
+set(ShapeVariationAnalyzer_VERSION_PATCH 0)
+
+
 #-----------------------------------------------------------------------------
 # Extension meta-information
 set(EXTENSION_HOMEPAGE "http://slicer.org/slicerWiki/index.php/Documentation/Nightly/Extensions/ShapeVariationAnalyzer")
