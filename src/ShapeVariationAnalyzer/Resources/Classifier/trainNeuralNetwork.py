@@ -9,6 +9,7 @@ import argparse
 import json
 import shutil
 import zipfile
+import math
 
 # ----------------------------------------------------------------------------- #
 #																				#
@@ -16,17 +17,18 @@ import zipfile
 #																				#
 # ----------------------------------------------------------------------------- #
 
-## Reformat into a shape that's more adapted to the models we're going to train:
-#   - data as a flat matrix
-#   - labels as float 1-hot encodings
 def reformat(dataset, labels, classifier):
+    """ Reformat into a shape that's more adapted to the models we're going to train:
+        - data as a flat matrix
+        - labels as float 1-hot encodings
+    """
     dataset = dataset.reshape((-1, classifier.NUM_POINTS * classifier.NUM_FEATURES)).astype(np.float32)
     labels = (np.arange(classifier.NUM_CLASSES) == labels[:, None]).astype(np.float32)
     return dataset, labels
     
 def get_inputs(pickle_file, classifier):
-
-    # Reoad the data generated in pickleData.py
+    """ Reoad the data generated in picklefiel
+    """
     with open(pickle_file, 'rb') as f:
         save = pickle.load(f)
         train_dataset = save['train_dataset']
@@ -46,19 +48,25 @@ def get_inputs(pickle_file, classifier):
         print("\nTraining set", train_dataset.shape, train_labels.shape)
         print("Validation set", valid_dataset.shape, valid_labels.shape)
         print("Test set", test_dataset.shape, test_labels.shape)
-        print ""
 
         return train_dataset, train_labels, valid_dataset, valid_labels, test_dataset, test_labels
 
 
 def run_training(train_dataset, train_labels, valid_dataset, valid_labels, test_dataset, test_labels, saveModelPath, classifier):
+    # TODO: Generic number of layers and their number of nodes
+    # if classifier.NUM_HIDDEN_LAYERS == 1:
+    #     # nb_hidden_nodes_1 = 2048
+    #     # nb_hidden_nodes_1 = ( classifier.NUM_POINTS * classifier.NUM_FEATURES + classifier.NUM_CLASSES ) // 2
+    #     nb_hidden_nodes_1 = int ( math.sqrt ( classifier.NUM_POINTS * classifier.NUM_FEATURES * classifier.NUM_CLASSES ))
+    #     nb_hidden_nodes_2 = 0
+    # elif classifier.NUM_HIDDEN_LAYERS == 2:
+    #     # nb_hidden_nodes_1, nb_hidden_nodes_2 = 2048, 2048
+    #     r = math.pow( classifier.NUM_POINTS * classifier.NUM_FEATURES / classifier.NUM_CLASSES, 1/3)
+    #     nb_hidden_nodes_1 = int ( classifier.NUM_CLASSES * math.pow ( r, 2 ))
+    #     nb_hidden_nodes_2 =int ( classifier.NUM_POINTS * classifier.NUM_FEATURES * r )
 
-    #       >>>>>       A RENDRE GENERIQUE !!!!!!!
-    if classifier.NUM_HIDDEN_LAYERS == 1:
-        nb_hidden_nodes_1 = 2048
-        nb_hidden_nodes_2 = 0
-    elif classifier.NUM_HIDDEN_LAYERS == 2:
-        nb_hidden_nodes_1, nb_hidden_nodes_2 = 2048, 2048
+    # print("nb_hidden_nodes_1 : " + str(classifier.nb_hidden_nodes_1))
+    # print("nb_hidden_nodes_2 : " + str(classifier.nb_hidden_nodes_2))
 
     # Construct the graph
     graph = tf.Graph()
@@ -77,7 +85,7 @@ def run_training(train_dataset, train_labels, valid_dataset, valid_labels, test_
             tf_data = tf.placeholder(tf.float32, shape=(1,classifier.NUM_POINTS * classifier.NUM_FEATURES), name="input")
 
         with tf.name_scope('Bias_and_weights_management'):
-            weightsDict = classifier.bias_weights_creation(nb_hidden_nodes_1, nb_hidden_nodes_2)    
+            weightsDict = classifier.bias_weights_creation(nb_hidden_nodes_1 = classifier.nb_hidden_nodes_1, nb_hidden_nodes_2 = classifier.nb_hidden_nodes_2)    
         
         # Training computation.
         with tf.name_scope('Training_computations'):
@@ -86,13 +94,12 @@ def run_training(train_dataset, train_labels, valid_dataset, valid_labels, test_
         with tf.name_scope('Loss_computation'):
             loss = classifier.loss(logits, tf_train_labels, classifier.lambda_reg, weightsDict)
         
-        
+        print "Loss computation"
         with tf.name_scope('Optimization'):
             # Optimizer.
             optimizer = tf.train.GradientDescentOptimizer(classifier.learning_rate).minimize(loss)
             # optimizer = tf.train.AdagradOptimizer(classifier.learning_rate).minimize(loss)
         
-        # tf.tensor_summary("W_fc1", weightsDict['W_fc1'])
         tf.summary.scalar("Loss", loss)
         summary_op = tf.summary.merge_all()
         saver = tf.train.Saver(weightsDict)
@@ -157,37 +164,36 @@ def run_training(train_dataset, train_labels, valid_dataset, valid_labels, test_
     
     return finalaccuracy
 
-def exportModelNetwork(zipPath):
+def exportModelNetwork(zipPath, outputPath):
 
 	# Zipper tout ca :: base_name = la ou on veut zipper+zipname
-	shutil.make_archive(base_name = zipPath, format = 'zip', root_dir = os.path.dirname(zipPath), base_dir = os.path.basename(zipPath))
+
+	shutil.make_archive(base_name = outputPath, format = 'zip', root_dir = os.path.dirname(zipPath), base_dir = os.path.basename(zipPath))
 
 	return
 
-
-
-# ----------------------------------------------------------------------------- #
-# 																				#
-# 						   Passons aux choses serieuses							#
-# 																				#
-# ----------------------------------------------------------------------------- #
-# 
 def main(_):
-    print "\nTensorFlow current version : " + str(tf.__version__) + "\n"
+    print("\nTensorFlow current version : " + str(tf.__version__) + "\n")
       
     # Get the arguments from the command line
     parser = argparse.ArgumentParser()
-    parser.add_argument('-inputZip', action='store', dest='inputZip', help='Input zip file which contains the datasets & the parameters for the classifier', 
+    parser.add_argument('--inputZip', action='store', dest='inputZip', help='Input zip file which contains the datasets & the parameters for the classifier', 
+                        default = "")
+    parser.add_argument('--outputZip', action='store', dest='outputZip', help='Output zip file which will contain the neural netowrk trained', 
                         default = "")
 
     args = parser.parse_args()
 
     inputZip = args.inputZip
+    outputZip = args.outputZip
     basedir = os.path.dirname(inputZip)
     nameDir = os.path.splitext(os.path.basename(inputZip))[0]
+    outputdir = os.path.dirname(outputZip)
+    nameOuput = os.path.splitext(os.path.basename(outputZip))[0]
 
+    outputPath = os.path.join(outputdir, nameOuput)
     networkDir = os.path.join(basedir, nameDir)
-    print "networkDir : " + networkDir
+    print("networkDir : " + networkDir)
 
     if os.path.isdir(networkDir):
         shutil.rmtree(networkDir)
@@ -210,8 +216,8 @@ def main(_):
 
     # In case our JSON file doesnt contain a valid Classifier
     if not jsonDict.has_key('CondylesClassifier'):
-        print "Error: Couldn't parameterize the network."
-        print "There is no 'CondylesClassifier' model."
+        print("Error: Couldn't parameterize the network.")
+        print("There is no 'CondylesClassifier' model.")
         return 0
 
     # If we have the Classifier, set all parameters for the network
@@ -221,19 +227,19 @@ def main(_):
     if 'NUM_CLASSES' in jsonDict['CondylesClassifier']:
         classifier.NUM_CLASSES = jsonDict['CondylesClassifier']['NUM_CLASSES'] 
     else:
-        print "Missing NUM_CLASSES"
+        print("Missing NUM_CLASSES")
         accuracy = -1
 
     if 'NUM_POINTS' in jsonDict['CondylesClassifier']:
         classifier.NUM_POINTS = jsonDict['CondylesClassifier']['NUM_POINTS']
     else:
-        print "Missing NUM_POINTS"
+        print("Missing NUM_POINTS")
         accuracy = -1
 
     if 'NUM_FEATURES' in jsonDict['CondylesClassifier']:
         classifier.NUM_FEATURES = jsonDict['CondylesClassifier']['NUM_FEATURES']
     else:
-        print "Missing NUM_FEATURES"
+        print("Missing NUM_FEATURES")
         accuracy = -1
 
     # TODO: Manage case with incomplete parameterization of the classifier network
@@ -267,9 +273,16 @@ def main(_):
 
     if 'NUM_HIDDEN_LAYERS' in jsonDict['CondylesClassifier']:
         classifier.NUM_HIDDEN_LAYERS = jsonDict['CondylesClassifier']['NUM_HIDDEN_LAYERS']
+        if classifier.NUM_HIDDEN_LAYERS:
+            classifier.nb_hidden_nodes_1 = jsonDict['CondylesClassifier']['nb_hidden_nodes_1']
+        if classifier.NUM_HIDDEN_LAYERS > 1:
+            classifier.nb_hidden_nodes_1 = jsonDict['CondylesClassifier']['nb_hidden_nodes_2']
+        # if classifier.NUM_HIDDEN_LAYERS > 2:
+        #     classifier.nb_hidden_nodes_1 = jsonDict['CondylesClassifier']['nb_hidden_nodes_3']
     else:
-        classifier.NUM_HIDDEN_LAYERS = 2
-
+        classifier.NUM_HIDDEN_LAYERS = 1
+        classifier.nb_hidden_nodes_1 = ( classifier.NUM_POINTS * classifier.NUM_FEATURES + classifier.NUM_CLASSES ) // 2
+        
 
     train_dataset, train_labels, valid_dataset, valid_labels, test_dataset, test_labels = get_inputs(pickle_file, classifier)
 
@@ -280,7 +293,7 @@ def main(_):
 
     # Zip all those files together
     zipPath = networkDir
-    exportModelNetwork(zipPath)
+    exportModelNetwork(zipPath, outputPath)
 
     return 
 

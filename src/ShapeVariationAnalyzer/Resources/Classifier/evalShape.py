@@ -2,7 +2,6 @@ import os
 import sys
 from six.moves import cPickle as pickle
 import neuralNetwork as nn
-# import inputData
 import numpy as np
 import tensorflow as tf
 
@@ -12,24 +11,18 @@ import shutil
 import json
 
 
-# ----------------------------------------------------------------------------- #
-# 																				#
-# 						   Passons aux choses serieuses							#
-# 																				#
-# ----------------------------------------------------------------------------- #
-# 
-
-## Reformat into a shape that's more adapted to the models we're going to train:
-#   - data as a flat matrix
-#   - labels as float 1-hot encodings
 def reformat_data(dataset, classifier):
+    """ Reformat into a shape that's more adapted to the models we're going to train:
+        - data as a flat matrix
+        - labels as float 1-hot encodings
+    """
     dataset = dataset.reshape((-1, classifier.NUM_POINTS * classifier.NUM_FEATURES)).astype(np.float32)
     return dataset
 
 
 def get_input_shape(data, classifier):
-    # Get features in a matrix (NUM_FEATURES x NUM_POINTS)
-    # data = input_Data.load_features(inputFile)
+    """ Get features in a matrix (NUM_FEATURES x NUM_POINTS)
+    """
     data = data.reshape((-1, classifier.NUM_POINTS * classifier.NUM_FEATURES)).astype(np.float32)
     data = reformat_data(data, classifier)
     return data
@@ -40,17 +33,17 @@ def get_input_shape(data, classifier):
 def get_result(prediction):
     return np.argmax(prediction[0,:])
 
-def exportModelNetwork(zipPath):
-    shutil.make_archive(base_name = zipPath, format = 'zip', root_dir = os.path.dirname(zipPath), base_dir = os.path.basename(zipPath))
+def exportModelNetwork(zipPath, outputPath):
+    shutil.make_archive(base_name = outputPath, format = 'zip', root_dir = os.path.dirname(zipPath), base_dir = os.path.basename(zipPath))
     return
 
 
 def main(_):
-
-
     # Get the arguments from the command line
     parser = argparse.ArgumentParser()
-    parser.add_argument('-inputZip', action='store', dest='inputZip', help='Input zip file which contains the datasets & the parameters for the classifier', 
+    parser.add_argument('--inputZip', action='store', dest='inputZip', help='Input zip file which contains the datasets & the parameters for the classifier', 
+                        default = "")
+    parser.add_argument('--outputZip', action='store', dest='outputZip', help='Input zip file which the network trained and the results of the classification', 
                         default = "")
 
     # parser.add_argument('-inputFile', action='store', dest='inputFile', help='Input file to classify', default = "")
@@ -58,11 +51,16 @@ def main(_):
     args = parser.parse_args()
 
     inputZip = args.inputZip
+    outputZip = args.outputZip
     # inputFile = args.inputFile
 
     basedir = os.path.dirname(inputZip)
     nameDir = os.path.splitext(os.path.basename(inputZip))[0]
     networkDir = os.path.join(basedir, nameDir)
+
+    ouputbaseDir = os.path.dirname(outputZip)
+    outputName = os.path.splitext(os.path.basename(outputZip))[0]
+    outputPath = os.path.join(ouputbaseDir, outputName)
 
     if os.path.isdir(networkDir):
         shutil.rmtree(networkDir)
@@ -84,8 +82,8 @@ def main(_):
 
     # In case our JSON file doesnt contain a valid Classifier
     if not jsonDict.has_key('CondylesClassifier'):
-        print "Error: Couldn't parameterize the network."
-        print "There is no 'CondylesClassifier' model."
+        print("Error: Couldn't parameterize the network.")
+        print("There is no 'CondylesClassifier' model.")
         return 0
 
 
@@ -96,26 +94,26 @@ def main(_):
     if 'NUM_CLASSES' in jsonDict['CondylesClassifier']:
         classifier.NUM_CLASSES = jsonDict['CondylesClassifier']['NUM_CLASSES'] 
     else:
-        print "Missing NUM_CLASSES"
+        print("Missing NUM_CLASSES")
     
     if 'NUM_POINTS' in jsonDict['CondylesClassifier']:
         classifier.NUM_POINTS = jsonDict['CondylesClassifier']['NUM_POINTS']
     else:
-        print "Missing NUM_POINTS"
+        print("Missing NUM_POINTS")
 
     if 'NUM_FEATURES' in jsonDict['CondylesClassifier']:
         classifier.NUM_FEATURES = jsonDict['CondylesClassifier']['NUM_FEATURES']
     else:
-        print "Missing NUM_FEATURES"
+        print("Missing NUM_FEATURES")
 
 
     dictToClassify = pickle.load( open( pickleToClassify, "rb" ) )
     dictClassified = dict()
 
     for file in dictToClassify.keys():
-        print file
+        # print(file)
         # Create session, and import existing graph
-        # print shape
+        # print(shape)
         myData = get_input_shape(dictToClassify[file], classifier)
         session = tf.InteractiveSession()
 
@@ -133,19 +131,14 @@ def main(_):
 
         result = get_result(data_pred)
         dictClassified[file] = result
-    #     print "Shape : " + os.path.basename(file)
-    #     print "Group predicted :" + str(result) + "\n"
-
-    # print "\n\n" + str(dictClassified)
-
+        
     # Save into a JSON file
-
     with open(os.path.join(networkDir,'results.json'), 'w') as f:
         json.dump(dictClassified, f, ensure_ascii=False, indent = 4)
 
     # Zip all those files together
     zipPath = networkDir
-    exportModelNetwork(zipPath)
+    exportModelNetwork(zipPath, outputPath)
 
     return True
 

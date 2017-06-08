@@ -6,27 +6,14 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1582</width>
-    <height>1732</height>
+    <width>1600</width>
+    <height>1798</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Form</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_5">
-   <item>
-    <spacer name="verticalSpacer">
-     <property name="orientation">
-      <enum>Qt::Vertical</enum>
-     </property>
-     <property name="sizeHint" stdset="0">
-      <size>
-       <width>20</width>
-       <height>40</height>
-      </size>
-     </property>
-    </spacer>
-   </item>
    <item>
     <widget class="ctkCollapsibleButton" name="CollapsibleButton_creationCSVFile" native="true">
      <property name="text" stdset="0">
@@ -320,31 +307,38 @@
         <layout class="QGridLayout" name="gridLayout_5">
          <item row="2" column="0">
           <layout class="QGridLayout" name="gridLayout_6">
-           <item row="1" column="1">
-            <widget class="QPushButton" name="pushButton_trainNetwork">
-             <property name="text">
-              <string>Train Network</string>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="0">
+           <item row="2" column="0">
             <widget class="QLabel" name="label_stateNetwork">
              <property name="text">
               <string>Computing network...</string>
              </property>
             </widget>
            </item>
-           <item row="2" column="1">
-            <widget class="QPushButton" name="pushButton_ExportNetwork">
+           <item row="0" column="0">
+            <widget class="QPushButton" name="pushButton_preprocessData">
              <property name="text">
-              <string>Export Network</string>
+              <string>Preprocess data</string>
              </property>
             </widget>
            </item>
            <item row="0" column="1">
-            <widget class="QPushButton" name="pushButton_preprocessData">
+            <widget class="QPushButton" name="pushButton_ExportUntrainedNetwork">
              <property name="text">
-              <string>Preprocess data</string>
+              <string>Export Untrained Network</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="QPushButton" name="pushButton_trainNetwork">
+             <property name="text">
+              <string>Train Network</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="QPushButton" name="pushButton_ExportNetwork">
+             <property name="text">
+              <string>Export Classifier</string>
              </property>
             </widget>
            </item>
@@ -414,6 +408,16 @@
               </item>
              </layout>
             </item>
+            <item row="3" column="0">
+             <widget class="QCheckBox" name="checkBox_numberOfLayers">
+              <property name="text">
+               <string>Number of hidden layers</string>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="1">
+             <widget class="QSpinBox" name="spinBox_numberOfLayers"/>
+            </item>
            </layout>
           </widget>
          </item>
@@ -469,13 +473,6 @@
              </property>
             </widget>
            </item>
-           <item row="3" column="1">
-            <widget class="QPushButton" name="pushButton_classifyIndex">
-             <property name="text">
-              <string>Classify</string>
-             </property>
-            </widget>
-           </item>
            <item row="0" column="1">
             <widget class="ctkPathLineEdit" name="ctkPathLineEdit_networkPath" native="true"/>
            </item>
@@ -483,6 +480,31 @@
             <widget class="QLabel" name="label_NetworkPath">
              <property name="text">
               <string>Network path</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <widget class="QPushButton" name="pushButton_preprocessNewData">
+           <property name="text">
+            <string>Preprocess new data</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <layout class="QGridLayout" name="gridLayout_8">
+           <item row="0" column="0">
+            <widget class="QPushButton" name="pushButton_exportToClassify">
+             <property name="text">
+              <string>Export to classify</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QPushButton" name="pushButton_classifyIndex">
+             <property name="text">
+              <string>Classify</string>
              </property>
             </widget>
            </item>
@@ -512,6 +534,19 @@
          <string>Export Result</string>
         </property>
        </widget>
+      </item>
+      <item>
+       <spacer name="verticalSpacer">
+        <property name="orientation">
+         <enum>Qt::Vertical</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>20</width>
+          <height>40</height>
+         </size>
+        </property>
+       </spacer>
       </item>
      </layout>
     </widget>

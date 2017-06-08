@@ -6,7 +6,7 @@ the virtualenv bin/python
 """
 
 import tensorflow
-print "TENSORFLOW VERSION ::: " + str(tensorflow.__version__)
+print("TENSORFLOW VERSION ::: " + str(tensorflow.__version__))
 
 
 

@@ -16,11 +16,10 @@ class inputData():
         self.controlAverage = controlAverage_param 
 
 
-    #
-    # Function get_folder_classes_list(datasetPath)
-    # 	For a given folder, return the list of subfolders
-    #
     def get_folder_classes_list(self, datasetPath):
+        """ Function get_folder_classes_list(datasetPath)
+        For a given folder, return the list of subfolders
+        """
         dataset_folders = [os.path.join(datasetPath, d) for d in sorted(os.listdir(datasetPath))]
 
         # Delete .DS_Store file if there is one
@@ -29,20 +28,19 @@ class inputData():
 
         return dataset_folders
 
-
-    #
-    # Function load_features(file)
-    #   Load the shape stored in the filename "shape" and extract features (normals + mean distances + curvatures), stored in a 2D array (currentData)
-    #   Features are normalized (normals are already done, in previous program SurfaceFeaturesExtractor with vtkPolyDataNormals)
-    #
     def load_features(self, shape):
-        print shape
+        """ Function load_features(file)
+            Load the shape stored in the filename "shape" and extract features 
+            (those specified in featuresList attribute), stored in a 2D array (currentData)
+            Features are normalized (normals are already done, in previous program SurfaceFeaturesExtractor with vtkPolyDataNormals)
+        """
+        print(shape)
         dataset = np.ndarray(shape=(1, self.NUM_POINTS, self.NUM_FEATURES), dtype=np.float32)
 
         try:
             reader_poly = vtk.vtkPolyDataReader()
             reader_poly.SetFileName(shape)
-            # print "shape : " + shape
+            # print("shape : " + shape)
 
             reader_poly.Update()
             geometry = reader_poly.GetOutput()
@@ -184,11 +182,12 @@ class inputData():
         return currentData
 
 
-    #
-    # Function load_features_classe(folder, min_num_shapes)
-    #   Call load_features for an entire folder/classe. Check if there's enough shapes in a classe.
-    #
+    
+    
     def load_features_classe(self, vtklist, min_num_shapes=1):
+        """ Function load_features_classe(vtklist, min_num_shapes)
+        Call load_features for an entire folder/classe. Check if there's enough shapes in a classe.
+        """
         vtk_filenames = vtklist
         dataset = np.ndarray(shape=(len(vtk_filenames), self.NUM_POINTS, self.NUM_FEATURES), dtype=np.float32)
 
@@ -209,11 +208,12 @@ class inputData():
         print('Full dataset tensor:', dataset.shape)
         print('Mean:', np.mean(dataset))
         print('Standard deviation:', np.std(dataset))
-        print ""
         return dataset
 
     def load_features_with_names(self, vtklist):
-
+        """ Function load_features_names(vtklist)
+        Call load_features for a shape. 
+        """
         # vtk_filenames = vtklist
         allShapes_feat = dict()
         dataset = np.ndarray(shape=(len(vtklist), self.NUM_POINTS, self.NUM_FEATURES), dtype=np.float32)
@@ -237,28 +237,17 @@ class inputData():
         print('Full dataset tensor:', dataset.shape)
         print('Mean:', np.mean(dataset))
         print('Standard deviation:', np.std(dataset))
-        print ""
         return dataset, allShapes_feat
 
-
-    #
-    # Function maybe_pickle(data_folders, min_num_shapes_per_class, force=False)
-    #   Pickle features array sorted by class
-    #
     def maybe_pickle(self, dictFeatData, min_num_shapes_per_class, path, force=False):
+        """ Function maybe_pickle(data_folders, min_num_shapes_per_class, force=False)
+        Pickle features array sorted by class
+        """
         dataset_names = []
-        # folders = list()
-        # for d in data_folders:
-        #     if os.path.isdir(os.path.join(data_folders, d)):
-        #         folders.append(os.path.join(data_folders, d))
         
         for group, vtklist in dictFeatData.items():
             set_filename = os.path.join(path, 'Group' + str(group) + '.pickle')
 
-
-        # for folder in folders:
-        #     head, tail = os.path.split(folder)
-        #     set_filename = os.path.join(slicer.app.temporaryPath, tail + '.pickle')
             dataset_names.append(set_filename)
             if os.path.exists(set_filename) and not force:
                 # You may override by setting force=True.
@@ -274,12 +263,10 @@ class inputData():
 
         return dataset_names
 
-
-    #
-    # Function make_arrays(nb_rows, nbPoints, nbFeatures)
-    #
-    #
     def make_arrays(self,nb_rows, nbPoints, nbFeatures):
+        """ Function make_arrays(nb_rows, nbPoints, nbFeatures)
+        Create numpy array for data and their labels
+        """
         if nb_rows:
             dataset = np.ndarray((nb_rows, self.NUM_POINTS, self.NUM_FEATURES), dtype=np.float32)
             labels = np.ndarray(nb_rows, dtype=np.int32)
@@ -287,12 +274,10 @@ class inputData():
             dataset, labels = None, None
         return dataset, labels
 
-
-    #
-    # Function merge_datasets(pickle_files, train_size, valid_size=0)
-    #
-    #
     def merge_datasets(self,pickle_files, train_size, valid_size=0):
+        """ Function to merge the dataset 
+        with the same number of shapes in each class 
+        """
         num_classes = len(pickle_files)
         valid_dataset, valid_labels = self.make_arrays(valid_size, self.NUM_POINTS, self.NUM_FEATURES)
         train_dataset, train_labels = self.make_arrays(train_size, self.NUM_POINTS, self.NUM_FEATURES)
@@ -328,11 +313,10 @@ class inputData():
         return valid_dataset, valid_labels, train_dataset, train_labels
 
 
-    #
-    # Function merge_all_datasets(pickle_files, train_size, valid_size=0)
-    #
-    #
     def merge_all_datasets(self,pickle_files, train_size, valid_size=0):
+        """ Function to merge the entire dataset 
+        with all the entire shapes
+        """
         num_classes = len(pickle_files)
         valid_dataset, valid_labels = self.make_arrays(valid_size, self.NUM_POINTS, self.NUM_FEATURES)
         train_dataset, train_labels = self.make_arrays(train_size, self.NUM_POINTS, self.NUM_FEATURES)
@@ -369,11 +353,10 @@ class inputData():
         return valid_dataset, valid_labels, train_dataset, train_labels
 
 
-    #
-    # Function randomize(dataset, labels)
-    #   Randomize the data and their labels
-    #
     def randomize(self,dataset, labels):
+        """ Function randomize(dataset, labels)
+        Randomize the data and their labels before training the neural network
+        """
         permutation = np.random.permutation(labels.shape[0])
         shuffled_dataset = dataset[permutation, :, :]
         shuffled_labels = labels[permutation]

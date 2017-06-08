@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<executable>
+  <category>Quantification</category>
+  <title>Eval Shape</title>
+  <description><![CDATA[Evaluate shape group index with neural network.]]></description>
+  <version>1.0.$Revision$</version>
+  <documentation-url></documentation-url>
+  <license>slicer4</license>
+  <contributor>Priscille de Dumast (University of Michigan)</contributor>
+  <acknowledgements><![CDATA[This work was supported by the National Institutes of Dental and Craniofacial Research and Biomedical Imaging and Bioengineering of the National Institutes of Health under Award Number R01DE024450.]]></acknowledgements>
+  <parameters>
+    <label>IO</label>
+    <description><![CDATA[Input/output parameters]]></description>
+    <file fileExtensions=".zip">
+      <name>inputZip</name>
+      <label>Input Zip</label>
+      <longflag>--inputZip</longflag>
+      <channel>input</channel>
+      <index>0</index>
+      <description><![CDATA[Input zip]]></description>
+    </file>
+    <file fileExtensions=".zip">
+      <name>outputZip</name>
+      <label>Output Zip</label>
+      <longflag>--outputZip</longflag>
+      <channel>output</channel>
+      <index>1</index>
+      <description><![CDATA[Output zip]]></description>
+    </file>
+  </parameters>
+</executable>

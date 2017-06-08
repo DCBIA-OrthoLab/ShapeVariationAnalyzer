@@ -22,7 +22,7 @@ class ShapeVariationAnalyzer(ScriptedLoadableModule):
 
     def __init__(self, parent):
         ScriptedLoadableModule.__init__(self, parent)
-        parent.title = "ShapeVarationAnalyzer"
+        parent.title = "ShapeVariationAnalyzer"
         parent.categories = ["Quantification"]
         parent.dependencies = []
         parent.contributors = ["Priscille de Dumast (University of Michigan), Laura Pascal (University of Michigan)"]
@@ -74,19 +74,12 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.featuresList = list()
 
         # Interface
-        loader = qt.QUiLoader()
         self.moduleName = 'ShapeVariationAnalyzer'
         scriptedModulesPath = eval('slicer.modules.%s.path' % self.moduleName.lower())
         scriptedModulesPath = os.path.dirname(scriptedModulesPath)
         path = os.path.join(scriptedModulesPath, 'Resources', 'UI', '%s.ui' % self.moduleName)
-        qfile = qt.QFile(path)
-        qfile.open(qt.QFile.ReadOnly)
-
-        widget = loader.load(qfile, self.parent)
-        self.layout = self.parent.layout()
-        self.widget = widget
-        self.layout.addWidget(widget)
-
+        self.widget = slicer.util.loadUI(path)
+        self.layout.addWidget(self.widget)
 
         #     global variables of the Interface:
         #          Tab: Creation of CSV File for Classification Groups
@@ -115,8 +108,11 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.MRMLNodeComboBox_VTKInputData = self.logic.get('MRMLNodeComboBox_VTKInputData')
         self.pathLineEdit_CSVInputData = self.logic.get('PathLineEdit_CSVInputData')
         self.pushButton_classifyIndex = self.logic.get('pushButton_classifyIndex')
+        self.pushButton_preprocessNewData = self.logic.get('pushButton_preprocessNewData')
+        self.pushButton_exportToClassify = self.logic.get('pushButton_exportToClassify')
 
         self.pushButton_trainNetwork = self.logic.get('pushButton_trainNetwork')
+        self.pushButton_exportUntrainedNetwork = self.logic.get('pushButton_ExportUntrainedNetwork')
         self.pushButton_exportNetwork = self.logic.get('pushButton_ExportNetwork')
         self.pathLineEdit_CSVFileDataset = self.logic.get('pathLineEdit_CSVFileDataset')
         self.pathLineEdit_CSVFileMeansShape = self.logic.get('pathLineEdit_CSVFileMeansShape')
@@ -131,6 +127,8 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.checkBox_numsteps = self.logic.get('checkBox_numsteps')
         self.spinBox_numsteps = self.logic.get('spinBox_numsteps')
         self.comboBox_controlGroup_features = self.logic.get('comboBox_controlGroup_features')
+        self.checkBox_numberOfLayers = self.logic.get('checkBox_numberOfLayers')
+        self.spinBox_numberOfLayers = self.logic.get('spinBox_numberOfLayers')
 
         #          Tab: Result / Analysis
         self.collapsibleButton_Result = self.logic.get('CollapsibleButton_Result')
@@ -163,7 +161,11 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
 
         self.pushButton_trainNetwork.setDisabled(True)
         self.pushButton_exportNetwork.setDisabled(True)
+        self.pushButton_exportUntrainedNetwork.setDisabled(True)
         self.pushButton_preprocessData.setDisabled(True)
+
+        self.pushButton_exportToClassify.setDisabled(True)
+        self.pushButton_classifyIndex.setDisabled(True)
 
         self.label_stateNetwork.hide()
 
@@ -189,9 +191,13 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.spinBox_group.setValue(0)
 
         #     spinbox configuration in the Advanced parameters
-        self.spinBox_numsteps.setMinimum(10001)
-        self.spinBox_numsteps.setMaximum(11)
+        self.spinBox_numsteps.setMinimum(11)
+        self.spinBox_numsteps.setMaximum(10001)
         self.spinBox_numsteps.setValue(1001)
+
+        self.spinBox_numberOfLayers.setMinimum(1)
+        self.spinBox_numberOfLayers.setMaximum(2)
+        self.spinBox_numberOfLayers.setValue(2)
 
         #     tree view configuration
         headerTreeView = self.MRMLTreeView_classificationGroups.header()
@@ -255,8 +261,9 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.MRMLNodeComboBox_VTKInputData.connect('currentNodeChanged(vtkMRMLNode*)', self.onVTKInputData)
         self.pathLineEdit_CSVInputData.connect('currentPathChanged(const QString)', self.onCSVInputData)
         self.pushButton_classifyIndex.connect('clicked()', self.onClassifyIndex)
+        self.pushButton_preprocessNewData.connect('clicked()', self.onPreprocessNewData)
+        self.pushButton_exportToClassify.connect('clicked()', self.onExportToClassify)
 
-# onDataChanged (const QModelIndex &topLeft, const QModelIndex &bottomRight)
         self.checkableComboBox_choiceOfFeatures.connect('checkedIndexesChanged()', self.onCheckableComboBoxFeaturesChanged)
 
         #          Tab: Result / Analysis
@@ -280,6 +287,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
                 # Tab: Classification Network
         self.pushButton_trainNetwork.connect('clicked()', self.onTrainNetwork)
         self.pushButton_exportNetwork.connect('clicked()', self.onExportNetwork)
+        self.pushButton_exportUntrainedNetwork.connect('clicked()', self.onExportUntrainedNetwork)
         self.pathLineEdit_CSVFileDataset.connect('currentPathChanged(const QString)', self.onCSVFileDataset)
         self.pathLineEdit_CSVFileMeansShape.connect('currentPathChanged(const QString)', self.onCSVFileMeansShape)
         self.pushButton_preprocessData.connect('clicked()', self.onPreprocessData)
@@ -306,7 +314,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
             
         self.comboBox_healthyGroup.clear()
 
-        print "onCloseScene"
+        print("onCloseScene")
         self.dictVTKFiles = dict()
         self.dictGroups = dict()
         self.dictCSVFile = dict()
@@ -380,7 +388,6 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         horizontalHeader.setResizeMode(1,qt.QHeaderView.ResizeToContents)
         self.tableWidget_result.verticalHeader().setVisible(False)
 
-
         # Enable/disable
         self.comboBox_healthyGroup.setDisabled(True)
         self.pushButton_exportUpdatedClassification.setDisabled(True)
@@ -395,7 +402,11 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
 
         self.pushButton_trainNetwork.setDisabled(True)
         self.pushButton_exportNetwork.setDisabled(True)
+        self.pushButton_exportUntrainedNetwork.setDisabled(True)
         self.pushButton_preprocessData.setDisabled(True)
+        self.pushButton_exportToClassify.setDisabled(True)
+        self.pushButton_classifyIndex.setDisabled(True)
+
         self.label_stateNetwork.hide()
         self.stateCSVMeansShape = False
         self.stateCSVDataset = False
@@ -422,10 +433,10 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.MRMLTreeView_classificationGroups.setMRMLScene(slicer.app.mrmlScene())
 
 
-
-    # Only one tab can be display at the same time:
-    #   When one tab is opened all the other tabs are closed
     def onSelectedCollapsibleButtonOpen(self, selectedCollapsibleButton):
+        """  Only one tab can be display at the same time:
+        When one tab is opened all the other tabs are closed 
+        """
         if selectedCollapsibleButton.isChecked():
             collapsibleButtonList = [self.collapsibleButton_creationCSVFile,
                                      self.collapsibleButton_previewClassificationGroups,
@@ -440,15 +451,12 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
     # Tab: Creation of CSV File for Classification Groups  #
     # ---------------------------------------------------- #
 
-    # Function in order to manage the display of these three buttons:
-    #    - "Add Group"
-    #    - "Modify Group"
-    #    - "Remove Group"
     def onManageGroup(self):
-        # Display the button:
-        #     - "Add Group" for a group which hasn't been added yet
-        #     - "Remove Group" for the last group added
-        #     - "Modify Group" for all the groups added
+        """ Function to display the 3 button:
+            - "Add Group" for a group which hasn't been added yet
+            - "Remove Group" for the last group added
+            - "Modify Group" for all the groups added
+        """
         if self.spinBox_group.maximum == self.spinBox_group.value:
             self.stackedWidget_manageGroup.setCurrentIndex(0)
         else:
@@ -461,10 +469,11 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
             if len(self.directoryList) > 0:
                 self.directoryButton_creationCSVFile.directory = self.directoryList[self.spinBox_group.value - 1]
 
-    # Function to add a group of the dictionary
-    #    - Add the paths of all the vtk files found in the directory given
-    #      of a dictionary which will be used to create the CSV file
     def onAddGroupForCreationCSVFile(self):
+        """Function to add a group of the dictionary
+        - Add the paths of all the vtk files found in the directory given 
+        of a dictionary which will be used to create the CSV file
+        """
         # Error message
         directory = self.directoryButton_creationCSVFile.directory.encode('utf-8')
         if directory in self.directoryList:
@@ -490,11 +499,11 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         # Message for the user
         slicer.util.delayDisplay("Group Added")
         
-
-    # Function to remove a group of the dictionary
-    #    - Remove the paths of all the vtk files corresponding to the selected group
-    #      of the dictionary which will be used to create the CSV file
     def onRemoveGroupForCreationCSVFile(self):
+        """ Function to remove a group of the dictionary
+            - Remove the paths of all the vtk files corresponding to the selected group 
+            of the dictionary which will be used to create the CSV file
+        """
         # Remove the paths of the vtk files of the dictionary
         self.logic.removeGroupToDictionary(self.dictCSVFile, self.directoryList, self.spinBox_group.value)
 
@@ -509,10 +518,11 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         # Message for the user
         slicer.util.delayDisplay("Group removed")
 
-    # Function to modify a group of the dictionary:
-    #    - Remove of the dictionary the paths of all vtk files corresponding to the selected group
-    #    - Add of the dictionary the new paths of all the vtk files
     def onModifyGroupForCreationCSVFile(self):
+        """ Function to modify a group of the dictionary:
+            - Remove of the dictionary the paths of all vtk files corresponding to the selected group
+            - Add of the dictionary the new paths of all the vtk files
+        """
         # Error message
         directory = self.directoryButton_creationCSVFile.directory.encode('utf-8')
         if directory in self.directoryList:
@@ -529,10 +539,11 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         # Message for the user
         slicer.util.delayDisplay("Group modified")
 
-    # Function to export the CSV file in the directory chosen by the user
-    #    - Save the CSV file from the dictionary previously filled
-    #    - Load automatically this CSV file in the next tab: "Creation of New Classification Groups"
     def onExportForCreationCSVFile(self):
+        """ Function to export the CSV file in the directory chosen by the user
+            - Save the CSV file from the dictionary previously filled
+            - Load automatically this CSV file in the next tab: "Creation of New Classification Groups"
+        """
         # Path of the csv file
         dlg = ctk.ctkFileDialog()
         filepath = dlg.getSaveFileName(None, "Export CSV file for Classification groups", os.path.join(qt.QDir.homePath(), "Desktop"), "CSV File (*.csv)")
@@ -556,7 +567,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.dictCSVFile = dict()
 
         # Message in the python console
-        print "Export CSV File: " + filepath
+        print("Export CSV File: " + filepath)
 
         # Load automatically the CSV file in the pathline in the next tab "Creation of New Classification Groups"
         self.pathLineEdit_previewGroups.setCurrentPath(filepath)
@@ -570,8 +581,10 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
     #     
     # ---------------------------------------------------- #
 
-    # Function to read the CSV file containing all the vtk filepaths needed to create the new Classification Groups
     def onSelectPreviewGroups(self):
+        """ Function to read the CSV file containing all the vtk 
+        filepaths needed to create the new Classification Groups 
+        """
         # Re-initialization of the dictionary containing all the vtk files
         # which will be used to create a new Classification Groups
         self.dictVTKFiles = dict()
@@ -580,7 +593,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         if not os.path.exists(self.pathLineEdit_previewGroups.currentPath):
             return
 
-        print "------ Creation of a new Classification Groups ------"
+        # print("------ Creation of a new Classification Groups ------")
         # Check if it's a CSV file
         condition1 = self.logic.checkExtension(self.pathLineEdit_previewGroups.currentPath, ".csv")
         if not condition1:
@@ -611,8 +624,11 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.pushButton_previewVTKFiles.setEnabled(True)
         # self.pushButton_compute.setEnabled(True)
 
-    # Function to manage the checkable combobox to allow the user to choose the group that he wants to preview in SPV
+    
     def onCheckableComboBoxValueChanged(self):
+        """ Function to manage the checkable combobox to allow 
+        the user to choose the group that he wants to preview in SPV
+        """
         # Update the checkboxes in the qtableWidget of each vtk file
         index = self.checkableComboBox_ChoiceOfGroup.currentIndex
         for row in range(0,self.tableWidget_VTKFiles.rowCount):
@@ -631,18 +647,21 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
                 item = self.checkableComboBox_ChoiceOfGroup.model().item(index, 0)
                 if item.checkState():
                     checkBox.setChecked(True)
-                    self.groupSelected.add(index + 1)                           # >>>>> + 1 ?????
+                    self.groupSelected.add(index + 1)
                 else:
                     checkBox.setChecked(False)
-                    self.groupSelected.discard(index + 1)                           # >>>>> + 1 ?????
+                    self.groupSelected.discard(index + 1)
                 checkBox.blockSignals(False)
 
         # Update the color in the qtableWidget of each vtk file
         colorTransferFunction = self.logic.creationColorTransfer(self.groupSelected)
         self.updateColorInTableForPreviewInSPV(colorTransferFunction)
 
-    # Function to manage the combobox which allow the user to change the group of a vtk file
+    
     def onGroupValueChanged(self):
+        """ Function to manage the combobox which 
+        allow the user to change the group of a vtk file 
+        """
         # Updade the dictionary which containing the VTK files sorted by groups
         self.logic.onComboBoxTableValueChanged(self.dictVTKFiles, self.tableWidget_VTKFiles)
 
@@ -655,8 +674,10 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         # self.directoryButton_exportUpdatedClassification.directory = os.path.dirname(self.pathLineEdit_previewGroups.currentPath)
 
 
-    # Function to manage the checkbox in the table used to make a preview in SPV
     def onCheckBoxTableValueChanged(self):
+        """ Function to manage the checkbox in 
+        the table used to make a preview in SPV 
+        """
         self.groupSelected = set()
         # Update the checkable comboBox which allow to select what groups the user wants to display in SPV
         self.checkableComboBox_ChoiceOfGroup.blockSignals(True)
@@ -688,8 +709,11 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         colorTransferFunction = self.logic.creationColorTransfer(self.groupSelected)
         self.updateColorInTableForPreviewInSPV(colorTransferFunction)
 
-    # Function to update the colors that the selected vtk files will have in Shape Population Viewer
+    
     def updateColorInTableForPreviewInSPV(self, colorTransferFunction):
+        """ Function to update the colors that the selected 
+        vtk files will have in Shape Population Viewer
+        """
         for row in range(0,self.tableWidget_VTKFiles.rowCount):
             # Recovery of the group display in the table for each vtk file
             widget = self.tableWidget_VTKFiles.cellWidget(row, 1)
@@ -713,11 +737,12 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
             else:
                 self.tableWidget_VTKFiles.item(row,3).setBackground(qt.QColor(255,255,255))
 
-    # Function to display the selected vtk files in Shape Population Viewer
-    #    - Add a color map "DisplayClassificationGroup"
-    #    - Launch the CLI ShapePopulationViewer
     def onPreviewVTKFiles(self):
-        print "--- Preview VTK Files in ShapePopulationViewer ---"
+        """ Function to display the selected vtk files in Shape Population Viewer
+            - Add a color map "DisplayClassificationGroup"
+            - Launch the CLI ShapePopulationViewer
+        """
+        # print("--- Preview VTK Files in ShapePopulationViewer ---")
         if os.path.exists(self.pathLineEdit_previewGroups.currentPath):
             # Creation of a color map to visualize each group with a different color in ShapePopulationViewer
             self.logic.addColorMap(self.tableWidget_VTKFiles, self.dictVTKFiles)
@@ -736,13 +761,14 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
             for value in self.dictVTKFiles.values():
                 self.logic.removeDataVTKFiles(value)
 
-    # Function to export the new Classification Groups
-    #    - Data saved:
-    #           - Save the mean vtk files in the selected directory
-    #           - Save the CSV file in the selected directory
-    #    - Load automatically the CSV file in the next tab: "Selection of Classification Groups"
     def onExportUpdatedClassificationGroups(self):
-        print "--- Export the new Classification Groups ---"
+        """ Function to export the new Classification Groups
+            - Data saved:
+                - Save the mean vtk files in the selected directory
+                - Save the CSV file in the selected directory
+            - Load automatically the CSV file in the next tab: "Selection of Classification Groups"
+        """
+        # print("--- Export the new Classification Groups ---")
 
         dlg = ctk.ctkFileDialog()
         filepath = dlg.getSaveFileName(None, "Export Updated CSV file", "", "CSV File (*.csv)")
@@ -775,8 +801,10 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
     #        
     # ---------------------------------------------------- #
 
-    # Function to select the Classification Groups
+    
     def onComputeAverageClassificationGroups(self):
+        """ Function to select the Classification Groups
+        """
         # Re-initialization of the dictionary containing the Classification Groups
         self.dictShapeModels = dict()
 
@@ -784,7 +812,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         if not os.path.exists(self.pathLineEdit_selectionClassificationGroups.currentPath):
             return
 
-        print "------ Selection of a Classification Groups ------"
+        # print("------ Selection of a Classification Groups ------")
         # Check if it's a CSV file
         condition1 = self.logic.checkExtension(self.pathLineEdit_selectionClassificationGroups.currentPath, ".csv")
         if not condition1:
@@ -808,20 +836,13 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         if not condition4: 
             self.pathLineEdit_CSVFileDataset.setCurrentPath(" ")
             return
-        # Enable/disable buttons
-        # self.comboBox_healthyGroup.setEnabled(True)
-        
-
         self.pushButton_computeMeanGroup.setEnabled(True)
 
-        # Configuration of the spinbox specify the healthy group
-        #      Set the Maximum value of comboBox_healthyGroup at the maximum number groups
-
-
-        # self.comboBox_healthyGroup.setMaximum(len(self.dictShapeModels) - 1)
-
     def onComputeMeanGroup(self):
-        print "compute mean group"
+        """ Function to compute the average shape
+        for each present group
+        """
+        # print("compute mean group")
         for group, listvtk in self.dictShapeModels.items():
             # Compute the mean of each group thanks to the CLI "computeMean"
             self.logic.computeMean(group, listvtk)
@@ -841,7 +862,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
 
     def onMeanGroupCSV(self):
         
-        print "------ onMeanGroupCSV ------"
+        # print("------ onMeanGroupCSV ------")
         self.dictGroups = dict()
 
         # Check if it's a CSV file
@@ -860,16 +881,10 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         #    which will be used to create a new Classification Groups
         if not (condition2 and condition3):
             self.dictGroups = dict()
-            # self.pathLineEdit_meanGroup.setCurrentPath(" ")
             return
 
         self.pushButton_previewGroups.setEnabled(True)
         self.comboBox_healthyGroup.setEnabled(True)
-        # self.comboBox_healthyGroup.setMaximum(len(self.dictGroups.keys()) - 1)
-
-        # numItem = self.comboBox_healthyGroup.count
-        # for i in range(0, numItem):
-        #     self.comboBox_healthyGroup.removeItem(0)
         self.comboBox_healthyGroup.clear()
 
         for key, value in self.dictGroups.items():
@@ -877,24 +892,19 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
             self.comboBox_healthyGroup.addItem("Group " + str(key))
 
 
-        
-
-    # Function to preview the Classification Groups in Slicer
-    #    - The opacity of all the vtk files is set to 0.8
-    #    - The healthy group is white and the others are red
     def onPreviewGroupMeans(self):
-        print "------ Preview of the Group's Mean in Slicer ------"
+        """ Function to preview the Classification Groups in Slicer
+            - The opacity of all the vtk files is set to 0.8
+            - The healthy group is white and the others are red
+        """
+        # print("------ Preview of the Group's Mean in Slicer ------")
 
         list = slicer.mrmlScene.GetNodesByClass("vtkMRMLModelNode")
         end = list.GetNumberOfItems()
         for i in range(0,end):
             model = list.GetItemAsObject(i)
-            print model.GetName()
-            print 
             if model.GetName()[:len("meanGroup")] == "meanGroup":
-                print model.GetName()[:len("meanGroup")]
                 hardenModel = slicer.mrmlScene.GetNodesByName(model.GetName()).GetItemAsObject(0)
-                print "model remove : " + str(model.GetName())
                 slicer.mrmlScene.RemoveNode(hardenModel)
 
         self.MRMLTreeView_classificationGroups.setMRMLScene(slicer.app.mrmlScene())
@@ -903,7 +913,6 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         for key in self.dictGroups.keys():
             filename = self.dictGroups.get(key, None)
             loader = slicer.util.loadModel
-            print " filename load : " + str(filename)
             loader(filename)
 
     # Change the color and the opacity for each vtk file
@@ -912,7 +921,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         for i in range(3,end):
             model = list.GetItemAsObject(i)
             disp = model.GetDisplayNode()
-            print "model adns color : " + str(model.GetName())
+            # print ("model in color : " + str(model.GetName()))
             for group in self.dictGroups.keys():
                 filename = self.dictGroups.get(group, None)
                 if os.path.splitext(os.path.basename(filename))[0] == model.GetName():
@@ -934,7 +943,10 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
 
 
     def onExportMeanGroups(self):
-        print "--- Export all the mean shapes + csv file ---"
+        """ Function to export the computed average shapes 
+        (VTK files) + a CSV file listing them 
+        """
+        # print("--- Export all the mean shapes + csv file ---")
 
         # Message for the user if files already exist
         directory = self.directoryButton_exportMeanGroups.directory.encode('utf-8')
@@ -983,7 +995,6 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
             dictForCSV[key] = newvtkpath
 
         # Save the CSV file containing all the data useful in order to compute OAIndex of a patient
-
         self.logic.creationCSVFile(directory, "MeanGroups.csv", dictForCSV, "MeanGroup")
 
         # Remove the shape model (GX.h5) of each group
@@ -994,7 +1005,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
 
         # Message for the user
         slicer.util.delayDisplay("Files Saved")
-        print "Saved in :: " + directory + "/MeanGroups.csv"
+        print("Saved in :: " + directory + "/MeanGroups.csv")
 
         # Load automatically the CSV file in the pathline in the next tab "Selection of Classification Groups"
         if self.pathLineEdit_meanGroup.currentPath == CSVfilePath:
@@ -1012,6 +1023,10 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
     # ---------------------------------------------------- #
 
     def enableNetwork(self):
+        """ Function to enable to train the Network if both 
+        the Mean shape CSV file and classification group CSV file
+        have been accepted
+        """
         if self.stateCSVDataset and self.stateCSVMeansShape:
             self.pushButton_preprocessData.setEnabled(True)
         else:
@@ -1020,6 +1035,9 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         return
 
     def onCSVFileDataset(self):
+        """ Function to load the shapes listed in 
+        the classification group CSV file
+        """
         # Re-initialization of the dictionary containing the Training dataset
         self.dictShapeModels = dict()
 
@@ -1029,7 +1047,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
             self.enableNetwork()
             return
 
-        print "------ Selection of a Dataset ------"
+        # print("------ Selection of a Dataset ------")
         # Check if it's a CSV file
         condition1 = self.logic.checkExtension(self.pathLineEdit_CSVFileDataset.currentPath, ".csv")
         if not condition1:
@@ -1065,6 +1083,9 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
 
 
     def onCSVFileMeansShape(self):
+        """ Function to load the shapes listed in 
+        the mean shapes CSV file
+        """
         # Re-initialization of the dictionary containing the Training dataset
         self.dictGroups = dict()
 
@@ -1074,7 +1095,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
             self.enableNetwork()
             return
 
-        print "------ Selection of a Dataset ------"
+        # print("------ Selection of a Dataset ------")
         # Check if it's a CSV file
         condition1 = self.logic.checkExtension(self.pathLineEdit_CSVFileMeansShape.currentPath, ".csv")
         if not condition1:
@@ -1113,11 +1134,14 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
 
 
     def onCheckableComboBoxFeaturesChanged(self):
-        print "----- Features check combo box changed -----"
+        """ Function to manage the features choosen by the user
+        to base the neural network on
+        """
+        # print("----- Features check combo box changed -----")
         index =  self.checkableComboBox_choiceOfFeatures.currentIndex
 
         item = self.checkableComboBox_choiceOfFeatures.model().item(index, 0)
-        print str(item.text())
+        print(str(item.text()))
         if item.checkState():
             if not self.featuresList.count(item.text()):
                 self.featuresList.append(str(item.text()))
@@ -1125,14 +1149,17 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
             if self.featuresList.count(item.text()):
                 self.featuresList.remove(item.text())
 
-        print "self.featuresDict : "
-        print str(self.featuresList)
-
         return
 
 
     def onPreprocessData(self):
-        print "----- onPreprocessData -----"
+        """ Function to prepare all the data before training the network
+            - Extract all the features (CLI extractfeatures)
+            - load only the features selected (class input_Data)
+            - pickle all the dataset for the network
+            - Create a zipfile with every file needed for the network
+        """
+        # print("----- onPreprocessData -----")
         self.dictFeatData = dict()
         self.pickle_file = ""
 
@@ -1152,10 +1179,9 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
             else:
                 meansList = meansList + "," +  str(v)
 
-        # print self.dictShapeModels
+        # print(self.dictShapeModels)
         for group, listvtk in self.dictShapeModels.items():
             for shape in listvtk:
-# > > > >  > UNCOMMENT !!!
                 self.logic.extractFeatures(shape, meansList, outputDir)
 
                 # # Storage of the means for each group
@@ -1196,39 +1222,61 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         with open(os.path.join(meanGroupsDir,'meanGroups.json'), 'w') as f:
             json.dump(dictMeanGroups, f, ensure_ascii=False, indent = 4)
 
-        import time
-        start_time = time.time()
         # Zipper tout ca 
         self.archiveName = shutil.make_archive(base_name = networkDir, format = 'zip', root_dir = tempPath, base_dir = 'Network')
-
         self.pushButton_trainNetwork.setEnabled(True)
-        end_time = time.time()
+        self.pushButton_exportUntrainedNetwork.setEnabled(True)
 
-        # print "Temps make_archive + enable train_network = " + str(end_time - start_time)
+        return
 
+    def onExportUntrainedNetwork(self):
+        """ Function to export the neural netowrk as
+        a zipfile for later reuse
+        """
+        # print("----- onExportUntrainedNetwork -----")
+
+        num_steps = 1001
+        if self.collapsibleGroupBox_advancedParameters.checked and self.checkBox_numsteps.checked:
+            num_steps = self.spinBox_numsteps.value
+        # Path of the csv file
+        dlg = ctk.ctkFileDialog()
+        filepath = dlg.getSaveFileName(None, "Export Classification neural network", os.path.join(qt.QDir.homePath(), "Desktop"), "Archive Zip (*.zip)")
+
+        self.logic.exportUntrainedNetwork(self.archiveName, filepath, num_steps = num_steps)
         return
 
 
     def onTrainNetwork(self):
-        print "----- onTrainNetwork -----"
+        """ Function to call the logic function related 
+        to the training of the neural network
+        """
+        # print("----- onTrainNetwork -----")
         self.label_stateNetwork.text = 'Computation running...'
         self.label_stateNetwork.show()
 
         num_steps = 1001
-        if self.collapsibleGroupBox_advancedParameters.checked and self.checkBox_numsteps.checked:
-            print "num_steps checked"
-            num_steps = self.spinBox_numsteps.value
+        num_layers = 2
+
+        if self.collapsibleGroupBox_advancedParameters.checked:
+            if self.checkBox_numsteps.checked:
+                num_steps = self.spinBox_numsteps.value
+            if self.checkBox_numberOfLayers.checked:
+                num_layers = self.spinBox_numberOfLayers.value
         
-        accuracy = self.logic.trainNetworkClassification(self.archiveName, num_steps = num_steps)
+        accuracy = self.logic.trainNetworkClassification(self.archiveName, num_steps = num_steps, num_layers = num_layers)
         
-        print "ESTIMATED ACCURACY :: " + str(accuracy)
+        print("ESTIMATED ACCURACY :: " + str(accuracy))
 
         self.label_stateNetwork.text = ("Estimated accuracy: %.1f%%" % accuracy)
         self.pushButton_exportNetwork.setEnabled(True)
+
         return
 
     def onExportNetwork(self):
-        print "----- onExportNetwork -----"
+        """ Function to export the neural netowrk as
+        a zipfile for later reuse
+        """
+        # print("----- onExportNetwork -----")
 
         # Path of the csv file
         dlg = ctk.ctkFileDialog()
@@ -1243,7 +1291,10 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         return
 
     def onNetworkPath(self):
-        print "----- onNetworkPath -----"
+        """ Function to launch the network loading 
+        when specifying the path to the zipfile
+        """
+        # print("----- onNetworkPath -----")
         condition1 = self.logic.checkExtension(self.pathLineEdit_networkPath.currentPath, '.zip')
         if not condition1:
             self.pathLineEdit_networkPath.setCurrentPath(" ")
@@ -1252,25 +1303,26 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.dictGroups = dict()
         validModel = self.logic.validModelNetwork(self.pathLineEdit_networkPath.currentPath, self.dictGroups)
 
-        print self.dictGroups
+        # print(self.dictGroups)
         if not validModel:
-            print "Error: Classifier not valid"
+            print("Error: Classifier not valid")
             self.pathLineEdit_networkPath.currentPath = ""
         else: 
-            print "Network accepted"
+            print("Network accepted")
 
         return
 
-
-    # Function to select the vtk Input Data
+    
     def onVTKInputData(self):
+        """ Function to select the vtk Input Data
+        """
         # Remove the old vtk file in the temporary directory of slicer if it exists
         if self.patientList:
-            print "onVTKInputData remove old vtk file"
-            oldVTKPath = slicer.app.temporaryPath + "/" + os.path.basename(self.patientList[0])
+            print("onVTKInputData remove old vtk file")
+            oldVTKPath = os.path.join(slicer.app.temporaryPath,os.path.basename(self.patientList[0]))
             if os.path.exists(oldVTKPath):
                 os.remove(oldVTKPath)
-        # print self.patientList
+        # print(self.patientList)
         # Re-Initialization of the patient list
         self.patientList = list()
 
@@ -1284,14 +1336,16 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         currentNode = self.MRMLNodeComboBox_VTKInputData.currentNode()
         if not currentNode == None:
             #     Save the selected node in the temporary directory of slicer
-            vtkfilepath = slicer.app.temporaryPath + "/" + self.MRMLNodeComboBox_VTKInputData.currentNode().GetName() + ".vtk"
+            vtkfilepath = os.path.join(slicer.app.temporaryPath, self.MRMLNodeComboBox_VTKInputData.currentNode().GetName() + ".vtk")
             self.logic.saveVTKFile(self.MRMLNodeComboBox_VTKInputData.currentNode().GetPolyData(), vtkfilepath)
             #     Adding to the list
             self.patientList.append(vtkfilepath)
-        print self.patientList
+        print(self.patientList)
 
-    # Function to select the CSV Input Data
+    
     def onCSVInputData(self):
+        """ Function to select the CSV Input Data
+        """
         self.patientList = list()
         # Delete the path in VTK file
         if not os.path.exists(self.pathLineEdit_CSVInputData.currentPath):
@@ -1305,13 +1359,13 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
             for i in range(0, patientTable.GetNumberOfRows()):
                 self.patientList.append(patientTable.GetValue(i,0).ToString())
         
-        
-    def onClassifyIndex(self):
-        print "------ Compute the OA index Type of a patient ------"
-
-        # Check if the user gave all the data used to compute the OA index type of the patient:
-        # - VTK input data or CSV input data
-        # - Model network!
+    def onPreprocessNewData(self):
+        """ Function to preprocess the data to classify,
+        independently of the classification. 
+        - Extract Features
+        - Pickle data
+        """
+        # print("------ Preprocess New Data ------")
         if self.MRMLNodeComboBox_VTKInputData.currentNode() == None and not self.pathLineEdit_CSVInputData.currentPath:
             slicer.util.errorDisplay('Miss the Input Data')
             return
@@ -1335,7 +1389,6 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
             else:
                 meansList = meansList + "," +  str(v)
 
-
         for shape in self.patientList:
             # Extract features de la/les shapes a classifier
             self.logic.extractFeatures(shape, meansList, outputDir)
@@ -1343,12 +1396,39 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         # Change paths in patientList to have shape with features
         self.logic.storageDataToClassify(self.dictFeatData, self.patientList, outputDir)
 
-        # For each patient:
-        self.dictClassified = dict()
-        self.dictToClassify = dict()
-
         pickleToClassifyyy = self.logic.pickleToClassify(self.patientList, os.path.join(slicer.app.temporaryPath,'Network'))
-        shutil.make_archive(base_name = networkDir, format = 'zip', root_dir = tempPath, base_dir = 'Network')
+        self.archiveName = shutil.make_archive(base_name = networkDir, format = 'zip', root_dir = tempPath, base_dir = 'Network')
+
+        self.pushButton_exportToClassify.setEnabled(True)
+        self.pushButton_classifyIndex.setEnabled(True)
+        return
+
+
+    def onExportToClassify(self):
+        """ Function to extract the classifier and the data to classify
+        Possibility to run remotely with this zip file 
+        """
+        tempPath = slicer.app.temporaryPath
+        networkDir = os.path.join(tempPath, 'Network')
+
+        dlg = ctk.ctkFileDialog()
+        filepath = dlg.getSaveFileName(None, "Export Network and shapes to classify", os.path.join(qt.QDir.homePath(), "Desktop"), "Archive Zip (*.zip)")
+
+        directory = os.path.dirname(filepath)
+        path = filepath.split(".zip",1)[0]
+
+        shutil.make_archive(path, 'zip', networkDir)
+
+        return
+        
+    def onClassifyIndex(self):
+        """ Function classify shapes
+            - preprocess (extract features) the data
+            - generate a complete zipfile for the network
+        """
+        # print("------ Compute the OA index Type of a patient ------")
+        tempPath = slicer.app.temporaryPath
+        networkDir = os.path.join(tempPath, 'Network')
 
         self.dictResults = dict()
         self.dictResults = self.logic.evalClassification(networkDir + ".zip")
@@ -1359,8 +1439,9 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
     #               Tab: Result / Analysis                 #
     # ---------------------------------------------------- #
 
-    # Function to display the result in a table
     def displayResult(self, dictResults):
+        """ Function to display the result in a table
+        """
         for VTKfilename, resultGroup in dictResults.items():
             row = self.tableWidget_result.rowCount
             self.tableWidget_result.setRowCount(row + 1)
@@ -1377,9 +1458,10 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.collapsibleButton_Result.setChecked(True)
         self.onSelectedCollapsibleButtonOpen(self.collapsibleButton_Result)
 
-    # Function to export the result in a CSV File
-    def onExportResult(self):
 
+    def onExportResult(self):
+        """ Function to export the result in a CSV File
+        """
         # Path of the csv file
         dlg = ctk.ctkFileDialog()
         filepath = dlg.getSaveFileName(None, "Export CSV file for Classification groups", os.path.join(qt.QDir.homePath(), "Desktop"), "CSV File (*.csv)")
@@ -1391,14 +1473,13 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.logic.creationCSVFileForResult(self.tableWidget_result, directory, basename)
 
         # Message in the python console and for the user
-        print "Export CSV File: " + filepath
+        print("Export CSV File: " + filepath)
         slicer.util.delayDisplay("Result saved")
 
 
 # ------------------------------------------------------------------------------------ #
 #                                   ALGORITHM                                          #
 # ------------------------------------------------------------------------------------ #
-
 
 class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
     def __init__(self, interface):
@@ -1407,130 +1488,16 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         self.colorBar = {'Point1': [0, 0, 1, 0], 'Point2': [0.5, 1, 1, 0], 'Point3': [1, 1, 0, 0]}
         self.input_Data = inputData.inputData()
 
-        # 
-        # ----- Virtualenv setup ----- #
-        # 
-        pathSlicerExec = str(os.path.dirname(sys.executable))
-        currentPath = os.path.dirname(os.path.abspath(__file__))
-        dirSitePckgs = os.path.join(pathSlicerExec, "../lib/Python/lib/python2.7/site-packages")
-        pathSlicerPython = os.path.join(pathSlicerExec, "../bin/SlicerPython")
-
-        # Check pip installation
-        # print "\n\n I. Pip installation"
-        try:
-            import pip
-            # print "===> Pip already installed"
-        except Exception as e: 
-            # ----- Install pip as it's not already done -----
-            command = ["bash", "-c", pathSlicerPython + " " + os.path.join(currentPath,'Resources/get-pip.py')]
-            p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            out, err = p.communicate()
-            # print "out : " + str(out) + "\nerr : " + str(err)
-            import pip
-            # print "===> Pip now installed to PythonSlicer"
-
-        # Check virtualenv installation
-        # print "\n\n II. Virtualenv installation"
-        try:
-            import virtualenv
-            # print "===> Virtualenv already installed"
-        except Exception as e: 
-            venv_install = pip.main(['install', 'virtualenv'])
-            import virtualenv
-            # print "===> Virtualenv now installed with pip.main"
-
-
-        # print "\n\n III. Create environment tensorflowSlicer"
-        tempPath = slicer.app.temporaryPath
-        env_dir = os.path.join(tempPath, "env-tensorflow") 
-        if not os.path.isdir(env_dir):
-            os.mkdir(env_dir) 
-
-        if not os.path.isfile(os.path.join(env_dir, 'bin', 'activate')):
-            command = ["bash", "-c", pathSlicerPython + " " + os.path.join(dirSitePckgs, 'virtualenv.py') + " --python=" + pathSlicerPython + " " + env_dir]
-            p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            out, err =  p.communicate()
-            # print "out : " + str(out) + "\nerr : " + str(err)
-            # print "\n===> Environmnent tensorflowSlicer created"
-
-
-        # print "\n\n\n IV. Install tensorflow into tensorflowSlicer"
-        # 
-        #   To install tensorflow in virtualenv, requires:
-        #       - activate environment
-        #       - export PYTHONPATH
-        #       - launch python
-        #               => cmd_setenv
-        #       - add the environment path to sys.path
-        #       - set sys.prefix 
-        #       - pip install tensorflow
-        # 
-          
-        # source path-to-env/bin/activate
-        self.cmd_setenv = "source " + os.path.join(env_dir, 'bin', 'activate') + "; "
-        # construct python path
-        env_pythonpath = os.path.join(env_dir, 'bin') + ":" + os.path.join(env_dir, 'lib', 'python2.7') + ":" + os.path.join(env_dir, 'lib', 'python2.7', 'site-packages')
-        # export python path
-        self.cmd_setenv = self.cmd_setenv + "export PYTHONPATH=" + env_pythonpath +  "; "
-        # call Slicer python
-        self.cmd_setenv = self.cmd_setenv + pathSlicerPython
-
-        # construct sys.path
-        env_syspath = "sys.path.append(\"" + os.path.join(env_dir,'lib','python2.7') + "\"); sys.path.append(\"" + os.path.join(env_dir,'lib','python2.7','site-packages') + "\"); sys.path.append(\"" + os.path.join(env_dir,'lib','python2.7','site-packages','pip','utils') + "\"); "
-        cmd_virtenv = str(' -c ')
-        cmd_virtenv = cmd_virtenv + "\'import sys; " + env_syspath 
-
-        # construct sys.path
-        env_sysprefix = "sys.prefix=\"" + env_dir + "\"; "
-        cmd_virtenv = cmd_virtenv + env_sysprefix
-
-        #construct install command
-        env_install = "import pip; pip.main([\"install\", \"--prefix=" + env_dir + "\", \"tensorflow\"]); pip.main([\"install\", \"--prefix=" + env_dir + "\", \"pandas\"])\'"
-        cmd_virtenv = cmd_virtenv + env_install
-
-        bashCommand = self.cmd_setenv + cmd_virtenv
-        command = ["bash", "-c", str(bashCommand)]
-        p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        out, err =  p.communicate()
-        # print "\nout : " + str(out) + "\nerr : " + str(err)
-
-        # Tensorflow is now installed but might not work due to a missing file
-        # We create it to avoid the error 'no module named google.protobuf'
-        # -----
-        # print "\n\n Create missing __init__.py if doesn't existe yet"
-        google_init = os.path.join(env_dir, 'lib', 'python2.7', 'site-packages', 'google', '__init__.py')
-        if not os.path.isfile(google_init):
-            fichier = open(google_init, "w")
-            fichier.close()
-        
-
-        # print "\n\n\n V. Check tensorflow is well installed"
-        # test_tf = os.path.join(currentPath,'Testing/test-tensorflowinstall.py')
-        # bashCommand = self.cmd_setenv + " " + test_tf
-
-        # command = ["bash", "-c", bashCommand]
-        # p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        # out, err =  p.communicate()
-        # print "\nout : " + str(out) + "\nerr : " + str(err)
-
-
-
-    # Functions to recovery the widget in the .ui file
+    
     def get(self, objectName):
-        return self.findWidget(self.interface.widget, objectName)
+        """ Functions to recovery the widget in the .ui file
+        """
+        return slicer.util.findChild(self.interface.widget, objectName)
 
-    def findWidget(self, widget, objectName):
-        if widget.objectName == objectName:
-            return widget
-        else:
-            for w in widget.children():
-                resulting_widget = self.findWidget(w, objectName)
-                if resulting_widget:
-                    return resulting_widget
-            return None
-
-    # Function to add all the vtk filepaths found in the given directory of a dictionary
     def addGroupToDictionary(self, dictCSVFile, directory, directoryList, group):
+        """ Function to add all the vtk filepaths 
+        found in the given directory of a dictionary
+        """
         # Fill a dictionary which contains the vtk files for the classification groups sorted by group
         valueList = list()
         for file in os.listdir(directory):
@@ -1542,16 +1509,19 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         # Add the path of the directory
         directoryList.insert((group - 1), directory)
 
-    # Function to remove the group of the dictionary
     def removeGroupToDictionary(self, dictCSVFile, directoryList, group):
+        """ Function to remove the group of the dictionary
+        """
         # Remove the group from the dictionary
         dictCSVFile.pop(group, None)
 
         # Remove the path of the directory
         directoryList.pop(group - 1)
 
-    # Check if the path given has the right extension
+    
     def checkExtension(self, filename, extension):
+        """ Check if the path given has the right extension
+        """
         if os.path.splitext(os.path.basename(filename))[1] == extension : 
             return True
         elif os.path.basename(filename) == "" or os.path.basename(filename) == " " :
@@ -1559,9 +1529,10 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         slicer.util.errorDisplay('Wrong extension file, a ' + extension + ' file is needed!')
         return False
 
-    # Function to read a CSV file
     def readCSVFile(self, filename):
-        print "CSV FilePath: " + filename
+        """ Function to read a CSV file
+        """
+        print("CSV FilePath: " + filename)
         CSVreader = vtk.vtkDelimitedTextReader()
         CSVreader.SetFieldDelimiterCharacters(",")
         CSVreader.SetFileName(filename)
@@ -1570,13 +1541,14 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
 
         return CSVreader.GetOutput()
 
-    # Function to create a dictionary containing all the vtk filepaths sorted by group
-    #    - the paths are given by a CSV file
-    #    - If one paths doesn't exist
-    #         Return False
-    #      Else if all the path of all vtk file exist
-    #         Return True
     def creationDictVTKFiles(self, dict):
+        """ Function to create a dictionary containing all the vtk filepaths sorted by group
+            - the paths are given by a CSV file
+            - If one paths doesn't exist
+                Return False
+            Else if all the path of all vtk file exist
+            Return True
+        """
         for i in range(0, self.table.GetNumberOfRows()):
             if not os.path.exists(self.table.GetValue(i,0).ToString()):
                 slicer.util.errorDisplay('VTK file not found, path not good at lign ' + str(i+2))
@@ -1593,37 +1565,36 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
                     tempList.append(self.table.GetValue(i,0).ToString())
                     dict[self.table.GetValue(i,1).ToInt()] = tempList
 
-        # Check
-        # print "Number of Groups in CSV Files: " + str(len(dict))
-        # for key, value in dict.items():
-        #     print "Groupe: " + str(key)
-        #     print "VTK Files: " + str(value)
-
         return True
 
-    # Function to check if in each group there is at least more than one mesh
     def checkSeveralMeshInDict(self, dict):
+        """ Function to check if in each group 
+        there is at least more than one mesh
+        """
         for key, value in dict.items():
             if type(value) is not ListType or len(value) == 1:
                 slicer.util.errorDisplay('The group ' + str(key) + ' must contain more than one mesh.')
                 return False
         return True
 
-    # Function to check if in each group there is at least more than one mesh
     def checkOneMeshPerGroupInDict(self, dict):
+        """ Function to check if in each group 
+        there is at least more than one mesh 
+        """
         for key, value in dict.items():
             if type(value) is ListType: # or len(value) != 1:
                 slicer.util.errorDisplay('The group ' + str(key) + ' must contain exactly one mesh.')
                 return False
         return True
 
-    # Function to store the shape models for each group in a dictionary
-    #    The function return True IF
-    #       - all the paths exist
-    #       - the extension of the paths is .h5
-    #       - there are only one shape model per group
-    #    else False
     def creationDictShapeModel(self, dict):
+        """Function to store the shape models for each group in a dictionary
+        The function return True IF
+            - all the paths exist
+            - the extension of the paths is .h5
+            - there are only one shape model per group
+        else False
+        """
         for i in range(0, self.table.GetNumberOfRows()):
             if not os.path.exists(self.table.GetValue(i,0).ToString()):
                 slicer.util.errorDisplay('VTK file not found, path not good at lign ' + str(i+2))
@@ -1635,9 +1606,11 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
 
         return True
 
-    # Function to add a color map "DisplayClassificationGroup" to all the vtk files
-    # which allow the user to visualize each group with a different color in ShapePopulationViewer
     def addColorMap(self, table, dictVTKFiles):
+        """ Function to add a color map "DisplayClassificationGroup" 
+        to all the vtk files which allow the user to visualize each 
+        group with a different color in ShapePopulationViewer
+        """
         for key, value in dictVTKFiles.items():
             for vtkFile in value:
                 # Read VTK File
@@ -1680,8 +1653,10 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
                 writer.Update()
                 writer.Write()
 
-    # Function to create a CSV file containing all the selected vtk files that the user wants to display in SPV
     def creationCSVFileForSPV(self, filename, table, dictVTKFiles):
+        """ Function to create a CSV file containing all the 
+        selected vtk files that the user wants to display in SPV 
+        """
         # Creation a CSV file with a header 'VTK Files'
         file = open(filename, 'w')
         cw = csv.writer(file, delimiter=',')
@@ -1708,13 +1683,14 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
                 cw.writerow([pathVTKFile])
         file.close()
 
-    # Function to fill the table of the preview of all VTK files
-    #    - Checkable combobox: allow the user to select one or several groups that he wants to display in SPV
-    #    - Column 0: filename of the vtk file
-    #    - Column 1: combobox with the group corresponding to the vtk file
-    #    - Column 2: checkbox to allow the user to choose which models will be displayed in SPV
-    #    - Column 3: color that the mesh will have in SPV
     def fillTableForPreviewVTKFilesInSPV(self, dictVTKFiles, checkableComboBox, table):
+        """Function to fill the table of the preview of all VTK files
+            - Checkable combobox: allow the user to select one or several groups that he wants to display in SPV
+            - Column 0: filename of the vtk file
+            - Column 1: combobox with the group corresponding to the vtk file
+            - Column 2: checkbox to allow the user to choose which models will be displayed in SPV
+            - Column 3: color that the mesh will have in SPV
+        """
         row = 0
         for key, value in dictVTKFiles.items():
             # Fill the Checkable Combobox
@@ -1758,9 +1734,10 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
 
                 row = row + 1
 
-    # Function to change the group of a vtk file
-    #     - The user can change the group thanks to the combobox in the table used for the preview in SPV
     def onComboBoxTableValueChanged(self, dictVTKFiles, table):
+        """ Function to change the group of a vtk file
+            - The user can change the group thanks to the combobox in the table used for the preview in SPV
+        """
         # For each row of the table
         for row in range(0,table.rowCount):
             # Recovery of the group associated to the vtk file which is in the combobox
@@ -1788,8 +1765,9 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
                         newvalue.append(path)
                         break
 
-    # Function to create the same color transfer function than there is in SPV
     def creationColorTransfer(self, groupSelected):
+        """ Function to create the same color transfer function than there is in SPV
+        """
         # Creation of the color transfer function with the updated range
         colorTransferFunction = vtk.vtkColorTransferFunction()
         if len(groupSelected) > 0:
@@ -1806,8 +1784,9 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
                 colorTransferFunction.AddRGBPoint(x,r,g,b)
         return colorTransferFunction
 
-    # Function to copy and delete all the arrays of all the meshes contained in a list
     def deleteArrays(self, key, value):
+        """ Function to copy and delete all the arrays of all the meshes contained in a list
+        """
         for vtkFile in value:
             # Read VTK File
             reader = vtk.vtkDataSetReader()
@@ -1834,8 +1813,9 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
             # Save the vtk file without array in the temporary directory in Slicer
             self.saveVTKFile(polyDataCopy, filepath)
 
-    # Function to save a VTK file to the filepath given
     def saveVTKFile(self, polydata, filepath):
+        """ Function to save a VTK file to the filepath given 
+        """
         writer = vtk.vtkPolyDataWriter()
         writer.SetFileName(filepath)
         if vtk.VTK_MAJOR_VERSION <= 5:
@@ -1850,16 +1830,15 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         if caller.IsA('vtkMRMLCommandLineModuleNode'):
             print("Status is %s" % caller.GetStatusString())
 
-    # Function to compute the mean between all the mesh-files contained in one group
     def computeMean(self, numGroup, vtkList):
-        
-        print "--- Compute the mean of all the group ---"
-
+        """ Function to compute the mean between all 
+        the mesh-files contained in one group
+        """
+        print("--- Compute the mean of all the group ---")
         # Call of computeMean : computation of an average shape for a group of shaoes 
         # Arguments:
         #  --inputList is the list of vtkfile we want to compute the average
         #  --outputSurface is the resulting mean shape
-    
 
         #     Creation of the command line
         scriptedModulesPath = eval('slicer.modules.%s.path' % self.interface.moduleName.lower())
@@ -1867,7 +1846,8 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         libPath = os.path.join(scriptedModulesPath)
         sys.path.insert(0, libPath)
         computeMean = os.path.join(scriptedModulesPath, '../hidden-cli-modules/computemean')
-        # computeMean = "/Users/prisgdd/Documents/Projects/CNN/SurfaceFeaturesExtractor-build/src/ComputeMeanShapes/src/bin/computemean"
+        # computeMean = "/Users/mirclem/Desktop/work/ShapeVariationAnalyzer/src/CLI/SurfaceFeaturesExtractor-build/src/ComputeMeanShapes/src/bin/computemeanshapes"
+        computeMean = "/Users/prisgdd/Documents/Projects/CNN/SurfaceFeaturesExtractor-build/src/ComputeMeanShapes/src/bin/computemean"
 
         arguments = list()
         arguments.append("--inputList")
@@ -1879,23 +1859,25 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         resultdir = slicer.app.temporaryPath
         arguments.append("--outputSurface")
         arguments.append(str(resultdir) + "/meanGroup" + str(numGroup) + ".vtk")
-        # print arguments
+        # print(arguments)
         #     Call the executable
         process = qt.QProcess()
         process.setProcessChannelMode(qt.QProcess.MergedChannels)
 
-        # print "Calling " + os.path.basename(computeMean)
+        # print("Calling " + os.path.basename(computeMean))
         process.start(computeMean, arguments)
         process.waitForStarted()
-        # print "state: " + str(process2.state())
+        # print("state: " + str(process2.state()))
         process.waitForFinished()
-        # print "error: " + str(process.error())
+        # print("error: " + str(process.error()))
         
         processOutput = str(process.readAll())
-        # print processOutput
+        # print(processOutput)
 
-    # Function to remove in the temporary directory all the data used to create the mean for each group
     def removeDataVTKFiles(self, value):
+        """ Function to remove in the temporary directory all 
+        the data used to create the mean for each group
+        """
         # remove of all the vtk file
         for vtkFile in value:
             filepath = slicer.app.temporaryPath + '/' + os.path.basename(vtkFile)
@@ -1907,15 +1889,16 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         filename = "meanGroup" + str(key)
         meanPath = slicer.app.temporaryPath + '/' + filename + '.vtk'
         dictGroups[key] = meanPath
-        # print dictGroups
+        # print(dictGroups)
 
-    # Function to create a CSV file:
-    #    - Two columns are always created:
-    #          - First column: path of the vtk files
-    #          - Second column: group associated to this vtk file
-    #    - If saveH5 is True, this CSV file will contain a New Classification Group, a thrid column is then added
-    #          - Thrid column: path of the shape model of each group
     def creationCSVFile(self, directory, CSVbasename, dictForCSV, option):
+        """ Function to create a CSV file:
+            - Two columns are always created:
+                - First column: path of the vtk files
+                - Second column: group associated to this vtk file
+            - If saveH5 is True, this CSV file will contain a New Classification Group, a thrid column is then added
+                - Thrid column: path of the shape model of each group
+        """
         CSVFilePath = str(directory) + "/" + CSVbasename
         file = open(CSVFilePath, 'w')
         cw = csv.writer(file, delimiter=',')
@@ -1936,14 +1919,16 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
                 cw.writerow([value, str(key)])
         file.close()
 
-    # Function to save the data of the new Classification Groups in the directory given by the user
-    #       - The mean vtk files of each groups
-    #       - The shape models of each groups
-    #       - The CSV file containing:
-    #               - First column: the paths of mean vtk file of each group
-    #               - Second column: the groups associated
-    #               - Third column: the paths of the shape model of each group
     def saveNewClassificationGroups(self, basename, directory, dictShapeModels):
+
+        """ Function to save the data of the new Classification Groups in the directory given by the user
+            - The mean vtk files of each groups
+            - The shape models of each groups
+            - The CSV file containing:
+                - First column: the paths of mean vtk file of each group
+                - Second column: the groups associated
+                - Third column: the paths of the shape model of each group
+        """ 
         dictForCSV = dict()
         for key, value in dictShapeModels.items():
             # Save the shape model (h5 file) of each group
@@ -1956,30 +1941,31 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         # Save the CSV file containing all the data useful in order to compute OAIndex of a patient
         self.creationCSVFile(directory, basename, dictForCSV, "NCG")
 
-
-
-    # Function to remove in the temporary directory all the data useless after to do a export of the new Classification Groups
     def removeDataAfterNCG(self, dict):
+        """ Function to remove in the temporary directory all the 
+        data useless after to do a export of the new Classification Groups
+        """
         for key in dict.keys():
             # Remove of the shape model of each group
             path = dict[key]
             if os.path.exists(path):
                 os.remove(path)
 
-    # Function to make some action on a dictionary
     def actionOnDictionary(self, dict, file, listSaveVTKFiles, action):
-        # Action Remove:
-        #       Remove the vtk file to the dictionary dict
-        #       If the vtk file was found:
-        #            Return a list containing the key and the vtk file
-        #       Else:
-        #            Return False
-        # Action Find:
-        #       Find the vtk file in the dictionary dict
-        #       If the vtk file was found:
-        #            Return True
-        #       Else:
-        #            Return False
+        """ Function to make some action on a dictionary
+            Action Remove:
+                Remove the vtk file to the dictionary dict
+                If the vtk file was found:
+                    Return a list containing the key and the vtk file
+                Else:
+                    Return False
+            Action Find:
+                Find the vtk file in the dictionary dict
+                If the vtk file was found:
+                    Return True
+                Else:
+                    Return False
+        """
         if action == 'remove' or action == 'find':
             if not file == None:
                 for key, value in dict.items():
@@ -2003,6 +1989,9 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
 
 
     def checkNumberOfPoints(self, dictShapes):
+        """ Function to check that all the shapes have 
+        the same number of points 
+        """
         num_shape = 0
         num_points = 0 
         for key, value in dictShapes.items():
@@ -2048,12 +2037,9 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
 
 
     def extractFeatures(self, shape, meansList, outputDir):
-
-
-        # print "--- Extract features of shape : " + shape + " ---"
-
-        # Call of surfacefeaturesextractor 
-
+        """ Function to extract the features from the provided shape
+        Call the CLI surfacefeaturesextractor
+        """
         #     Creation of the command line
         scriptedModulesPath = eval('slicer.modules.%s.path' % self.interface.moduleName.lower())
         scriptedModulesPath = os.path.dirname(scriptedModulesPath)
@@ -2061,9 +2047,9 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         sys.path.insert(0, libPath)
         surfacefeaturesextractor = os.path.join(scriptedModulesPath, '../hidden-cli-modules/surfacefeaturesextractor')
         
-        # surfacefeaturesextractor = "/Users/prisgdd/Documents/Projects/CNN/SurfaceFeaturesExtractor-build/src/SurfaceFeaturesExtractor/bin/surfacefeaturesextractor"
+        # surfacefeaturesextractor = "/Users/mirclem/Desktop/work/ShapeVariationAnalyzer/src/CLI/SurfaceFeaturesExtractor-build/src/SurfaceFeaturesExtractor/bin/surfacefeaturesextractor"
+        surfacefeaturesextractor = "/Users/prisgdd/Documents/Projects/CNN/SurfaceFeaturesExtractor-build/src/SurfaceFeaturesExtractor/bin/surfacefeaturesextractor"
         
-
         filename = str(os.path.basename(shape))
 
         arguments = list()
@@ -2078,44 +2064,52 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         arguments.append("--distMeshOn")
         arguments.append("--distMesh")
         arguments.append(str(meansList))
-        # print arguments
+        # print(arguments)
 
         #     Call the executable
         process = qt.QProcess()
         process.setProcessChannelMode(qt.QProcess.MergedChannels)
 
-        # print "Calling " + os.path.basename(computeMean)
+        # print("Calling " + os.path.basename(computeMean))
         process.start(surfacefeaturesextractor, arguments)
         process.waitForStarted()
-        # print "state: " + str(process.state())
+        # print("state: " + str(process.state()))
         process.waitForFinished()
-        # print "error: " + str(process.error())
+        # print("error: " + str(process.error()))
         
         processOutput = str(process.readAll())
-        # print processOutput
+        # print(processOutput)
 
         return
 
     def storageFeaturesData(self, dictFeatData, dictShapeModels):
+        """ Funtion to complete a dict listing all 
+        the shapes with extracted features
+        """
         for key, value in dictShapeModels.items():
             newValue = list()
             for shape in value:
                 filename,_ = os.path.splitext(os.path.basename(shape))
-                ftPath = slicer.app.temporaryPath + '/dataFeatures/' + filename + '.vtk'
+                ftPath = os.path.join(slicer.app.temporaryPath,'dataFeatures',filename + '.vtk')
 
                 newValue.append(ftPath)
-            # print "\nkey : " + str(key)
             dictFeatData[key] = newValue
         return
 
     def storageDataToClassify(self, dictFeatData, listPatient, outputDir):
+        """ Funtion to complete a dict listing all 
+        the shapes to be classified
+        """
         for i in range(0, len(listPatient)):
             filename,_ = os.path.splitext(os.path.basename(listPatient[i]))
-            ftPath = outputDir + "/" + filename + '.vtk'
+            ftPath = os.path.join(outputDir, filename + '.vtk')
             listPatient[i] = ftPath
         return listPatient
 
     def pickleData(self, dictFeatData, featuresList, controlGroup):
+        """ Function to pickle the data for the network
+        Update the inputData instance for update in the zipfile later
+        """
         tempPath = slicer.app.temporaryPath
         networkDir = os.path.join(tempPath, "Network")
         if os.path.isdir(networkDir):
@@ -2213,6 +2207,8 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
 
 
     def pickleToClassify(self, patientList, path):
+        """ Function to pickle the data to classify for the network
+        """
         force = True
 
         set_filename = os.path.join(path, 'toClassify.pickle')
@@ -2230,9 +2226,58 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
 
         return set_filename
 
-    def trainNetworkClassification(self, archiveName, num_steps):
-        # print " &&&&&& Train Network Classification &&&&&& "
-        # Set le path pour le network
+    def exportUntrainedNetwork(self, archiveName, zipPath, num_steps):
+        """ Funciton to compress/zip everything needed to 
+        export the Classifier BEFORE training 
+        Useful for remote training 
+        """
+        # Set path for teh network
+        tempPath = slicer.app.temporaryPath
+        networkDir = os.path.join(tempPath, "Network")
+        if os.path.isdir(networkDir):
+            shutil.rmtree(networkDir)
+        os.mkdir(networkDir) 
+
+        with zipfile.ZipFile(archiveName) as zf:
+            zf.extractall(os.path.dirname(archiveName))
+            
+        jsonFile = os.path.join(networkDir, 'classifierInfo.json')
+
+        with open(jsonFile) as f:
+            jsonDict = json.load(f)
+
+        jsonDict['CondylesClassifier']['learning_rate'] = 0.0005
+        jsonDict['CondylesClassifier']['lambda_reg'] = 0.01
+        jsonDict['CondylesClassifier']['num_epochs'] = 50
+        jsonDict['CondylesClassifier']['num_steps'] =  num_steps
+        jsonDict['CondylesClassifier']['batch_size'] = 10
+        jsonDict['CondylesClassifier']['NUM_HIDDEN_LAYERS'] = 2
+        
+        if jsonDict['CondylesClassifier']['NUM_HIDDEN_LAYERS'] == 1:
+            jsonDict['CondylesClassifier']['nb_hidden_nodes_1'] = int ( math.sqrt ( jsonDict['CondylesClassifier']['NUM_POINTS'] * jsonDict['CondylesClassifier']['NUM_FEATURES'] * jsonDict['CondylesClassifier']['NUM_CLASSES'] ))
+            jsonDict['CondylesClassifier']['nb_hidden_nodes_2'] = 0
+        
+        elif jsonDict['CondylesClassifier']['NUM_HIDDEN_LAYERS'] == 2:
+            r = math.pow( jsonDict['CondylesClassifier']['NUM_POINTS'] * jsonDict['CondylesClassifier']['NUM_FEATURES'] / jsonDict['CondylesClassifier']['NUM_CLASSES'], 1/3)
+            jsonDict['CondylesClassifier']['nb_hidden_nodes_1'] = int ( jsonDict['CondylesClassifier']['NUM_CLASSES'] * math.pow ( r, 2 ))
+            jsonDict['CondylesClassifier']['nb_hidden_nodes_2'] =int ( jsonDict['CondylesClassifier']['NUM_POINTS'] * jsonDict['CondylesClassifier']['NUM_FEATURES'] * r )
+
+        with open(os.path.join(networkDir,'classifierInfo.json'), 'w') as f:
+            json.dump(jsonDict, f, ensure_ascii=False, indent = 4)
+
+        path = zipPath.split(".zip",1)[0]
+        shutil.make_archive(path, 'zip', networkDir)
+
+        return 
+
+
+    def trainNetworkClassification(self, archiveName, num_steps, num_layers):
+        """ Funciton to train the Neural Network 
+        within the virtualenv containing tensorflow
+        First creation of a zipfile with updated info
+        Return the estimated accuracy of the network
+        """
+        # Set path for teh network
         tempPath = slicer.app.temporaryPath
         networkDir = os.path.join(tempPath, "Network")
         if os.path.isdir(networkDir):
@@ -2249,9 +2294,20 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
 
         jsonDict['CondylesClassifier']['learning_rate'] = 0.0005
         jsonDict['CondylesClassifier']['lambda_reg'] = 0.01
-        jsonDict['CondylesClassifier']['num_epochs'] = 2
+        jsonDict['CondylesClassifier']['num_epochs'] = 50
         jsonDict['CondylesClassifier']['num_steps'] =  num_steps
+        # jsonDict['CondylesClassifier']['num_steps'] =  2001
         jsonDict['CondylesClassifier']['batch_size'] = 10
+        jsonDict['CondylesClassifier']['NUM_HIDDEN_LAYERS'] = num_layers
+        
+        if jsonDict['CondylesClassifier']['NUM_HIDDEN_LAYERS'] == 1:
+            jsonDict['CondylesClassifier']['nb_hidden_nodes_1'] = int ( math.sqrt ( jsonDict['CondylesClassifier']['NUM_POINTS'] * jsonDict['CondylesClassifier']['NUM_FEATURES'] * jsonDict['CondylesClassifier']['NUM_CLASSES'] ))
+            jsonDict['CondylesClassifier']['nb_hidden_nodes_2'] = 0
+        
+        elif jsonDict['CondylesClassifier']['NUM_HIDDEN_LAYERS'] == 2:
+            r = math.pow( jsonDict['CondylesClassifier']['NUM_POINTS'] * jsonDict['CondylesClassifier']['NUM_FEATURES'] / jsonDict['CondylesClassifier']['NUM_CLASSES'], 1/3)
+            jsonDict['CondylesClassifier']['nb_hidden_nodes_1'] = int ( jsonDict['CondylesClassifier']['NUM_CLASSES'] * math.pow ( r, 2 ))
+            jsonDict['CondylesClassifier']['nb_hidden_nodes_2'] =int ( jsonDict['CondylesClassifier']['NUM_POINTS'] * jsonDict['CondylesClassifier']['NUM_FEATURES'] * r )
 
         with open(os.path.join(networkDir,'classifierInfo.json'), 'w') as f:
             json.dump(jsonDict, f, ensure_ascii=False, indent = 4)
@@ -2259,16 +2315,21 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         shutil.make_archive(base_name = networkDir, format = 'zip', root_dir = tempPath, base_dir = 'Network')
 
         # 
-        # Train le network dans le virtualenv
+        # Train network in virtualenv
         # 
         currentPath = os.path.dirname(os.path.abspath(__file__))
-        train_file = os.path.join(currentPath,'Resources/Classifier/trainNeuralNetwork.py')
-        bashCommand = self.cmd_setenv + " " + train_file + " -inputZip " + archiveName
+        train_file = os.path.join(currentPath,'Resources','Classifier','trainNeuralNetwork.py')
+        envWrapper_file = os.path.join(currentPath,'Wrapper','envTensorFlowWrapper.py')
+        
+        pathSlicerExec = str(os.path.dirname(sys.executable))
+        pathSlicerPython = os.path.join(pathSlicerExec, "..", "bin", "SlicerPython")
 
-        command = ["bash", "-c", bashCommand]
+        command = [pathSlicerPython, envWrapper_file, "-pgm", train_file, "-args", "{'--inputZip': '" + archiveName + "', '--outputZip': '" + archiveName + "'}" ]
+
+        print command
         p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out, err =  p.communicate()
-        print "\nout : " + str(out) #+ "\nerr : " + str(err)
+        print("\nout : " + str(out) + "\nerr : " + str(err))
 
         if os.path.isdir(networkDir):
             shutil.rmtree(networkDir)
@@ -2291,7 +2352,6 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
                 ziph.write(os.path.join(root, file))
 
     def exportModelNetwork(self, filepath):
-        
         tempPath = slicer.app.temporaryPath
         networkDir = os.path.join(tempPath, 'Network')
 
@@ -2301,7 +2361,10 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         return
 
     def validModelNetwork(self, archiveName, dictGroups):
-
+        """ Function to valid a given neural network 
+        when its path is specified 
+        If it is accepted, parameters are updated for later reuse
+        """
         tempPath = slicer.app.temporaryPath
         networkDir = os.path.join(tempPath, 'Network')
         # Si y a deja un Network dans le coin, on le degage
@@ -2322,11 +2385,11 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
 
         # In case our JSON file doesnt contain a valid Classifier
         if not jsonDict.has_key('CondylesClassifier'):
-            print "No CondylesClassifier containing network parameters"
+            print("No CondylesClassifier containing network parameters")
             return 0
         myDict = jsonDict['CondylesClassifier']
         if not ('NUM_CLASSES' in myDict and 'NUM_FEATURES' in myDict and 'NUM_POINTS' in myDict):
-            print "Missing basics network parameters"
+            print("Missing basics network parameters")
             return 0
 
         self.input_Data = inputData.inputData()
@@ -2334,7 +2397,7 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         self.input_Data.NUM_CLASSES = jsonDict['CondylesClassifier']['NUM_CLASSES']
         self.input_Data.NUM_FEATURES = jsonDict['CondylesClassifier']['NUM_FEATURES']
         self.input_Data.featuresList = jsonDict['CondylesClassifier']['Features']
-        self.input_Data.controlAverage  = jsonDict['controlAverage'] 
+        self.input_Data.controlAverage  = jsonDict['CondylesClassifier']['controlAverage'] 
 
         numModelFiles = 0
         strCondClass = 'CondylesClassifier'
@@ -2343,7 +2406,7 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
                 numModelFiles = numModelFiles + 1
 
         if numModelFiles < 3 :
-            print "Missing files for this model"
+            print("Missing files for this model")
             return 0
 
         # Get the dict of mean shapes
@@ -2353,7 +2416,6 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
             meanGroupsDict = json.load(f) 
             for group, file in meanGroupsDict.items():
                 dictGroups[group] = os.path.join(meanGroupsDir,file)
-
 
         return 1
 
@@ -2368,29 +2430,17 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
 
         # Classify dans le virtualenv
         currentPath = os.path.dirname(os.path.abspath(__file__))
-        train_file = os.path.join(currentPath,'Resources/Classifier/evalShape.py')
-        bashCommand = self.cmd_setenv + " " + train_file + " -inputZip " + archiveName
-
-        # arguments = ["-c", bashCommand]
-        # #     Call the executable
-        # process = qt.QProcess()
-        # process.setProcessChannelMode(qt.QProcess.MergedChannels)
-
-        # # print "Calling " 
-        # process.start("bash", arguments)
-        # process.waitForStarted()
-        # print "state: " + str(process.state())
-        # process.waitForFinished()
-        # print "error: " + str(process.error())
+        train_file = os.path.join(currentPath,'Resources','Classifier','evalShape.py')
+        envWrapper_file = os.path.join(currentPath,'Wrapper','envTensorFlowWrapper.py')
         
-        # processOutput = str(process.readAll())
-        # print "\n\n PROCESS OUTPUT ===== \n\n"
-        # print processOutput
+        pathSlicerExec = str(os.path.dirname(sys.executable))
+        pathSlicerPython = os.path.join(pathSlicerExec, "..", "bin", "SlicerPython")
 
-        command = ["bash", "-c", bashCommand]
+        command = [pathSlicerPython, envWrapper_file, "-pgm", train_file, "-args", "{'--inputZip': '" + archiveName + "', '--outputZip': '" + archiveName + "'}" ]
+
         p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out, err =  p.communicate()
-        print "\nout : " + str(out) + "\nerr : " + str(err)
+        print("\nout : " + str(out) + "\nerr : " + str(err))
 
         with zipfile.ZipFile(archiveName) as zf:
             zf.extractall(os.path.dirname(archiveName))
@@ -2399,10 +2449,13 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         with open(jsonFile) as f:
             resultsDict = json.load(f)
 
-        # print resultsDict
+        # print(str(resultsDict))
         return resultsDict
 
+
     def creationCSVFileForResult(self, table, directory, CSVbasename):
+        """ Function to store all the results in a CSV file
+        """
         CSVFilePath = directory + "/" + CSVbasename
         file = open(CSVFilePath, 'w')
         cw = csv.writer(file, delimiter=',')
