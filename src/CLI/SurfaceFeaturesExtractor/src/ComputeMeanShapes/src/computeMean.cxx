@@ -5,11 +5,14 @@
 #include "fileIO.hxx"
 
 #include <iterator>
-#include <dirent.h>
+
 
 #ifndef WIN32
     #include <sys/types.h>
+#else 
+    #include <dirent.h>
 #endif
+
 
 // Declaration of getListFile()
 void getListFile(std::string path, std::vector<std::string> &list, const std::string &suffix);
