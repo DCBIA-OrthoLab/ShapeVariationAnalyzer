@@ -13,6 +13,7 @@ set(MODULE_PYTHON_RESOURCES
   Resources/Classifier/neuralNetwork.py
   Resources/Classifier/evalShape.py
   Resources/Classifier/trainNeuralNetwork.py
+  Wrapper/envTensorFlowWrapper.py
   )
 
 #-----------------------------------------------------------------------------
