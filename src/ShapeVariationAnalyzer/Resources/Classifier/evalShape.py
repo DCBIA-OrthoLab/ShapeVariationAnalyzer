@@ -69,6 +69,7 @@ def main(_):
     # Unpack archive
     with zipfile.ZipFile(inputZip) as zf:
         zf.extractall(networkDir)
+        zf.extractall(basedir)
 
     jsonFile = os.path.join(networkDir, 'classifierInfo.json')
     saveModelPath = os.path.join(networkDir, 'CondylesClassifier')

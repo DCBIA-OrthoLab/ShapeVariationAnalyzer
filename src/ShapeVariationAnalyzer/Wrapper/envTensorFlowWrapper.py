@@ -33,7 +33,7 @@ def config_env():
 
     if sys.platform == 'win32': 
         dirSitePckgs = os.path.join(pathSlicerExec, "..", "lib", "Python", "Lib", "site-packages")
-        pathSlicerPython = '\"'os.path.join(pathSlicerExec, "..", "bin", "SlicerPython.exe") + '\"'
+        pathSlicerPython = '\"' + os.path.join(pathSlicerExec, "..", "bin", "SlicerPython.exe") + '\"'
     else: 
         dirSitePckgs = os.path.join(pathSlicerExec, "..", "lib", "Python", "lib",'python%s' % sys.version[:3], "site-packages")
         pathSlicerPython = os.path.join(pathSlicerExec, "..", "bin", "SlicerPython")
