@@ -32,8 +32,8 @@ def config_env():
     currentPath = os.path.dirname(os.path.abspath(__file__))
 
     if sys.platform == 'win32': 
-        dirSitePckgs = os.path.join(pathSlicerExec, "lib", "Python", "Lib", "site-packages")
-        pathSlicerPython = os.path.join(pathSlicerExec, "bin", "SlicerPython")
+        dirSitePckgs = os.path.join(pathSlicerExec, "..", "lib", "Python", "Lib", "site-packages")
+        pathSlicerPython = '\"'os.path.join(pathSlicerExec, "..", "bin", "SlicerPython.exe") + '\"'
     else: 
         dirSitePckgs = os.path.join(pathSlicerExec, "..", "lib", "Python", "lib",'python%s' % sys.version[:3], "site-packages")
         pathSlicerPython = os.path.join(pathSlicerExec, "..", "bin", "SlicerPython")
@@ -57,7 +57,7 @@ def config_env():
         os.mkdir(env_dir) 
 
     if not os.path.isfile(os.path.join(env_dir, 'bin', 'activate')):
-        command = ["bash", "-c", pathSlicerPython + " " + os.path.join(dirSitePckgs, 'virtualenv.py') + " --python=" + pathSlicerPython + " " + env_dir]
+        command = ["bash", "-c", pathSlicerPython + ' \"' + os.path.join(dirSitePckgs, 'virtualenv.py') + '\" --python=' + pathSlicerPython + ' \"' + env_dir + '\"']
         p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         # out, err =  p.communicate()
         # print("out : " + str(out) + "\nerr : " + str(err))
@@ -76,7 +76,7 @@ def config_env():
       """
     # source path-to-env/bin/activate
     if sys.platform == 'win32': 
-        cmd_setenv = os.path.join(env_dir, 'Scripts', 'activate') + "; "
+        cmd_setenv = '\"' + os.path.join(env_dir, 'Scripts', 'activate') + '\"; '
     else:
         cmd_setenv = "source " + os.path.join(env_dir, 'bin', 'activate') + "; "
     # construct python path
