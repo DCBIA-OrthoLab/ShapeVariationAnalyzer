@@ -13,7 +13,12 @@ set(MODULE_PYTHON_RESOURCES
   Resources/Classifier/neuralNetwork.py
   Resources/Classifier/evalShape.py
   Resources/Classifier/trainNeuralNetwork.py
+  evalShape
+  evalShape.xml
+  trainNeuralNetwork
+  trainNeuralNetwork.xml
   Wrapper/envTensorFlowWrapper.py
+  Testing/test-tensorflowinstall.py
   )
 
 #-----------------------------------------------------------------------------

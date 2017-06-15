@@ -7,7 +7,7 @@
 #include <iterator>
 
 
-#ifndef WIN32
+#if WIN32
     #include <sys/types.h>
 #else 
     #include <dirent.h>
