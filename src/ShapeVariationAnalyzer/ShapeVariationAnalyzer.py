@@ -1236,13 +1236,18 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         # print("----- onExportUntrainedNetwork -----")
 
         num_steps = 1001
-        if self.collapsibleGroupBox_advancedParameters.checked and self.checkBox_numsteps.checked:
-            num_steps = self.spinBox_numsteps.value
+        num_layers = 2
+
+        if self.collapsibleGroupBox_advancedParameters.checked:
+            if self.checkBox_numsteps.checked:
+                num_steps = self.spinBox_numsteps.value
+            if self.checkBox_numberOfLayers.checked:
+                num_layers = self.spinBox_numberOfLayers.value
         # Path of the csv file
         dlg = ctk.ctkFileDialog()
         filepath = dlg.getSaveFileName(None, "Export Classification neural network", os.path.join(qt.QDir.homePath(), "Desktop"), "Archive Zip (*.zip)")
 
-        self.logic.exportUntrainedNetwork(self.archiveName, filepath, num_steps = num_steps)
+        self.logic.exportUntrainedNetwork(self.archiveName, filepath, num_steps = num_steps, num_layers = num_layers)
         return
 
 
@@ -2226,7 +2231,7 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
 
         return set_filename
 
-    def exportUntrainedNetwork(self, archiveName, zipPath, num_steps):
+    def exportUntrainedNetwork(self, archiveName, zipPath, num_steps, num_layers):
         """ Funciton to compress/zip everything needed to 
         export the Classifier BEFORE training 
         Useful for remote training 
@@ -2248,13 +2253,14 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
 
         jsonDict['CondylesClassifier']['learning_rate'] = 0.0005
         jsonDict['CondylesClassifier']['lambda_reg'] = 0.01
-        jsonDict['CondylesClassifier']['num_epochs'] = 50
+        jsonDict['CondylesClassifier']['num_epochs'] = 5
         jsonDict['CondylesClassifier']['num_steps'] =  num_steps
         jsonDict['CondylesClassifier']['batch_size'] = 10
-        jsonDict['CondylesClassifier']['NUM_HIDDEN_LAYERS'] = 2
+        jsonDict['CondylesClassifier']['NUM_HIDDEN_LAYERS'] = num_layers
         
         if jsonDict['CondylesClassifier']['NUM_HIDDEN_LAYERS'] == 1:
-            jsonDict['CondylesClassifier']['nb_hidden_nodes_1'] = int ( math.sqrt ( jsonDict['CondylesClassifier']['NUM_POINTS'] * jsonDict['CondylesClassifier']['NUM_FEATURES'] * jsonDict['CondylesClassifier']['NUM_CLASSES'] ))
+            jsonDict['CondylesClassifier']['nb_hidden_nodes_1'] = int ( jsonDict['CondylesClassifier']['NUM_POINTS'] * jsonDict['CondylesClassifier']['NUM_FEATURES'] + jsonDict['CondylesClassifier']['NUM_CLASSES'] // 2 )
+            # jsonDict['CondylesClassifier']['nb_hidden_nodes_1'] = int ( math.sqrt ( jsonDict['CondylesClassifier']['NUM_POINTS'] * jsonDict['CondylesClassifier']['NUM_FEATURES'] * jsonDict['CondylesClassifier']['NUM_CLASSES'] ))
             jsonDict['CondylesClassifier']['nb_hidden_nodes_2'] = 0
         
         elif jsonDict['CondylesClassifier']['NUM_HIDDEN_LAYERS'] == 2:

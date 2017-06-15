@@ -1,9 +1,13 @@
 
 if(UNIX)
-    set( INSTALL_RUNTIME_DESTINATION bin)
+    # set( INSTALL_RUNTIME_DESTINATION bin)
     set( INSTALL_LIBRARY_DESTINATION lib)
     set( INSTALL_ARCHIVE_DESTINATION lib)
 endif()
+
+
+
+set(INSTALL_RUNTIME_DESTINATION ${SlicerExecutionModel_DEFAULT_CLI_INSTALL_RUNTIME_DESTINATION}/../hidden-cli-modules)
 
 
 SEMMacroBuildCLI(
