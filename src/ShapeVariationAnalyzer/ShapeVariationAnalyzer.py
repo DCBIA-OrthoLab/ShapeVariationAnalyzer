@@ -417,7 +417,8 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.CollapsibleButton_computeAverageGroups.setChecked(False)
         self.collapsibleButton_Result.setChecked(False)
         self.collapsibleGroupBox_advancedParameters.setChecked(False)
-        self.comboBox_healthyGroup_features.clear()
+        self.comboBox_healthyGroup.clear()
+        self.comboBox_controlGroup_features.clear()
 
         #     qMRMLNodeComboBox configuration
         self.MRMLNodeComboBox_VTKInputData.setMRMLScene(slicer.mrmlScene)
