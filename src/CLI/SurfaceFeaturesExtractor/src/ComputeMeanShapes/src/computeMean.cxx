@@ -7,9 +7,11 @@
 #include <iterator>
 
 
-
-#include <dirent.h>
-
+#if win32  
+    #include <../include/dirent.h>
+#else
+    #include <dirent.h>
+#endif
 
 // Declaration of getListFile()
 void getListFile(std::string path, std::vector<std::string> &list, const std::string &suffix);

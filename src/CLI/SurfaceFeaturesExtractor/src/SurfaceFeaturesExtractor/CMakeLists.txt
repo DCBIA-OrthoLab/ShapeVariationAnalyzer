@@ -9,7 +9,8 @@ file(
 
 
 set(INSTALL_RUNTIME_DESTINATION ${SlicerExecutionModel_DEFAULT_CLI_INSTALL_RUNTIME_DESTINATION}/../hidden-cli-modules)
-
+set(INSTALL_LIBRARY_DESTINATION ${SlicerExecutionModel_DEFAULT_CLI_INSTALL_RUNTIME_DESTINATION}/../hidden-cli-modules)
+set(INSTALL_ARCHIVE_DESTINATION ${SlicerExecutionModel_DEFAULT_CLI_INSTALL_RUNTIME_DESTINATION}/../hidden-cli-modules)
 
 SEMMacroBuildCLI(
 		NAME surfacefeaturesextractor
