@@ -1,5 +1,8 @@
 trap { Write-Error $_; Exit 1 }
 
+Remove-Item Env:\PYTHONPATH
+Remove-Item Env:\PYTHONHOME
+
 $scriptName = "install-python.ps1"
 if (![System.IO.File]::Exists(".\windows\$scriptName")) {
   Write-Host "Download $scriptName"

@@ -121,7 +121,7 @@ def config_env():
         env_pythonpath = os.path.join(env_dir, 'bin') + ":" + os.path.join(env_dir, 'lib', 'python%s' % sys.version[:3]) + ":" + os.path.join(env_dir, 'lib', 'python%s' % sys.version[:3], 'site-packages')
         env_pythonhome = os.path.join(env_dir, 'bin')
     # export python path
-    cmd_setenv = cmd_setenv + "export PYTHONPATH=" + env_pythonpath +  "; " + "export PYTHONHOME=" + env_pythonhome +  "; "
+    cmd_setenv = cmd_setenv + "export PYTHONPATH=" + env_pythonpath +  "; " + "export PYTHONHOME=" + env_pythonhome +  "; echo PYTHONHOME; echo PYTHONPATH; "
     # call Slicer python
     cmd_setenv = cmd_setenv + pathSlicerPython
 
@@ -162,7 +162,7 @@ def config_env():
     
 
     print("\n\n\n IV. Check tensorflow is well installed")
-    test_tf = os.path.join(currentPath, "..","Testing", "test-tensorflowinstall.py")
+    test_tf = '\"' + os.path.join(currentPath, "..","Testing", "test-tensorflowinstall.py") +'\"'
     bashCommand = cmd_setenv + " " + test_tf
 
     command = ["bash", "-c", bashCommand]
