@@ -53,7 +53,6 @@ def config_env():
             out, err =  p.communicate()
             print("out : " + str(out) + "\nerr : " + str(err))
 
-            print "\n\nTERMINEY\n\n"
             rootDir = os.path.splitdrive(sys.executable)[0] + '/'
             for root in os.listdir(rootDir):
                 if "Python35" in root:
