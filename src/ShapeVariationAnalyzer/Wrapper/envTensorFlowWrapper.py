@@ -162,7 +162,7 @@ def config_env():
     
 
     print("\n\n\n IV. Check tensorflow is well installed")
-    test_tf = os.path.join(currentPath, "..","Testing", "test-tensorflowinstall.py")
+    test_tf = '\"' + os.path.join(currentPath, "..","Testing", "test-tensorflowinstall.py") +'\"'
     bashCommand = cmd_setenv + " " + test_tf
 
     command = ["bash", "-c", bashCommand]
