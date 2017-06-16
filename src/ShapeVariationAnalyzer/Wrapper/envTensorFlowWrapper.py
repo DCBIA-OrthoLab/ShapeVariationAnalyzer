@@ -7,9 +7,9 @@ import ast
 
 
 def wrap(cmd_setenv, program, args=0):
-    bashCommand = cmd_setenv + " " + program
+    bashCommand = cmd_setenv + " " + '\"' + program + '\"'
     for flag,value in args.items():
-        bashCommand = bashCommand + " " + flag + " " + value
+        bashCommand = bashCommand + " " + flag + ' \"' + value + '\"'
 
     command = ["bash", "-c", str(bashCommand)]
 
@@ -31,9 +31,41 @@ def config_env():
         pathSlicerExec.replace("/","\\")
     currentPath = os.path.dirname(os.path.abspath(__file__))
 
-    if sys.platform == 'win32': 
-        dirSitePckgs = os.path.join(pathSlicerExec, "..", "lib", "Python", "Lib", "site-packages")
-        pathSlicerPython = '\"' + os.path.join(pathSlicerExec, "..", "bin", "SlicerPython.exe") + '\"'
+    if sys.platform == 'win32':
+        Python35 = 0
+        for path in os.getenv('PATH').split(';'):
+            if "Python35" in path and "Scripts" in path:
+                    pathSlicerPython = '\"' + os.path.join(path, '..', "python.exe") + '\"'
+                    dirSitePckgs = os.path.join(path, "..", "Lib", "site-packages")
+                    pythonpath = '\"' + os.path.join(path, '..') + '\"'
+                    Python35 = 1
+                    break
+        if Python35 == 0:
+            # install python 3.5 + virtualenv
+            # @powershell -ExecutionPolicy Unrestricted "iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/ClementMirabel/ShapeVariationAnalyzer-Resources/master/install-SVA-deps.ps1'))"
+            powershellPath = os.path.join(currentPath, "..", "Resources", "PowerShell", "install-SVA-deps.ps1")
+
+            p = subprocess.Popen(['powershell.exe', "Set-ExecutionPolicy RemoteSigned"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            out, err =  p.communicate()
+            # print("out : " + str(out) + "\nerr : " + str(err))
+
+            p = subprocess.Popen(['powershell.exe', powershellPath], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            out, err =  p.communicate()
+            print("out : " + str(out) + "\nerr : " + str(err))
+
+            print "\n\nTERMINEY\n\n"
+            rootDir = os.path.splitdrive(sys.executable)[0] + '/'
+            for root in os.listdir(rootDir):
+                if "Python35" in root:
+                    pythonpath = '\"' + os.path.join(rootDir, root) + '\"'
+                    print pythonpath
+                    pathSlicerPython = '\"' + os.path.join(rootDir, root, "python.exe") + '\"'
+                    print pathSlicerPython
+                    dirSitePckgs = os.path.join(rootDir, root, "Lib", "site-packages")
+                    print dirSitePckgs
+                    os.environ["path"] = os.getenv("path") + os.path.join(rootDir, root) + ";" + os.path.join(rootDir, root, 'Scripts') + ";" 
+                    break
+
     else: 
         dirSitePckgs = os.path.join(pathSlicerExec, "..", "lib", "Python", "lib",'python%s' % sys.version[:3], "site-packages")
         pathSlicerPython = os.path.join(pathSlicerExec, "..", "bin", "SlicerPython")
@@ -57,14 +89,17 @@ def config_env():
         os.mkdir(env_dir) 
 
     if not os.path.isfile(os.path.join(env_dir, 'bin', 'activate')):
-        command = ["bash", "-c", pathSlicerPython + ' \"' + os.path.join(dirSitePckgs, 'virtualenv.py') + '\" --python=' + pathSlicerPython + ' \"' + env_dir + '\"']
+        if sys.platform == 'win32': 
+            command = ["bash", "-c", 'export PYTHONPATH=' + pythonpath + '; export PYTHONHOME=' + pythonpath + '; ' + pathSlicerPython + ' \"' + os.path.join(dirSitePckgs, 'virtualenv.py') + '\" --python=' + pathSlicerPython + ' \"' + env_dir + '\"']
+        else:
+            command = ["bash", "-c", pathSlicerPython + ' \"' + os.path.join(dirSitePckgs, 'virtualenv.py') + '\" --python=' + pathSlicerPython + ' \"' + env_dir + '\"']
         p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        # out, err =  p.communicate()
-        # print("out : " + str(out) + "\nerr : " + str(err))
+        out, err =  p.communicate()
+        print("out : " + str(out) + "\nerr : " + str(err))
         print("\n===> Environmnent tensorflowSlicer created")
 
 
-    # print("\n\n\n III. Install tensorflow into tensorflowSlicer")
+    print("\n\n\n III. Install tensorflow into tensorflowSlicer")
     """ To install tensorflow in virtualenv, requires:
         - activate environment
         - export PYTHONPATH
@@ -81,17 +116,20 @@ def config_env():
         cmd_setenv = "source " + os.path.join(env_dir, 'bin', 'activate') + "; "
     # construct python path
     if sys.platform == 'win32': 
-        env_pythonpath = os.path.join(env_dir, 'bin') + ":" + os.path.join(env_dir, 'lib', 'Python') + ":" + os.path.join(env_dir, 'lib', 'Python', 'Lib', 'site-packages')
+        env_pythonpath = '\"' + os.path.join(env_dir, 'Scripts') + ';' + os.path.join(env_dir, 'Lib') + ';' + os.path.join(env_dir, 'Lib', 'site-packages') + '\"'
+        env_pythonhome = '\"' + os.path.join(env_dir, 'Scripts') + '\"'
     else:
         env_pythonpath = os.path.join(env_dir, 'bin') + ":" + os.path.join(env_dir, 'lib', 'python%s' % sys.version[:3]) + ":" + os.path.join(env_dir, 'lib', 'python%s' % sys.version[:3], 'site-packages')
+        env_pythonhome = os.path.join(env_dir, 'bin')
     # export python path
-    cmd_setenv = cmd_setenv + "export PYTHONPATH=" + env_pythonpath +  "; "
+    cmd_setenv = cmd_setenv + "export PYTHONPATH=" + env_pythonpath +  "; " + "export PYTHONHOME=" + env_pythonhome +  "; "
     # call Slicer python
     cmd_setenv = cmd_setenv + pathSlicerPython
 
     # construct sys.path
     if sys.platform == 'win32': 
-        env_syspath = "sys.path.append(\"" + os.path.join(env_dir,'lib', 'Python') + "\"); sys.path.append(\"" + os.path.join(env_dir,'lib','Python', 'Lib', 'site-packages') + "\"); sys.path.append(\"" + os.path.join(env_dir,'lib','python%s' % sys.version[:3], 'site-packages','pip','utils') + "\"); "
+        # env_syspath = "sys.path.append(\"" + os.path.join(env_dir,'Lib') + "\"); sys.path.append(\"" + os.path.join(env_dir, 'Lib', 'site-packages') + "\"); sys.path.append(\"" + os.path.join(env_dir,'Lib','site-packages','pip','utils') + "\"); "
+        env_syspath = "sys.path.append(\"" + os.path.join(env_dir,'Lib') + "\"); sys.path.append(\"" + os.path.join(env_dir, 'Lib', 'site-packages') + "\"); "
     else:
         env_syspath = "sys.path.append(\"" + os.path.join(env_dir,'lib', 'python%s' % sys.version[:3]) + "\"); sys.path.append(\"" + os.path.join(env_dir,'lib','python%s' % sys.version[:3], 'site-packages') + "\"); sys.path.append(\"" + os.path.join(env_dir,'lib','python%s' % sys.version[:3], 'site-packages','pip','utils') + "\"); "
     cmd_virtenv = str(' -c ')
@@ -109,14 +147,14 @@ def config_env():
     command = ["bash", "-c", str(bashCommand)]
     p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     out, err =  p.communicate()
-    # print("\nout : " + str(out) + "\nerr : " + str(err))
+    print("\nout : " + str(out) + "\nerr : " + str(err))
 
     # Tensorflow is now installed but might not work due to a missing file
     # We create it to avoid the error 'no module named google.protobuf'
     # -----
     print("\n\n Create missing __init__.py if doesn't existe yet")
     if sys.platform == 'win32': 
-        google_init = os.path.join(env_dir, 'lib', 'Python', 'Lib', 'site-packages', 'google', '__init__.py')
+        google_init = os.path.join(env_dir, 'Lib', 'site-packages', 'google', '__init__.py')
     else:
         google_init = os.path.join(env_dir, 'lib', 'python%s' % sys.version[:3], 'site-packages', 'google', '__init__.py')
     if not os.path.isfile(google_init):

@@ -2328,11 +2328,11 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         envWrapper_file = os.path.join(currentPath,'Wrapper','envTensorFlowWrapper.py')
         
         pathSlicerExec = str(os.path.dirname(sys.executable))
+
         pathSlicerPython = os.path.join(pathSlicerExec, "..", "bin", "SlicerPython")
+        args = '{"--inputZip": "' + archiveName + '", "--outputZip": "' + archiveName + '"}' 
+        command = [pathSlicerPython, envWrapper_file, "-pgm", train_file, "-args", args ]
 
-        command = [pathSlicerPython, envWrapper_file, "-pgm", train_file, "-args", "{'--inputZip': '" + archiveName + "', '--outputZip': '" + archiveName + "'}" ]
-
-        print command
         p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out, err =  p.communicate()
         print("\nout : " + str(out) + "\nerr : " + str(err))
@@ -2441,8 +2441,9 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         
         pathSlicerExec = str(os.path.dirname(sys.executable))
         pathSlicerPython = os.path.join(pathSlicerExec, "..", "bin", "SlicerPython")
-
-        command = [pathSlicerPython, envWrapper_file, "-pgm", train_file, "-args", "{'--inputZip': '" + archiveName + "', '--outputZip': '" + archiveName + "'}" ]
+        
+        args = '{"--inputZip": "' + archiveName + '", "--outputZip": "' + archiveName + '"}' 
+        command = [pathSlicerPython, envWrapper_file, "-pgm", train_file, "-args", args ]
 
         p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out, err =  p.communicate()

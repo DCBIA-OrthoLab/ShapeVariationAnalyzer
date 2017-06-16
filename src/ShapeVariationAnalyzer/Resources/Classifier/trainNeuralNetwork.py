@@ -30,7 +30,7 @@ def get_inputs(pickle_file, classifier):
     """ Reoad the data generated in picklefiel
     """
     with open(pickle_file, 'rb') as f:
-        save = pickle.load(f)
+        save = pickle.load(f, encoding='latin1')
         train_dataset = save['train_dataset']
         train_labels = save['train_labels']
         valid_dataset = save['valid_dataset']
@@ -94,7 +94,7 @@ def run_training(train_dataset, train_labels, valid_dataset, valid_labels, test_
         with tf.name_scope('Loss_computation'):
             loss = classifier.loss(logits, tf_train_labels, classifier.lambda_reg, weightsDict)
         
-        print "Loss computation"
+        print("Loss computation")
         with tf.name_scope('Optimization'):
             # Optimizer.
             optimizer = tf.train.GradientDescentOptimizer(classifier.learning_rate).minimize(loss)
@@ -211,12 +211,12 @@ def main(_):
     #
     # Create a network for the classification
     #
-    with open(jsonFile) as f:    
+    with open(jsonFile, encoding='utf-8') as f:    
         jsonDict = json.load(f)
 
 
     # In case our JSON file doesnt contain a valid Classifier
-    if not jsonDict.has_key('CondylesClassifier'):
+    if not 'CondylesClassifier' in jsonDict:
         print("Error: Couldn't parameterize the network.")
         print("There is no 'CondylesClassifier' model.")
         return 0
