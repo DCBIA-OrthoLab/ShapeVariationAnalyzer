@@ -1850,7 +1850,10 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         scriptedModulesPath = os.path.dirname(scriptedModulesPath)
         libPath = os.path.join(scriptedModulesPath)
         sys.path.insert(0, libPath)
-        computeMean = os.path.join(scriptedModulesPath, '..', 'hidden-cli-modules', 'computemean')
+        if sys.platform == 'win32':
+            computeMean = os.path.join(scriptedModulesPath, '..', 'hidden-cli-modules', 'computemean.exe')
+        else:
+            computeMean = os.path.join(scriptedModulesPath, '..', 'hidden-cli-modules', 'computemean')
         # computeMean = "/Users/mirclem/Desktop/work/ShapeVariationAnalyzer/src/CLI/SurfaceFeaturesExtractor-build/src/ComputeMeanShapes/src/bin/computemeanshapes"
         # computeMean = "/Users/prisgdd/Documents/Projects/CNN/SurfaceFeaturesExtractor-build/src/ComputeMeanShapes/src/bin/computemean"
 
@@ -2050,8 +2053,10 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         scriptedModulesPath = os.path.dirname(scriptedModulesPath)
         libPath = os.path.join(scriptedModulesPath)
         sys.path.insert(0, libPath)
-        surfacefeaturesextractor = os.path.join(scriptedModulesPath, '..' 'hidden-cli-modules', 'surfacefeaturesextractor')
-        
+        if sys.platform == 'win32':
+            surfacefeaturesextractor = os.path.join(scriptedModulesPath, '..', 'hidden-cli-modules', 'surfacefeaturesextractor.exe')
+        else:
+            surfacefeaturesextractor = os.path.join(scriptedModulesPath, '..', 'hidden-cli-modules', 'surfacefeaturesextractor')            
         # surfacefeaturesextractor = "/Users/mirclem/Desktop/work/ShapeVariationAnalyzer/src/CLI/SurfaceFeaturesExtractor-build/src/SurfaceFeaturesExtractor/bin/surfacefeaturesextractor"
         #surfacefeaturesextractor = "/Users/prisgdd/Documents/Projects/CNN/SurfaceFeaturesExtractor-build/src/SurfaceFeaturesExtractor/bin/surfacefeaturesextractor"
         
@@ -2328,11 +2333,11 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         envWrapper_file = os.path.join(currentPath,'Wrapper','envTensorFlowWrapper.py')
         
         pathSlicerExec = str(os.path.dirname(sys.executable))
+
         pathSlicerPython = os.path.join(pathSlicerExec, "..", "bin", "SlicerPython")
+        args = '{"--inputZip": "' + archiveName + '", "--outputZip": "' + archiveName + '"}' 
+        command = [pathSlicerPython, envWrapper_file, "-pgm", train_file, "-args", args ]
 
-        command = [pathSlicerPython, envWrapper_file, "-pgm", train_file, "-args", "{'--inputZip': '" + archiveName + "', '--outputZip': '" + archiveName + "'}" ]
-
-        print command
         p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out, err =  p.communicate()
         print("\nout : " + str(out) + "\nerr : " + str(err))
@@ -2441,8 +2446,9 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         
         pathSlicerExec = str(os.path.dirname(sys.executable))
         pathSlicerPython = os.path.join(pathSlicerExec, "..", "bin", "SlicerPython")
-
-        command = [pathSlicerPython, envWrapper_file, "-pgm", train_file, "-args", "{'--inputZip': '" + archiveName + "', '--outputZip': '" + archiveName + "'}" ]
+        
+        args = '{"--inputZip": "' + archiveName + '", "--outputZip": "' + archiveName + '"}' 
+        command = [pathSlicerPython, envWrapper_file, "-pgm", train_file, "-args", args ]
 
         p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out, err =  p.communicate()

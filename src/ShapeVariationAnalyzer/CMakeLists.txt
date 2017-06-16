@@ -13,6 +13,9 @@ set(MODULE_PYTHON_RESOURCES
   Resources/Classifier/neuralNetwork.py
   Resources/Classifier/evalShape.py
   Resources/Classifier/trainNeuralNetwork.py
+  Resources/PowerShell/install-SVA-deps.ps1
+  Resources/PowerShell/windows/install-python.ps1
+  Resources/PowerShell/windows/install-utils.ps1
   evalShape
   evalShape.xml
   trainNeuralNetwork

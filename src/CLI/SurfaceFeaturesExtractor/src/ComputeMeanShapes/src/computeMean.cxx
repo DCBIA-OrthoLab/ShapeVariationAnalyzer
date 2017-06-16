@@ -7,11 +7,8 @@
 #include <iterator>
 
 
-#if WIN32
-    #include <sys/types.h>
-#else 
-    #include <dirent.h>
-#endif
+
+#include <dirent.h>
 
 
 // Declaration of getListFile()
