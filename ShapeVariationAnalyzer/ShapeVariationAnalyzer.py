@@ -417,7 +417,8 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.CollapsibleButton_computeAverageGroups.setChecked(False)
         self.collapsibleButton_Result.setChecked(False)
         self.collapsibleGroupBox_advancedParameters.setChecked(False)
-        self.comboBox_healthyGroup_features.clear()
+        self.comboBox_healthyGroup.clear()
+        self.comboBox_controlGroup_features.clear()
 
         #     qMRMLNodeComboBox configuration
         self.MRMLNodeComboBox_VTKInputData.setMRMLScene(slicer.mrmlScene)
@@ -1236,13 +1237,18 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         # print("----- onExportUntrainedNetwork -----")
 
         num_steps = 1001
-        if self.collapsibleGroupBox_advancedParameters.checked and self.checkBox_numsteps.checked:
-            num_steps = self.spinBox_numsteps.value
+        num_layers = 2
+
+        if self.collapsibleGroupBox_advancedParameters.checked:
+            if self.checkBox_numsteps.checked:
+                num_steps = self.spinBox_numsteps.value
+            if self.checkBox_numberOfLayers.checked:
+                num_layers = self.spinBox_numberOfLayers.value
         # Path of the csv file
         dlg = ctk.ctkFileDialog()
         filepath = dlg.getSaveFileName(None, "Export Classification neural network", os.path.join(qt.QDir.homePath(), "Desktop"), "Archive Zip (*.zip)")
 
-        self.logic.exportUntrainedNetwork(self.archiveName, filepath, num_steps = num_steps)
+        self.logic.exportUntrainedNetwork(self.archiveName, filepath, num_steps = num_steps, num_layers = num_layers)
         return
 
 
@@ -1845,9 +1851,12 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         scriptedModulesPath = os.path.dirname(scriptedModulesPath)
         libPath = os.path.join(scriptedModulesPath)
         sys.path.insert(0, libPath)
-        computeMean = os.path.join(scriptedModulesPath, '../hidden-cli-modules/computemean')
+        if sys.platform == 'win32':
+            computeMean = os.path.join(scriptedModulesPath, '..', 'cli-modules', 'computemean.exe')
+        else:
+            computeMean = os.path.join(scriptedModulesPath, '..', 'cli-modules', 'computemean')
         # computeMean = "/Users/mirclem/Desktop/work/ShapeVariationAnalyzer/src/CLI/SurfaceFeaturesExtractor-build/src/ComputeMeanShapes/src/bin/computemeanshapes"
-        computeMean = "/Users/prisgdd/Documents/Projects/CNN/SurfaceFeaturesExtractor-build/src/ComputeMeanShapes/src/bin/computemean"
+        # computeMean = "/Users/prisgdd/Documents/Projects/CNN/SurfaceFeaturesExtractor-build/src/ComputeMeanShapes/src/bin/computemean"
 
         arguments = list()
         arguments.append("--inputList")
@@ -2045,10 +2054,12 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         scriptedModulesPath = os.path.dirname(scriptedModulesPath)
         libPath = os.path.join(scriptedModulesPath)
         sys.path.insert(0, libPath)
-        surfacefeaturesextractor = os.path.join(scriptedModulesPath, '../hidden-cli-modules/surfacefeaturesextractor')
-        
+        if sys.platform == 'win32':
+            surfacefeaturesextractor = os.path.join(scriptedModulesPath, '..', 'cli-modules', 'surfacefeaturesextractor.exe')
+        else:
+            surfacefeaturesextractor = os.path.join(scriptedModulesPath, '..', 'cli-modules', 'surfacefeaturesextractor')            
         # surfacefeaturesextractor = "/Users/mirclem/Desktop/work/ShapeVariationAnalyzer/src/CLI/SurfaceFeaturesExtractor-build/src/SurfaceFeaturesExtractor/bin/surfacefeaturesextractor"
-        surfacefeaturesextractor = "/Users/prisgdd/Documents/Projects/CNN/SurfaceFeaturesExtractor-build/src/SurfaceFeaturesExtractor/bin/surfacefeaturesextractor"
+        #surfacefeaturesextractor = "/Users/prisgdd/Documents/Projects/CNN/SurfaceFeaturesExtractor-build/src/SurfaceFeaturesExtractor/bin/surfacefeaturesextractor"
         
         filename = str(os.path.basename(shape))
 
@@ -2226,7 +2237,7 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
 
         return set_filename
 
-    def exportUntrainedNetwork(self, archiveName, zipPath, num_steps):
+    def exportUntrainedNetwork(self, archiveName, zipPath, num_steps, num_layers):
         """ Funciton to compress/zip everything needed to 
         export the Classifier BEFORE training 
         Useful for remote training 
@@ -2248,13 +2259,14 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
 
         jsonDict['CondylesClassifier']['learning_rate'] = 0.0005
         jsonDict['CondylesClassifier']['lambda_reg'] = 0.01
-        jsonDict['CondylesClassifier']['num_epochs'] = 50
+        jsonDict['CondylesClassifier']['num_epochs'] = 5
         jsonDict['CondylesClassifier']['num_steps'] =  num_steps
         jsonDict['CondylesClassifier']['batch_size'] = 10
-        jsonDict['CondylesClassifier']['NUM_HIDDEN_LAYERS'] = 2
+        jsonDict['CondylesClassifier']['NUM_HIDDEN_LAYERS'] = num_layers
         
         if jsonDict['CondylesClassifier']['NUM_HIDDEN_LAYERS'] == 1:
-            jsonDict['CondylesClassifier']['nb_hidden_nodes_1'] = int ( math.sqrt ( jsonDict['CondylesClassifier']['NUM_POINTS'] * jsonDict['CondylesClassifier']['NUM_FEATURES'] * jsonDict['CondylesClassifier']['NUM_CLASSES'] ))
+            jsonDict['CondylesClassifier']['nb_hidden_nodes_1'] = int ( jsonDict['CondylesClassifier']['NUM_POINTS'] * jsonDict['CondylesClassifier']['NUM_FEATURES'] + jsonDict['CondylesClassifier']['NUM_CLASSES'] // 2 )
+            # jsonDict['CondylesClassifier']['nb_hidden_nodes_1'] = int ( math.sqrt ( jsonDict['CondylesClassifier']['NUM_POINTS'] * jsonDict['CondylesClassifier']['NUM_FEATURES'] * jsonDict['CondylesClassifier']['NUM_CLASSES'] ))
             jsonDict['CondylesClassifier']['nb_hidden_nodes_2'] = 0
         
         elif jsonDict['CondylesClassifier']['NUM_HIDDEN_LAYERS'] == 2:
@@ -2322,11 +2334,11 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         envWrapper_file = os.path.join(currentPath,'Wrapper','envTensorFlowWrapper.py')
         
         pathSlicerExec = str(os.path.dirname(sys.executable))
+
         pathSlicerPython = os.path.join(pathSlicerExec, "..", "bin", "SlicerPython")
+        args = '{"--inputZip": "' + archiveName + '", "--outputZip": "' + archiveName + '"}' 
+        command = [pathSlicerPython, envWrapper_file, "-pgm", train_file, "-args", args ]
 
-        command = [pathSlicerPython, envWrapper_file, "-pgm", train_file, "-args", "{'--inputZip': '" + archiveName + "', '--outputZip': '" + archiveName + "'}" ]
-
-        print command
         p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out, err =  p.communicate()
         print("\nout : " + str(out) + "\nerr : " + str(err))
@@ -2435,8 +2447,9 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         
         pathSlicerExec = str(os.path.dirname(sys.executable))
         pathSlicerPython = os.path.join(pathSlicerExec, "..", "bin", "SlicerPython")
-
-        command = [pathSlicerPython, envWrapper_file, "-pgm", train_file, "-args", "{'--inputZip': '" + archiveName + "', '--outputZip': '" + archiveName + "'}" ]
+        
+        args = '{"--inputZip": "' + archiveName + '", "--outputZip": "' + archiveName + '"}' 
+        command = [pathSlicerPython, envWrapper_file, "-pgm", train_file, "-args", args ]
 
         p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out, err =  p.communicate()

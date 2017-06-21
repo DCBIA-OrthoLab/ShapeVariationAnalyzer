@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <executable>
-  <category>Shape Analysis</category>
-  <title>Surface Features Creator</title>
+  <category>Testing</category>
+  <title>SurfaceFeaturesExtractor</title>
   <description> Specific features are computed at each point of the 3D Model add added to the vtk file</description>
   <version>1.0</version>
   <contributor>Priscille de Dumast (University of Michigan)</contributor>

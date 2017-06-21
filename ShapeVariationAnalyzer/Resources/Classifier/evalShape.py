@@ -68,6 +68,7 @@ def main(_):
 
     # Unpack archive
     with zipfile.ZipFile(inputZip) as zf:
+        zf.extractall(networkDir)
         zf.extractall(basedir)
 
     jsonFile = os.path.join(networkDir, 'classifierInfo.json')
@@ -76,12 +77,12 @@ def main(_):
     #
     # Create a network for the classification
     #
-    with open(jsonFile) as f:    
+    with open(jsonFile, encoding='utf-8') as f:    
         jsonDict = json.load(f)
 
 
     # In case our JSON file doesnt contain a valid Classifier
-    if not jsonDict.has_key('CondylesClassifier'):
+    if not 'CondylesClassifier' in jsonDict:
         print("Error: Couldn't parameterize the network.")
         print("There is no 'CondylesClassifier' model.")
         return 0
@@ -107,7 +108,7 @@ def main(_):
         print("Missing NUM_FEATURES")
 
 
-    dictToClassify = pickle.load( open( pickleToClassify, "rb" ) )
+    dictToClassify = pickle.load( open( pickleToClassify, "rb" ), encoding='latin1' )
     dictClassified = dict()
 
     for file in dictToClassify.keys():
@@ -130,7 +131,7 @@ def main(_):
         data_pred = session.run(data_pred, feed_dict=feed_dict)
 
         result = get_result(data_pred)
-        dictClassified[file] = result
+        dictClassified[file] = int(result)
         
     # Save into a JSON file
     with open(os.path.join(networkDir,'results.json'), 'w') as f:

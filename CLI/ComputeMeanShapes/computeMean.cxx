@@ -5,10 +5,12 @@
 #include "fileIO.hxx"
 
 #include <iterator>
-#include <dirent.h>
 
-#ifndef WIN32
-    #include <sys/types.h>
+
+#if win32  
+    #include <../include/dirent.h>
+#else
+    #include <dirent.h>
 #endif
 
 // Declaration of getListFile()
