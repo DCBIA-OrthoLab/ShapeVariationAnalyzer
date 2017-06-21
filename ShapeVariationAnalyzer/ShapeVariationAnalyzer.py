@@ -1852,9 +1852,9 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         libPath = os.path.join(scriptedModulesPath)
         sys.path.insert(0, libPath)
         if sys.platform == 'win32':
-            computeMean = os.path.join(scriptedModulesPath, '..', 'hidden-cli-modules', 'computemean.exe')
+            computeMean = os.path.join(scriptedModulesPath, '..', 'cli-modules', 'computemean.exe')
         else:
-            computeMean = os.path.join(scriptedModulesPath, '..', 'hidden-cli-modules', 'computemean')
+            computeMean = os.path.join(scriptedModulesPath, '..', 'cli-modules', 'computemean')
         # computeMean = "/Users/mirclem/Desktop/work/ShapeVariationAnalyzer/src/CLI/SurfaceFeaturesExtractor-build/src/ComputeMeanShapes/src/bin/computemeanshapes"
         # computeMean = "/Users/prisgdd/Documents/Projects/CNN/SurfaceFeaturesExtractor-build/src/ComputeMeanShapes/src/bin/computemean"
 
@@ -2055,9 +2055,9 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         libPath = os.path.join(scriptedModulesPath)
         sys.path.insert(0, libPath)
         if sys.platform == 'win32':
-            surfacefeaturesextractor = os.path.join(scriptedModulesPath, '..', 'hidden-cli-modules', 'surfacefeaturesextractor.exe')
+            surfacefeaturesextractor = os.path.join(scriptedModulesPath, '..', 'cli-modules', 'surfacefeaturesextractor.exe')
         else:
-            surfacefeaturesextractor = os.path.join(scriptedModulesPath, '..', 'hidden-cli-modules', 'surfacefeaturesextractor')            
+            surfacefeaturesextractor = os.path.join(scriptedModulesPath, '..', 'cli-modules', 'surfacefeaturesextractor')            
         # surfacefeaturesextractor = "/Users/mirclem/Desktop/work/ShapeVariationAnalyzer/src/CLI/SurfaceFeaturesExtractor-build/src/SurfaceFeaturesExtractor/bin/surfacefeaturesextractor"
         #surfacefeaturesextractor = "/Users/prisgdd/Documents/Projects/CNN/SurfaceFeaturesExtractor-build/src/SurfaceFeaturesExtractor/bin/surfacefeaturesextractor"
         
