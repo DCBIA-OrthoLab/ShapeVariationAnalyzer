@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <executable>
-  <category></category>
+  <category>Testing</category>
   <title>computeMean</title>
   <description>Compute mean shape for a group of shapes</description>
   <contributor>Priscille de Dumast (UofM)</contributor>
