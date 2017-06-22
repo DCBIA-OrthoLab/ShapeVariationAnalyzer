@@ -1818,6 +1818,7 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
 
             # Save the vtk file without array in the temporary directory in Slicer
             self.saveVTKFile(polyDataCopy, filepath)
+        return
 
     def saveVTKFile(self, polydata, filepath):
         """ Function to save a VTK file to the filepath given 
@@ -1830,11 +1831,15 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
             writer.SetInputData(polydata)
         writer.Update()
         writer.Write()
+        return
 
     def printStatus(self, caller, event):
         print("Got a %s from a %s" % (event, caller.GetClassName()))
         if caller.IsA('vtkMRMLCommandLineModuleNode'):
             print("Status is %s" % caller.GetStatusString())
+            print("output:   \n %s" % caller.GetOutputText())
+            print("error:   \n %s" % caller.GetErrorText())
+        return
 
     def computeMean(self, numGroup, vtkList):
         """ Function to compute the mean between all 
@@ -1845,43 +1850,26 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         # Arguments:
         #  --inputList is the list of vtkfile we want to compute the average
         #  --outputSurface is the resulting mean shape
+        
+        parameters = {}
 
-        #     Creation of the command line
-        scriptedModulesPath = eval('slicer.modules.%s.path' % self.interface.moduleName.lower())
-        scriptedModulesPath = os.path.dirname(scriptedModulesPath)
-        libPath = os.path.join(scriptedModulesPath)
-        sys.path.insert(0, libPath)
-        if sys.platform == 'win32':
-            computeMean = os.path.join(scriptedModulesPath, '..', 'cli-modules', 'computemean.exe')
-        else:
-            computeMean = os.path.join(scriptedModulesPath, '..', 'cli-modules', 'computemean')
-        # computeMean = "/Users/mirclem/Desktop/work/ShapeVariationAnalyzer/src/CLI/SurfaceFeaturesExtractor-build/src/ComputeMeanShapes/src/bin/computemeanshapes"
-        # computeMean = "/Users/prisgdd/Documents/Projects/CNN/SurfaceFeaturesExtractor-build/src/ComputeMeanShapes/src/bin/computemean"
-
-        arguments = list()
-        arguments.append("--inputList")
         vtkfilelist = ""
         for vtkFiles in vtkList:
             vtkfilelist = vtkfilelist + vtkFiles + ','
-        arguments.append(vtkfilelist)
+        parameters["inputList"] = vtkfilelist
 
         resultdir = slicer.app.temporaryPath
-        arguments.append("--outputSurface")
-        arguments.append(str(resultdir) + "/meanGroup" + str(numGroup) + ".vtk")
-        # print(arguments)
-        #     Call the executable
-        process = qt.QProcess()
-        process.setProcessChannelMode(qt.QProcess.MergedChannels)
+        parameters["outputSurface"] = str(resultdir) + "/meanGroup" + str(numGroup) + ".vtk"
 
-        # print("Calling " + os.path.basename(computeMean))
-        process.start(computeMean, arguments)
-        process.waitForStarted()
-        # print("state: " + str(process2.state()))
-        process.waitForFinished()
-        # print("error: " + str(process.error()))
+        computeMean = slicer.modules.computemean
         
-        processOutput = str(process.readAll())
-        # print(processOutput)
+        print parameters
+
+        cliNode = slicer.cli.run(computeMean, None, parameters)
+        cliNode.AddObserver('ModifiedEvent', self.printStatus)
+        return 
+        
+
 
     def removeDataVTKFiles(self, value):
         """ Function to remove in the temporary directory all 
@@ -2049,49 +2037,64 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         """ Function to extract the features from the provided shape
         Call the CLI surfacefeaturesextractor
         """
-        #     Creation of the command line
-        scriptedModulesPath = eval('slicer.modules.%s.path' % self.interface.moduleName.lower())
-        scriptedModulesPath = os.path.dirname(scriptedModulesPath)
-        libPath = os.path.join(scriptedModulesPath)
-        sys.path.insert(0, libPath)
-        if sys.platform == 'win32':
-            surfacefeaturesextractor = os.path.join(scriptedModulesPath, '..', 'cli-modules', 'surfacefeaturesextractor.exe')
-        else:
-            surfacefeaturesextractor = os.path.join(scriptedModulesPath, '..', 'cli-modules', 'surfacefeaturesextractor')            
-        # surfacefeaturesextractor = "/Users/mirclem/Desktop/work/ShapeVariationAnalyzer/src/CLI/SurfaceFeaturesExtractor-build/src/SurfaceFeaturesExtractor/bin/surfacefeaturesextractor"
-        #surfacefeaturesextractor = "/Users/prisgdd/Documents/Projects/CNN/SurfaceFeaturesExtractor-build/src/SurfaceFeaturesExtractor/bin/surfacefeaturesextractor"
+        # #     Creation of the command line
+        # scriptedModulesPath = eval('slicer.modules.%s.path' % self.interface.moduleName.lower())
+        # scriptedModulesPath = os.path.dirname(scriptedModulesPath)
+        # libPath = os.path.join(scriptedModulesPath)
+        # sys.path.insert(0, libPath)
+        # if sys.platform == 'win32':
+        #     surfacefeaturesextractor = os.path.join(scriptedModulesPath, '..', 'cli-modules', 'surfacefeaturesextractor.exe')
+        # else:
+        #     surfacefeaturesextractor = os.path.join(scriptedModulesPath, '..', 'cli-modules', 'surfacefeaturesextractor')            
+        # # surfacefeaturesextractor = "/Users/mirclem/Desktop/work/ShapeVariationAnalyzer/src/CLI/SurfaceFeaturesExtractor-build/src/SurfaceFeaturesExtractor/bin/surfacefeaturesextractor"
+        # # surfacefeaturesextractor = "/Users/prisgdd/Documents/Projects/CNN/SurfaceFeaturesExtractor-build/src/SurfaceFeaturesExtractor/bin/surfacefeaturesextractor"
         
-        filename = str(os.path.basename(shape))
+        # filename = str(os.path.basename(shape))
 
-        arguments = list()
+        # arguments = list()
 
-        # Input Mesh
-        arguments.append(shape)
+        # # Input Mesh
+        # arguments.append(shape)
 
-        # Output Mesh
-        arguments.append(str(os.path.join(outputDir,filename))) 
+        # # Output Mesh
+        # arguments.append(str(os.path.join(outputDir,filename))) 
 
-        # List of average shapes
-        arguments.append("--distMeshOn")
-        arguments.append("--distMesh")
-        arguments.append(str(meansList))
-        # print(arguments)
+        # # List of average shapes
+        # arguments.append("--distMeshOn")
+        # arguments.append("--distMesh")
+        # arguments.append(str(meansList))
+        # # print(arguments)
 
-        #     Call the executable
-        process = qt.QProcess()
-        process.setProcessChannelMode(qt.QProcess.MergedChannels)
+        # #     Call the executable
+        # process = qt.QProcess()
+        # process.setProcessChannelMode(qt.QProcess.MergedChannels)
 
-        # print("Calling " + os.path.basename(computeMean))
-        process.start(surfacefeaturesextractor, arguments)
-        process.waitForStarted()
-        # print("state: " + str(process.state()))
-        process.waitForFinished()
-        # print("error: " + str(process.error()))
+        # # print("Calling " + os.path.basename(computeMean))
+        # process.start(surfacefeaturesextractor, arguments)
+        # process.waitForStarted()
+        # # print("state: " + str(process.state()))
+        # process.waitForFinished()
+        # # print("error: " + str(process.error()))
         
-        processOutput = str(process.readAll())
+        # processOutput = str(process.readAll())
         # print(processOutput)
 
-        return
+        parameters = {}
+
+        parameters["inputMesh"] = shape
+
+        filename = str(os.path.basename(shape))
+        parameters["outputMesh"] = str(os.path.join(outputDir,filename))
+
+        parameters["distMeshOn"] = 1
+        parameters["distMesh"] = str(meansList)
+
+
+        surfacefeaturesextractor = slicer.modules.surfacefeaturesextractor
+        cliNode = slicer.cli.run(surfacefeaturesextractor, None, parameters)
+        cliNode.AddObserver('ModifiedEvent', self.printStatus)
+        return 
+
 
     def storageFeaturesData(self, dictFeatData, dictShapeModels):
         """ Funtion to complete a dict listing all 
