@@ -70,7 +70,7 @@ void SurfaceFeaturesExtractor::compute_positions()
     std::string name = "Position";
     int nbPoints = this->intermediateSurface->GetNumberOfPoints();
 
-	vtkFloatArray* position = vtkFloatArray::New();
+	vtkSmartPointer<vtkFloatArray> position = vtkFloatArray::New();
 	position->SetNumberOfComponents(3);
 	position->SetName(name.c_str());
 
@@ -79,7 +79,8 @@ void SurfaceFeaturesExtractor::compute_positions()
 		double* p = new double[3];
 		p = this->intermediateSurface->GetPoint(i);
 
-		position->InsertNextTuple3(p[0],p[1],p[2]);		
+		position->InsertNextTuple3(p[0],p[1],p[2]);	
+		delete[] p;	
 	}
 	
 	this->intermediateSurface->GetPointData()->SetActiveVectors(name.c_str());
@@ -128,6 +129,9 @@ void SurfaceFeaturesExtractor::compute_distances()
 
 			this->intermediateSurface->GetPointData()->SetActiveScalars(meanDistLabels[k].c_str());
 			this->intermediateSurface->GetPointData()->SetScalars(meanDistance);
+			
+			delete[] p1;	
+			delete[] p2;	
 		}
 	}
 }
@@ -182,8 +186,11 @@ void SurfaceFeaturesExtractor::compute_shapeindex()			// S
 
 	vtkSmartPointer<vtkFloatArray> shapeIndexArray = vtkFloatArray::New() ;
 
-	vtkDataArray* minCurvArray = this->intermediateSurface->GetPointData()->GetScalars("Minimum_Curvature");
-	vtkDataArray* maxCurvArray = this->intermediateSurface->GetPointData()->GetScalars("Maximum_Curvature");
+	// vtkDataArray* minCurvArray = this->intermediateSurface->GetPointData()->GetScalars("Minimum_Curvature");
+	// vtkDataArray* maxCurvArray = this->intermediateSurface->GetPointData()->GetScalars("Maximum_Curvature");
+
+	vtkSmartPointer<vtkDataArray> minCurvArray = this->intermediateSurface->GetPointData()->GetScalars("Minimum_Curvature");
+	vtkSmartPointer<vtkDataArray> maxCurvArray = this->intermediateSurface->GetPointData()->GetScalars("Maximum_Curvature");
 
 	shapeIndexArray->SetName("Shape_Index");
 
@@ -211,8 +218,11 @@ void SurfaceFeaturesExtractor::compute_curvedness()			// C
 
 	vtkSmartPointer<vtkFloatArray> curvednessArray = vtkFloatArray::New() ;
 
-	vtkDataArray* minCurvArray = this->intermediateSurface->GetPointData()->GetScalars("Minimum_Curvature");
-	vtkDataArray* maxCurvArray = this->intermediateSurface->GetPointData()->GetScalars("Maximum_Curvature");
+	// vtkDataArray* minCurvArray = this->intermediateSurface->GetPointData()->GetScalars("Minimum_Curvature");
+	// vtkDataArray* maxCurvArray = this->intermediateSurface->GetPointData()->GetScalars("Maximum_Curvature");
+
+	vtkSmartPointer<vtkDataArray> minCurvArray = this->intermediateSurface->GetPointData()->GetScalars("Minimum_Curvature");
+	vtkSmartPointer<vtkDataArray> maxCurvArray = this->intermediateSurface->GetPointData()->GetScalars("Maximum_Curvature");
 
 	curvednessArray->SetName("Curvedness");
 
@@ -253,7 +263,7 @@ void SurfaceFeaturesExtractor::store_landmarks_vtk()
 	std::cout << " Functions store landmarks_vtk " << std::endl;
 
 	// Build a locator
-	vtkPointLocator *pointLocator = vtkPointLocator::New();
+	vtkSmartPointer<vtkPointLocator> pointLocator = vtkPointLocator::New();
 	pointLocator->SetDataSet(this->intermediateSurface);
 	pointLocator->BuildLocator();
 
@@ -347,6 +357,8 @@ void SurfaceFeaturesExtractor::store_landmarks_vtk()
 	}
 	landmarksArray->Resize(this->intermediateSurface->GetNumberOfPoints());
 	this->intermediateSurface->GetPointData()->AddArray(landmarksArray);
+
+	delete[] landmarkPids;
 
 }
 
