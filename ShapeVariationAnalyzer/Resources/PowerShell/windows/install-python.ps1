@@ -13,7 +13,7 @@ trap { Write-Error $_; Exit 1 }
 
 if (![System.IO.File]::Exists(".\install-utils.ps1")) {
   Write-Host "Download install-utils.ps1"
-  $url = "https://raw.githubusercontent.com/pdedumast/ShapeVariationAnalyzer/master/src/ShapeVariationAnalyzer/Resources/PowerShell/windows/install-utils.ps1"
+  $url = "https://raw.githubusercontent.com/DCBIA-OrthoLab/ShapeVariationAnalyzer/release/src/ShapeVariationAnalyzer/Resources/PowerShell/windows/install-utils.ps1"
   $cwd = (Get-Item -Path ".\" -Verbose).FullName
   (new-object net.webclient).DownloadFile($url, "$cwd\install-utils.ps1")
 }
