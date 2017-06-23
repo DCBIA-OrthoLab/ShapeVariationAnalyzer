@@ -56,6 +56,7 @@ void ComputeMean::compute_mean_shape()
 			sum[0] = sum[0] + p[0];
 			sum[1] = sum[1] + p[1];
 			sum[2] = sum[2] + p[2]; 
+			delete[] p;
 		}
 	
 		sum[0] = sum[0] / nbSurf;
@@ -63,6 +64,9 @@ void ComputeMean::compute_mean_shape()
 		sum[2] = sum[2] / nbSurf;
 
 		this->outputSurface->GetPoints()->SetPoint(i, sum);
+
+		delete[] sum;
+
 	}
 
 }
