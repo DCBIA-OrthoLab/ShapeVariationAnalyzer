@@ -80,7 +80,7 @@ void SurfaceFeaturesExtractor::compute_positions()
 		p = this->intermediateSurface->GetPoint(i);
 
 		position->InsertNextTuple3(p[0],p[1],p[2]);	
-		delete[] p;	
+		//delete[] p;	
 	}
 	
 	this->intermediateSurface->GetPointData()->SetActiveVectors(name.c_str());
@@ -130,8 +130,8 @@ void SurfaceFeaturesExtractor::compute_distances()
 			this->intermediateSurface->GetPointData()->SetActiveScalars(meanDistLabels[k].c_str());
 			this->intermediateSurface->GetPointData()->SetScalars(meanDistance);
 			
-			delete[] p1;	
-			delete[] p2;	
+			//delete[] p1;	
+			//delete[] p2;	
 		}
 	}
 }
@@ -358,7 +358,7 @@ void SurfaceFeaturesExtractor::store_landmarks_vtk()
 	landmarksArray->Resize(this->intermediateSurface->GetNumberOfPoints());
 	this->intermediateSurface->GetPointData()->AddArray(landmarksArray);
 
-	delete[] landmarkPids;
+	//delete[] landmarkPids;
 
 }
 

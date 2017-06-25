@@ -22,7 +22,7 @@
       <geometry fileExtensions=".vtk" multiple="false">
         <name>outputMesh</name>
         <label>Output Mesh</label>
-        <channel>input</channel>
+        <channel>output</channel>
         <index>1</index>
         <description>Output Mesh</description>
       </geometry>
