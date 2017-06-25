@@ -14,6 +14,7 @@
       <geometry fileExtensions=".vtk" multiple="false">
         <name>inputMesh</name>
         <label>Input Mesh</label>
+        <longflag>inputMesh</longflag>
         <channel>input</channel>
         <index>0</index>
         <description>Input Mesh</description>
@@ -22,6 +23,7 @@
       <geometry fileExtensions=".vtk" multiple="false">
         <name>outputMesh</name>
         <label>Output Mesh</label>
+        <longflag>outputMesh</longflag>
         <channel>input</channel>
         <index>1</index>
         <description>Output Mesh</description>
