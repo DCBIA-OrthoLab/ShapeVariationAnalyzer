@@ -77,8 +77,12 @@ def main(_):
     #
     # Create a network for the classification
     #
-    with open(jsonFile, encoding='utf-8') as f:    
-        jsonDict = json.load(f)
+    if sys.version_info[0] == 3: 
+        with open(jsonFile, encoding='utf-8') as f:    
+            jsonDict = json.load(f)
+    else:
+        with open(jsonFile) as f:    
+            jsonDict = json.load(f)
 
 
     # In case our JSON file doesnt contain a valid Classifier
@@ -108,7 +112,10 @@ def main(_):
         print("Missing NUM_FEATURES")
 
 
-    dictToClassify = pickle.load( open( pickleToClassify, "rb" ), encoding='latin1' )
+    if sys.version_info[0] == 2: 
+        dictToClassify = pickle.load( open( pickleToClassify, "rb" ))
+    else:
+        dictToClassify = pickle.load( open( pickleToClassify, "rb" ), encoding='latin1' )
     dictClassified = dict()
 
     for file in dictToClassify.keys():

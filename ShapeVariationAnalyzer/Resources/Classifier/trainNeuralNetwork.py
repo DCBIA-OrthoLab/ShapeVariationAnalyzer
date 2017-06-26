@@ -11,6 +11,7 @@ import shutil
 import zipfile
 import math
 
+
 # ----------------------------------------------------------------------------- #
 #																				#
 # 								Useful functions 								#
@@ -30,7 +31,10 @@ def get_inputs(pickle_file, classifier):
     """ Reoad the data generated in picklefiel
     """
     with open(pickle_file, 'rb') as f:
-        save = pickle.load(f, encoding='latin1')
+        if sys.version_info[0] == 2: 
+            save = pickle.load(f)
+        else:
+            save = pickle.load(f, encoding='latin1')
         train_dataset = save['train_dataset']
         train_labels = save['train_labels']
         valid_dataset = save['valid_dataset']
@@ -211,9 +215,12 @@ def main(_):
     #
     # Create a network for the classification
     #
-    with open(jsonFile, encoding='utf-8') as f:    
-        jsonDict = json.load(f)
-
+    if sys.version_info[0] == 3: 
+        with open(jsonFile, encoding='utf-8') as f:    
+            jsonDict = json.load(f)
+    else:
+        with open(jsonFile) as f:    
+            jsonDict = json.load(f)
 
     # In case our JSON file doesnt contain a valid Classifier
     if not 'CondylesClassifier' in jsonDict:
