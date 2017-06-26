@@ -135,7 +135,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.tableWidget_result = self.logic.get('tableWidget_result')
         self.pushButton_exportResult = self.logic.get('pushButton_exportResult')
         
-                 # Tab: Compute Average Groups
+        # Tab: Compute Average Groups
         self.CollapsibleButton_computeAverageGroups = self.logic.get('CollapsibleButton_computeAverageGroups')
         self.pathLineEdit_selectionClassificationGroups = self.logic.get('PathLineEdit_selectionClassificationGroups')
         self.pushButton_previewGroups = self.logic.get('pushButton_previewGroups')
@@ -1853,13 +1853,14 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         
         parameters = {}
 
-        vtkfilelist = ""
+        vtkfilelist = []
         for vtkFiles in vtkList:
-            vtkfilelist = vtkfilelist + vtkFiles + ','
+            vtkfilelist.append(vtkFiles)
         parameters["inputList"] = vtkfilelist
 
-        resultdir = slicer.app.temporaryPath
-        parameters["outputSurface"] = str(resultdir) + "/meanGroup" + str(numGroup) + ".vtk"
+        outModel = slicer.vtkMRMLModelNode()
+        slicer.mrmlScene.AddNode(outModel)
+        parameters["outputSurface"] = outModel.GetID()
 
         computeMean = slicer.modules.computemean
         
@@ -1867,6 +1868,11 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
 
         cliNode = slicer.cli.run(computeMean, None, parameters, wait_for_completion=True)
         cliNode.AddObserver('ModifiedEvent', self.printStatus)
+
+        resultdir = slicer.app.temporaryPath
+        slicer.util.saveNode(outModel, str(os.path.join(resultdir,"meanGroup" + str(numGroup) + ".vtk")))
+        slicer.mrmlScene.RemoveNode(outModel) 
+
         return 
         
 

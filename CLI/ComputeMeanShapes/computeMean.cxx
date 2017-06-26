@@ -7,15 +7,6 @@
 #include <iterator>
 
 
-#if _WIN32  
-    #include <../include/dirent.h>
-#else
-    #include <dirent.h>
-#endif
-
-// Declaration of getListFile()
-void getListFile(std::string path, std::vector<std::string> &list, const std::string &suffix);
-
 int main(int argc, char** argv)
 {
     PARSE_ARGS;
@@ -30,10 +21,8 @@ int main(int argc, char** argv)
 
     // Check input dir & Get shapes list
     std::vector<std::string> listShapes;
-    listShapes = inputList;  
-    for (int i = 0; i< inputList.size(); i ++)
-        std::cout<<inputList[i]<<std::endl;
-        
+    listShapes = inputList;
+       
     // Check output file
     if(outputSurface.rfind(".vtk")==std::string::npos || outputSurface.empty())
     {
@@ -42,34 +31,10 @@ int main(int argc, char** argv)
     }
 
     int groupNumber = 0;
-
     Filter->SetInput(listShapes, groupNumber);
     Filter->Update();
     writeVTKFile(outputSurface.c_str(),Filter->GetOutput());
 
     return EXIT_SUCCESS;
 }
-
-/** Function  getListFile(std::string path, std::vector<std::string> &list, const std::string &suffix)
- * Recupere la liste des fichier dans un dossier
- * @param path : directory of group mean shapes
- * @param list : list of group mean shape
- * @param suffix : files extension
- */
-void getListFile(std::string path, std::vector<std::string> &list, const std::string &suffix)
-{
-    DIR *dir = opendir(path.c_str());
-    if (dir != NULL)
-    {
-        while (dirent *entry = readdir(dir))
-        {
-            std::string filename = entry->d_name;
-            if (filename.size() >= suffix.size() && equal(suffix.rbegin(), suffix.rend(), filename.rbegin()))
-            list.push_back(path + "/" + filename);
-        }
-    }
-    closedir(dir);
-    sort(list.begin(), list.begin() + list.size());
-}
-
 
