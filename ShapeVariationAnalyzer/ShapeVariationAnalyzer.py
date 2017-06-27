@@ -2351,13 +2351,14 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         currentPath = os.path.dirname(os.path.abspath(__file__))
         train_file = os.path.join(currentPath,'Resources','Classifier','trainNeuralNetwork.py')
         envWrapper_file = os.path.join(currentPath,'Wrapper','envTensorFlowWrapper.py')
-        
+
         pathSlicerExec = str(os.path.dirname(sys.executable))
 
         pathSlicerPython = os.path.join(pathSlicerExec, "..", "bin", "SlicerPython")
         args = '{"--inputZip": "' + archiveName + '", "--outputZip": "' + archiveName + '"}' 
         command = [pathSlicerPython, envWrapper_file, "-pgm", train_file, "-args", args ]
 
+        print command
         p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out, err =  p.communicate()
         print("\nout : " + str(out) + "\nerr : " + str(err))

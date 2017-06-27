@@ -25,15 +25,12 @@ int main (int argc, char *argv[])
     vtkSmartPointer<vtkPolyData> inputShape = reader->GetOutput();
 
     int num_points = inputShape->GetNumberOfPoints();
-    std::cout<<"distMeshOn: "<<distMeshOn<<std::endl;
     if ( distMeshOn )
     {
-        std::cout<<"Passed! "<<std::endl;
         // Load each mesh used for distances 
         for (int k=0; k<distMesh.size(); k++) 
         {
             vtkSmartPointer<vtkPolyDataReader> readerMean = vtkSmartPointer<vtkPolyDataReader>::New();
-            std::cout<<"Mean: "<<distMesh[k].c_str()<<std::endl;
             readerMean->SetFileName(distMesh[k].c_str());
             readerMean->Update();
             crt_mesh = readerMean->GetOutput();
