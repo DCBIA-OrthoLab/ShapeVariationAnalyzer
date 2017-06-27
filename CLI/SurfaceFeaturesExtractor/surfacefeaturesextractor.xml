@@ -16,7 +16,6 @@
         <label>Input Mesh</label>
         <longflag>inputMesh</longflag>
         <channel>input</channel>
-        <index>0</index>
         <description>Input Mesh</description>
       </geometry>
 
@@ -24,7 +23,6 @@
         <name>outputMesh</name>
         <label>Output Mesh</label>
         <channel>output</channel>
-        <index>1</index>
         <description>Output Mesh</description>
       </geometry>
     </parameters>
