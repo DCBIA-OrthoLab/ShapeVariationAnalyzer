@@ -1402,7 +1402,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         # Change paths in patientList to have shape with features
         self.logic.storageDataToClassify(self.dictFeatData, self.patientList, outputDir)
 
-        pickleToClassifyyy = self.logic.pickleToClassify(self.patientList, os.path.join(slicer.app.temporaryPath,'Network'))
+        pickleToClassify = self.logic.pickleToClassify(self.patientList, os.path.join(slicer.app.temporaryPath,'Network'))
         self.archiveName = shutil.make_archive(base_name = networkDir, format = 'zip', root_dir = tempPath, base_dir = 'Network')
 
         self.pushButton_exportToClassify.setEnabled(True)
@@ -1865,7 +1865,7 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         
         print parameters
 
-        cliNode = slicer.cli.run(computeMean, None, parameters)
+        cliNode = slicer.cli.run(computeMean, None, parameters, wait_for_completion=True)
         cliNode.AddObserver('ModifiedEvent', self.printStatus)
         return 
         
@@ -2081,18 +2081,27 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
 
         parameters = {}
 
-        parameters["inputMesh"] = shape
+        slicer.util.loadModel(shape)
+        modelNode = slicer.util.getNode(os.path.basename(shape).split('.')[0])
+
+        parameters["inputMesh"] = modelNode.GetID()
 
         filename = str(os.path.basename(shape))
-        parameters["outputMesh"] = str(os.path.join(outputDir,filename))
+        outModel = slicer.vtkMRMLModelNode()
+        slicer.mrmlScene.AddNode(outModel)
+        parameters["outputMesh"] = outModel.GetID()
+        # parameters["outputMesh"] = str(os.path.join(outputDir,filename))
 
         parameters["distMeshOn"] = 1
         parameters["distMesh"] = str(meansList)
 
-
         surfacefeaturesextractor = slicer.modules.surfacefeaturesextractor
-        cliNode = slicer.cli.run(surfacefeaturesextractor, None, parameters)
-        cliNode.AddObserver('ModifiedEvent', self.printStatus)
+        # cliNode = slicer.cli.run(surfacefeaturesextractor, None, parameters, wait_for_completion=True)
+        cliNode = slicer.cli.runSync(surfacefeaturesextractor, None, parameters)
+        # cliNode.AddObserver('ModifiedEvent', self.printStatus)
+        slicer.util.saveNode(outModel, str(os.path.join(outputDir,filename)))
+        slicer.mrmlScene.RemoveNode(modelNode) 
+        slicer.mrmlScene.RemoveNode(outModel) 
         return 
 
 
