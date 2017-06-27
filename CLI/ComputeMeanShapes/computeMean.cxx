@@ -2,9 +2,9 @@
 
 #include "computeMeanCLP.h"
 #include "computeMean.hxx"
-#include "fileIO.hxx"
 
 #include <iterator>
+#include <algorithm>
 
 
 int main(int argc, char** argv)
@@ -12,6 +12,7 @@ int main(int argc, char** argv)
     PARSE_ARGS;
 
     vtkSmartPointer<ComputeMean> Filter = vtkSmartPointer<ComputeMean>::New();
+    vtkSmartPointer<vtkPolyDataWriter> writer = vtkSmartPointer<vtkPolyDataWriter>::New();
 
     if(argc < 3)
     {
@@ -21,8 +22,14 @@ int main(int argc, char** argv)
 
     // Check input dir & Get shapes list
     std::vector<std::string> listShapes;
-    listShapes = inputList;
-       
+    for (auto it = inputList.begin(); it != inputList.end(); ++it)
+    {
+        std::cout << *it << std::endl;
+        (*it).erase(std::remove((*it).begin(), (*it).end(), ' '), (*it).end());
+        (*it).erase(std::remove((*it).begin(), (*it).end(), '\''), (*it).end());
+        std::cout << *it << std::endl;
+        listShapes.push_back(*it);
+    }   
     // Check output file
     if(outputSurface.rfind(".vtk")==std::string::npos || outputSurface.empty())
     {
@@ -33,7 +40,10 @@ int main(int argc, char** argv)
     int groupNumber = 0;
     Filter->SetInput(listShapes, groupNumber);
     Filter->Update();
-    writeVTKFile(outputSurface.c_str(),Filter->GetOutput());
+
+    writer->SetFileName(outputSurface.c_str());
+    writer->SetInputData(Filter->GetOutput());
+    writer->Update();
 
     return EXIT_SUCCESS;
 }

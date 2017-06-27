@@ -14,7 +14,6 @@ include(${VTK_USE_FILE})
 
 #-----------------------------------------------------------------------------
 set(MODULE_INCLUDE_DIRECTORIES
-	include
   )
 
 set(MODULE_SRCS
