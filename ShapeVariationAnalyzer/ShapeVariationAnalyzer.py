@@ -2089,22 +2089,23 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
 
         slicer.util.loadModel(shape)
         modelNode = slicer.util.getNode(os.path.basename(shape).split('.')[0])
-
         parameters["inputMesh"] = modelNode.GetID()
 
         filename = str(os.path.basename(shape))
         outModel = slicer.vtkMRMLModelNode()
+        outModel.SetName(filename)
         slicer.mrmlScene.AddNode(outModel)
         parameters["outputMesh"] = outModel.GetID()
-        # parameters["outputMesh"] = str(os.path.join(outputDir,filename))
 
-        parameters["distMeshOn"] = 1
+        parameters["distMeshOn"] = True
         parameters["distMesh"] = str(meansList)
 
+        print str(meansList)
+
         surfacefeaturesextractor = slicer.modules.surfacefeaturesextractor
-        # cliNode = slicer.cli.run(surfacefeaturesextractor, None, parameters, wait_for_completion=True)
-        cliNode = slicer.cli.runSync(surfacefeaturesextractor, None, parameters)
-        # cliNode.AddObserver('ModifiedEvent', self.printStatus)
+        cliNode = slicer.cli.run(surfacefeaturesextractor, None, parameters, wait_for_completion=True)
+        # cliNode = slicer.cli.runSync(surfacefeaturesextractor, None, parameters)
+        cliNode.AddObserver('ModifiedEvent', self.printStatus)
         slicer.util.saveNode(outModel, str(os.path.join(outputDir,filename)))
         slicer.mrmlScene.RemoveNode(modelNode) 
         slicer.mrmlScene.RemoveNode(outModel) 

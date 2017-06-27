@@ -9,8 +9,6 @@
 #include <vtkCurvatures.h>
 #include <vtkPointLocator.h>
 
-#include "fileIO.h"
-
 
 class SurfaceFeaturesExtractor : public vtkPolyDataAlgorithm
 {

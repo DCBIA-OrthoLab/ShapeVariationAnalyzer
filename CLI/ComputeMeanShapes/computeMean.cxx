@@ -24,10 +24,8 @@ int main(int argc, char** argv)
     std::vector<std::string> listShapes;
     for (auto it = inputList.begin(); it != inputList.end(); ++it)
     {
-        std::cout << *it << std::endl;
         (*it).erase(std::remove((*it).begin(), (*it).end(), ' '), (*it).end());
         (*it).erase(std::remove((*it).begin(), (*it).end(), '\''), (*it).end());
-        std::cout << *it << std::endl;
         listShapes.push_back(*it);
     }   
     // Check output file
