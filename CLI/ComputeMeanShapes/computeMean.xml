@@ -9,14 +9,15 @@
     <label>Input parameters</label>
     <description><![CDATA[Input parameters]]></description>
 
-    <geometry fileExtensions=".vtk" multiple="true">
+    <string-vector>
       <name>inputList</name>
       <label>Input shapes</label>
+      <channel>input</channel>
       <longflag>inputList</longflag>
       <flag>i</flag>
       <!-- <flag>i</flag> -->
       <description><![CDATA[List of the input shapes]]></description>
-    </geometry>
+    </string-vector>
 
    <!--  <directory>
       <name>inputDir</name>
@@ -29,6 +30,7 @@
     <geometry fileExtensions=".vtk" multiple="false">
       <name>outputSurface</name>
       <label>Output Surface</label>
+      <channel>output</channel>
       <longflag>outputSurface</longflag>
       <flag>o</flag>
       <!-- <flag>o</flag> -->

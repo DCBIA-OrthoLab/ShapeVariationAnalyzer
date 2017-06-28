@@ -1,6 +1,8 @@
 #include "surfacefeaturesextractor.hxx"
-#include "fileIO.hxx"
 #include "surfacefeaturesextractorCLP.h"
+
+#include <vtkPolyDataReader.h>
+#include <vtkPolyDataWriter.h>
 
 #include <iterator>
 
@@ -9,17 +11,29 @@ int main (int argc, char *argv[])
 {
 	PARSE_ARGS;
     
-    vtkSmartPointer<vtkPolyData> inputShape = readVTKFile(inputMesh.c_str());
-    int num_points = inputShape->GetNumberOfPoints();
+    vtkSmartPointer<vtkPolyDataReader> reader = vtkSmartPointer<vtkPolyDataReader>::New();
+    vtkSmartPointer<vtkPolyDataWriter> writer = vtkSmartPointer<vtkPolyDataWriter>::New();
+    vtkSmartPointer<SurfaceFeaturesExtractor> Filter = vtkSmartPointer<SurfaceFeaturesExtractor>::New();
+    vtkSmartPointer<vtkPolyData> crt_mesh = vtkSmartPointer<vtkPolyData>::New();
 
     std::vector< vtkSmartPointer<vtkPolyData> > distMeshList;
+    std::vector< std::string> landmarkFile;
+
+
+    reader->SetFileName(inputMesh.c_str());
+    reader->Update();
+    vtkSmartPointer<vtkPolyData> inputShape = reader->GetOutput();
+
+    int num_points = inputShape->GetNumberOfPoints();
     if ( distMeshOn )
     {
         // Load each mesh used for distances 
         for (int k=0; k<distMesh.size(); k++) 
         {
-            vtkSmartPointer<vtkPolyData> crt_mesh = vtkSmartPointer<vtkPolyData>::New();
-            crt_mesh = readVTKFile( distMesh[k].c_str() );
+            vtkSmartPointer<vtkPolyDataReader> readerMean = vtkSmartPointer<vtkPolyDataReader>::New();
+            readerMean->SetFileName(distMesh[k].c_str());
+            readerMean->Update();
+            crt_mesh = readerMean->GetOutput();
 
             if (crt_mesh->GetNumberOfPoints() != num_points)
             {
@@ -30,14 +44,17 @@ int main (int argc, char *argv[])
         }
     }
 
-    std::vector< std::string> landmarkFile;
+
     if ( landmarksOn )
         landmarkFile.push_back(landmarks);
 
-    vtkSmartPointer<SurfaceFeaturesExtractor> Filter = vtkSmartPointer<SurfaceFeaturesExtractor>::New();
 	Filter->SetInput(inputShape, distMeshList, landmarkFile);
-	Filter->Update();
-    writeVTKFile(outputMesh.c_str(),Filter->GetOutput());
+    Filter->Update();
+
+    // std::cout << "outputMesh: " << outputMesh << std::endl;
+    writer->SetFileName(outputMesh.c_str());
+    writer->SetInputData(Filter->GetOutput());
+    writer->Update();
 
 	return EXIT_SUCCESS;
 }

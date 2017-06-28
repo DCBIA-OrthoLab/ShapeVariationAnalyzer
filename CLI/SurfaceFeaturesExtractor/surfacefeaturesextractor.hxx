@@ -1,5 +1,7 @@
 #include "surfacefeaturesextractor.h"
 #include <vtkDoubleArray.h>
+#include <sstream>
+
 #if !defined(M_PI)
 #define M_PI 3.14159265358979323846264338327950288   /* pi */
 #endif
@@ -70,7 +72,7 @@ void SurfaceFeaturesExtractor::compute_positions()
     std::string name = "Position";
     int nbPoints = this->intermediateSurface->GetNumberOfPoints();
 
-	vtkSmartPointer<vtkFloatArray> position = vtkFloatArray::New();
+	vtkSmartPointer<vtkFloatArray> position = vtkSmartPointer<vtkFloatArray>::New();
 	position->SetNumberOfComponents(3);
 	position->SetName(name.c_str());
 
@@ -79,8 +81,8 @@ void SurfaceFeaturesExtractor::compute_positions()
 		double* p = new double[3];
 		p = this->intermediateSurface->GetPoint(i);
 
-		position->InsertNextTuple3(p[0],p[1],p[2]);	
-		//delete[] p;	
+		position->InsertNextTuple3(p[0],p[1],p[2]);
+
 	}
 	
 	this->intermediateSurface->GetPointData()->SetActiveVectors(name.c_str());
@@ -105,14 +107,12 @@ void SurfaceFeaturesExtractor::compute_distances()
 		// std::string k_char = static_cast<std::ostringstream*>( &( std::ostringstream() << k) )->str();
 		meanDistLabels.push_back("distanceGroup"+k_char);
 	}
-	for (int k=0; k<this->meanShapesList.size(); k++) 
-	{
-		std::cout<<meanDistLabels[k]<<std::endl;
-	}
+	//for (int k=0; k<this->meanShapesList.size(); k++) 
+	//	std::cout<<meanDistLabels[k]<<std::endl;
 
 	for(int k=0; k<meanShapesList.size(); k++)
 	{
-		vtkSmartPointer<vtkFloatArray> meanDistance = vtkFloatArray::New() ;
+		vtkSmartPointer<vtkFloatArray> meanDistance = vtkSmartPointer<vtkFloatArray>::New() ;
 		meanDistance->SetName(meanDistLabels[k].c_str());
 
 		for (int i=0; i<nbPoints; i++)
@@ -130,8 +130,6 @@ void SurfaceFeaturesExtractor::compute_distances()
 			this->intermediateSurface->GetPointData()->SetActiveScalars(meanDistLabels[k].c_str());
 			this->intermediateSurface->GetPointData()->SetScalars(meanDistance);
 			
-			//delete[] p1;	
-			//delete[] p2;	
 		}
 	}
 }
@@ -184,7 +182,7 @@ void SurfaceFeaturesExtractor::compute_shapeindex()			// S
 
 	int nbPoints = this->intermediateSurface->GetNumberOfPoints();
 
-	vtkSmartPointer<vtkFloatArray> shapeIndexArray = vtkFloatArray::New() ;
+	vtkSmartPointer<vtkFloatArray> shapeIndexArray = vtkSmartPointer<vtkFloatArray>::New() ;
 
 	// vtkDataArray* minCurvArray = this->intermediateSurface->GetPointData()->GetScalars("Minimum_Curvature");
 	// vtkDataArray* maxCurvArray = this->intermediateSurface->GetPointData()->GetScalars("Maximum_Curvature");
@@ -216,7 +214,7 @@ void SurfaceFeaturesExtractor::compute_curvedness()			// C
 
 	int nbPoints = this->intermediateSurface->GetNumberOfPoints();
 
-	vtkSmartPointer<vtkFloatArray> curvednessArray = vtkFloatArray::New() ;
+	vtkSmartPointer<vtkFloatArray> curvednessArray = vtkSmartPointer<vtkFloatArray>::New() ;
 
 	// vtkDataArray* minCurvArray = this->intermediateSurface->GetPointData()->GetScalars("Minimum_Curvature");
 	// vtkDataArray* maxCurvArray = this->intermediateSurface->GetPointData()->GetScalars("Maximum_Curvature");
@@ -245,7 +243,7 @@ void SurfaceFeaturesExtractor::scalar_indexPoint()
 {
 	int nbPoints = this->intermediateSurface->GetNumberOfPoints();
 
-	vtkSmartPointer<vtkFloatArray> indexPointArray = vtkFloatArray::New() ;
+	vtkSmartPointer<vtkFloatArray> indexPointArray = vtkSmartPointer<vtkFloatArray>::New() ;
 
 	indexPointArray->SetName("Index_Points");
 
@@ -260,7 +258,7 @@ void SurfaceFeaturesExtractor::scalar_indexPoint()
 
 void SurfaceFeaturesExtractor::store_landmarks_vtk()
 {
-	std::cout << " Functions store landmarks_vtk " << std::endl;
+	//std::cout << " Functions store landmarks_vtk " << std::endl;
 
 	// Build a locator
 	vtkSmartPointer<vtkPointLocator> pointLocator = vtkPointLocator::New();
@@ -349,7 +347,7 @@ void SurfaceFeaturesExtractor::store_landmarks_vtk()
 			if (diff == 0)
 			{
 				exists = i+1;
-				std::cout << "Landmark ID " << exists << std::endl;
+				//std::cout << "Landmark ID " << exists << std::endl;
 				break;
 			} 
 		}

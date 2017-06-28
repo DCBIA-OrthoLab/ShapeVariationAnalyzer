@@ -14,7 +14,6 @@
       <geometry fileExtensions=".vtk" multiple="false">
         <name>inputMesh</name>
         <label>Input Mesh</label>
-        <longflag>inputMesh</longflag>
         <channel>input</channel>
         <index>0</index>
         <description>Input Mesh</description>
@@ -39,13 +38,13 @@
         <description>Compute the distances to a list of mesh</description> 
       </boolean>
 
-      <geometry fileExtensions=".vtk" multiple="true">
+      <string-vector>
         <name>distMesh</name>
         <label>List of mesh to compute distances</label>
         <longflag>distMesh</longflag>
         <channel>input</channel>
         <description>List of mesh to compute distances</description>
-      </geometry>
+      </string-vector>
 
       <boolean>
         <name>landmarksOn</name>

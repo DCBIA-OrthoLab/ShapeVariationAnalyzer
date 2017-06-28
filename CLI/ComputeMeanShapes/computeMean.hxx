@@ -23,10 +23,17 @@ ComputeMean::~ComputeMean(){}
 */
 void ComputeMean::SetInput(std::vector<std::string> input, int num)
 {
+    vtkSmartPointer<vtkPolyDataReader> reader = vtkSmartPointer<vtkPolyDataReader>::New();
+	std::string fileName;
 	std::vector<std::string>::iterator it = input.begin(), it_end = input.end();
     for (; it != it_end; it++)
-        this->inputSurfaces.push_back(readVTKFile((*it).c_str()));
-
+    {
+    	fileName = *it;
+    	std::cout<<"---Reading VTK input file at "<<fileName.c_str()<<std::endl;
+        reader->SetFileName(fileName.c_str());
+        reader->Update();
+        this->inputSurfaces.push_back(reader->GetOutput());
+    }
     this->number = num;
 }
 
@@ -40,6 +47,7 @@ void ComputeMean::init_output()
 
 void ComputeMean::compute_mean_shape()
 {
+	std::cout<<"---Starting computation"<<std::endl;
 	int nbPoints = this->inputSurfaces[0]->GetNumberOfPoints();
 	for (int i=0; i< nbPoints; i++)
 	{
@@ -56,7 +64,6 @@ void ComputeMean::compute_mean_shape()
 			sum[0] = sum[0] + p[0];
 			sum[1] = sum[1] + p[1];
 			sum[2] = sum[2] + p[2]; 
-			delete[] p;
 		}
 	
 		sum[0] = sum[0] / nbSurf;
@@ -64,8 +71,6 @@ void ComputeMean::compute_mean_shape()
 		sum[2] = sum[2] / nbSurf;
 
 		this->outputSurface->GetPoints()->SetPoint(i, sum);
-
-		delete[] sum;
 
 	}
 
