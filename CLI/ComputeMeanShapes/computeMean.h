@@ -13,8 +13,6 @@
 #include <vtkPointData.h>
 #include <vtkFloatArray.h>
 
-#include "fileIO.h"
-
 
 class ComputeMean : public vtkPolyDataAlgorithm
 {

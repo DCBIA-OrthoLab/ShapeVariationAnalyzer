@@ -135,7 +135,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.tableWidget_result = self.logic.get('tableWidget_result')
         self.pushButton_exportResult = self.logic.get('pushButton_exportResult')
         
-                 # Tab: Compute Average Groups
+        # Tab: Compute Average Groups
         self.CollapsibleButton_computeAverageGroups = self.logic.get('CollapsibleButton_computeAverageGroups')
         self.pathLineEdit_selectionClassificationGroups = self.logic.get('PathLineEdit_selectionClassificationGroups')
         self.pushButton_previewGroups = self.logic.get('pushButton_previewGroups')
@@ -1853,13 +1853,14 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         
         parameters = {}
 
-        vtkfilelist = ""
+        vtkfilelist = []
         for vtkFiles in vtkList:
-            vtkfilelist = vtkfilelist + vtkFiles + ','
+            vtkfilelist.append(vtkFiles)
         parameters["inputList"] = vtkfilelist
 
-        resultdir = slicer.app.temporaryPath
-        parameters["outputSurface"] = str(resultdir) + "/meanGroup" + str(numGroup) + ".vtk"
+        outModel = slicer.vtkMRMLModelNode()
+        slicer.mrmlScene.AddNode(outModel)
+        parameters["outputSurface"] = outModel.GetID()
 
         computeMean = slicer.modules.computemean
         
@@ -1867,6 +1868,11 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
 
         cliNode = slicer.cli.run(computeMean, None, parameters, wait_for_completion=True)
         cliNode.AddObserver('ModifiedEvent', self.printStatus)
+
+        resultdir = slicer.app.temporaryPath
+        slicer.util.saveNode(outModel, str(os.path.join(resultdir,"meanGroup" + str(numGroup) + ".vtk")))
+        slicer.mrmlScene.RemoveNode(outModel) 
+
         return 
         
 
@@ -2083,22 +2089,23 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
 
         slicer.util.loadModel(shape)
         modelNode = slicer.util.getNode(os.path.basename(shape).split('.')[0])
-
         parameters["inputMesh"] = modelNode.GetID()
 
         filename = str(os.path.basename(shape))
         outModel = slicer.vtkMRMLModelNode()
+        outModel.SetName(filename)
         slicer.mrmlScene.AddNode(outModel)
         parameters["outputMesh"] = outModel.GetID()
-        # parameters["outputMesh"] = str(os.path.join(outputDir,filename))
 
-        parameters["distMeshOn"] = 1
+        parameters["distMeshOn"] = True
         parameters["distMesh"] = str(meansList)
 
+        print str(meansList)
+
         surfacefeaturesextractor = slicer.modules.surfacefeaturesextractor
-        # cliNode = slicer.cli.run(surfacefeaturesextractor, None, parameters, wait_for_completion=True)
-        cliNode = slicer.cli.runSync(surfacefeaturesextractor, None, parameters)
-        # cliNode.AddObserver('ModifiedEvent', self.printStatus)
+        cliNode = slicer.cli.run(surfacefeaturesextractor, None, parameters, wait_for_completion=True)
+        # cliNode = slicer.cli.runSync(surfacefeaturesextractor, None, parameters)
+        cliNode.AddObserver('ModifiedEvent', self.printStatus)
         slicer.util.saveNode(outModel, str(os.path.join(outputDir,filename)))
         slicer.mrmlScene.RemoveNode(modelNode) 
         slicer.mrmlScene.RemoveNode(outModel) 
@@ -2344,13 +2351,14 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         currentPath = os.path.dirname(os.path.abspath(__file__))
         train_file = os.path.join(currentPath,'Resources','Classifier','trainNeuralNetwork.py')
         envWrapper_file = os.path.join(currentPath,'Wrapper','envTensorFlowWrapper.py')
-        
+
         pathSlicerExec = str(os.path.dirname(sys.executable))
 
         pathSlicerPython = os.path.join(pathSlicerExec, "..", "bin", "SlicerPython")
         args = '{"--inputZip": "' + archiveName + '", "--outputZip": "' + archiveName + '"}' 
         command = [pathSlicerPython, envWrapper_file, "-pgm", train_file, "-args", args ]
 
+        print command
         p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out, err =  p.communicate()
         print("\nout : " + str(out) + "\nerr : " + str(err))
