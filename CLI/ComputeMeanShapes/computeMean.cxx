@@ -22,7 +22,8 @@ int main(int argc, char** argv)
 
     // Check input dir & Get shapes list
     std::vector<std::string> listShapes;
-    for (auto it = inputList.begin(); it != inputList.end(); ++it)
+    std::vector<std::string>::iterator it = inputList.begin(), it_end = inputList.end();
+    for (; it != it_end; it++)
     {
         (*it).erase(std::remove((*it).begin(), (*it).end(), ' '), (*it).end());
         (*it).erase(std::remove((*it).begin(), (*it).end(), '\''), (*it).end());

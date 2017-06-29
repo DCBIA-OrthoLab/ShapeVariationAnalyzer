@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <executable>
-  <category>Quantification</category>
+  <category>Testing</category>
   <title>Train Neural Network</title>
   <description><![CDATA[Train a neural network.]]></description>
   <version>1.0.$Revision$</version>

@@ -1183,7 +1183,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         # print(self.dictShapeModels)
         for group, listvtk in self.dictShapeModels.items():
             for shape in listvtk:
-                self.logic.extractFeatures(shape, meansList, outputDir)
+                self.logic.extractFeatures(shape, meansList, outputDir, train = True)
 
                 # # Storage of the means for each group
                 self.logic.storageFeaturesData(self.dictFeatData, self.dictShapeModels)
@@ -1397,7 +1397,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
 
         for shape in self.patientList:
             # Extract features de la/les shapes a classifier
-            self.logic.extractFeatures(shape, meansList, outputDir)
+            self.logic.extractFeatures(shape, meansList, outputDir, train = False)
 
         # Change paths in patientList to have shape with features
         self.logic.storageDataToClassify(self.dictFeatData, self.patientList, outputDir)
@@ -2039,7 +2039,7 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         return num_points
 
 
-    def extractFeatures(self, shape, meansList, outputDir):
+    def extractFeatures(self, shape, meansList, outputDir, train):
         """ Function to extract the features from the provided shape
         Call the CLI surfacefeaturesextractor
         """
@@ -2107,8 +2107,9 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         # cliNode = slicer.cli.runSync(surfacefeaturesextractor, None, parameters)
         cliNode.AddObserver('ModifiedEvent', self.printStatus)
         slicer.util.saveNode(outModel, str(os.path.join(outputDir,filename)))
-        slicer.mrmlScene.RemoveNode(modelNode) 
-        slicer.mrmlScene.RemoveNode(outModel) 
+        if train == True:
+            slicer.mrmlScene.RemoveNode(modelNode)
+            slicer.mrmlScene.RemoveNode(outModel)
         return 
 
 
