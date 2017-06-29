@@ -5,7 +5,7 @@ project(ShapeVariationAnalyzer)
 
 set(ShapeVariationAnalyzer_VERSION_MAJOR 1)
 set(ShapeVariationAnalyzer_VERSION_MINOR 0)
-set(ShapeVariationAnalyzer_VERSION_PATCH 2)
+set(ShapeVariationAnalyzer_VERSION_PATCH 3)
 
 
 #-----------------------------------------------------------------------------
