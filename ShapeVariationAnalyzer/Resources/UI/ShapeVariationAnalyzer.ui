@@ -399,7 +399,7 @@
               <item>
                <widget class="QLabel" name="label_healthyGroup_features">
                 <property name="text">
-                 <string>Healthy group</string>
+                 <string>Control group</string>
                 </property>
                </widget>
               </item>

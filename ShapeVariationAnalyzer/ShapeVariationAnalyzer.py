@@ -361,6 +361,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.pathLineEdit_CSVFileDataset.setCurrentPath(" ")
         self.pathLineEdit_CSVFileMeansShape.setCurrentPath(" ")
         self.pathLineEdit_networkPath.setCurrentPath(" ")
+        self.pathLineEdit_meanGroup.setCurrentPath(" ")
 
         #          Tab: Result / Analysis
         self.collapsibleButton_Result = self.logic.get('CollapsibleButton_Result')
@@ -1837,8 +1838,8 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         print("Got a %s from a %s" % (event, caller.GetClassName()))
         if caller.IsA('vtkMRMLCommandLineModuleNode'):
             print("Status is %s" % caller.GetStatusString())
-            print("output:   \n %s" % caller.GetOutputText())
-            print("error:   \n %s" % caller.GetErrorText())
+            # print("output:   \n %s" % caller.GetOutputText())
+            # print("error:   \n %s" % caller.GetErrorText())
         return
 
     def computeMean(self, numGroup, vtkList):
@@ -1864,7 +1865,7 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
 
         computeMean = slicer.modules.computemean
         
-        print parameters
+        # print parameters
 
         cliNode = slicer.cli.run(computeMean, None, parameters, wait_for_completion=True)
         cliNode.AddObserver('ModifiedEvent', self.printStatus)
@@ -2100,7 +2101,7 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         parameters["distMeshOn"] = True
         parameters["distMesh"] = str(meansList)
 
-        print str(meansList)
+        # print str(meansList)
 
         surfacefeaturesextractor = slicer.modules.surfacefeaturesextractor
         cliNode = slicer.cli.run(surfacefeaturesextractor, None, parameters, wait_for_completion=True)
