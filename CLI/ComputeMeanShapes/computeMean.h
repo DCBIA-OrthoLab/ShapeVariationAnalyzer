@@ -51,6 +51,7 @@ private:
     vtkSmartPointer<vtkPolyData> intermediateSurface;
     
     int number;
+    int nbSurf;
 
     /** Function init_output()
      * Initialize outputSurface
