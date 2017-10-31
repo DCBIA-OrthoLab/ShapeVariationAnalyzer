@@ -2115,7 +2115,7 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
 
 
     def storageFeaturesData(self, dictFeatData, dictShapeModels):
-        """ Funtion to complete a dict listing all 
+        """ Function to complete a dict listing all
         the shapes with extracted features
         """
         for key, value in dictShapeModels.items():
@@ -2305,7 +2305,7 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
 
 
     def trainNetworkClassification(self, archiveName, num_steps, num_layers):
-        """ Funciton to train the Neural Network 
+        """ Function to train the Neural Network
         within the virtualenv containing tensorflow
         First creation of a zipfile with updated info
         Return the estimated accuracy of the network
