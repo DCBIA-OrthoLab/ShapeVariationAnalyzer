@@ -756,8 +756,8 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
             # Launch the CLI ShapePopulationViewer
             parameters = {}
             parameters["CSVFile"] = filePathCSV
-            launcherSPV = slicer.modules.launcher
-            slicer.cli.run(launcherSPV, None, parameters, wait_for_completion=True)
+            module = slicer.modules.shapepopulationviewer
+            slicer.cli.run(module, None, parameters, wait_for_completion=True)
 
             # Remove the vtk files previously created in the temporary directory of Slicer
             for value in self.dictVTKFiles.values():
@@ -2115,7 +2115,7 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
 
 
     def storageFeaturesData(self, dictFeatData, dictShapeModels):
-        """ Funtion to complete a dict listing all 
+        """ Function to complete a dict listing all
         the shapes with extracted features
         """
         for key, value in dictShapeModels.items():
@@ -2305,7 +2305,7 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
 
 
     def trainNetworkClassification(self, archiveName, num_steps, num_layers):
-        """ Funciton to train the Neural Network 
+        """ Function to train the Neural Network
         within the virtualenv containing tensorflow
         First creation of a zipfile with updated info
         Return the estimated accuracy of the network
@@ -2354,9 +2354,12 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         train_file = os.path.join(currentPath,'Resources','Classifier','trainNeuralNetwork.py')
         envWrapper_file = os.path.join(currentPath,'Wrapper','envTensorFlowWrapper.py')
 
-        pathSlicerExec = str(os.path.dirname(sys.executable))
+        if slicer.app.isInstalled:
+            pathSlicerExec = str(os.path.dirname(sys.executable))
+            pathSlicerPython = os.path.join(pathSlicerExec, "..", "bin", "SlicerPython")
+        else:
+            pathSlicerPython = os.path.join(os.environ["SLICER_HOME"], "..", "python-install", "bin", "SlicerPython")
 
-        pathSlicerPython = os.path.join(pathSlicerExec, "..", "bin", "SlicerPython")
         args = '{"--inputZip": "' + archiveName + '", "--outputZip": "' + archiveName + '"}' 
         command = [pathSlicerPython, envWrapper_file, "-pgm", train_file, "-args", args ]
 
