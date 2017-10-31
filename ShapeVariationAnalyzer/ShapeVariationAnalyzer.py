@@ -2354,9 +2354,12 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         train_file = os.path.join(currentPath,'Resources','Classifier','trainNeuralNetwork.py')
         envWrapper_file = os.path.join(currentPath,'Wrapper','envTensorFlowWrapper.py')
 
-        pathSlicerExec = str(os.path.dirname(sys.executable))
+        if slicer.app.isInstalled:
+            pathSlicerExec = str(os.path.dirname(sys.executable))
+            pathSlicerPython = os.path.join(pathSlicerExec, "..", "bin", "SlicerPython")
+        else:
+            pathSlicerPython = os.path.join(os.environ["SLICER_HOME"], "..", "python-install", "bin", "SlicerPython")
 
-        pathSlicerPython = os.path.join(pathSlicerExec, "..", "bin", "SlicerPython")
         args = '{"--inputZip": "' + archiveName + '", "--outputZip": "' + archiveName + '"}' 
         command = [pathSlicerPython, envWrapper_file, "-pgm", train_file, "-args", args ]
 
