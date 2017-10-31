@@ -756,8 +756,8 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
             # Launch the CLI ShapePopulationViewer
             parameters = {}
             parameters["CSVFile"] = filePathCSV
-            launcherSPV = slicer.modules.launcher
-            slicer.cli.run(launcherSPV, None, parameters, wait_for_completion=True)
+            module = slicer.modules.shapepopulationviewer
+            slicer.cli.run(module, None, parameters, wait_for_completion=True)
 
             # Remove the vtk files previously created in the temporary directory of Slicer
             for value in self.dictVTKFiles.values():
