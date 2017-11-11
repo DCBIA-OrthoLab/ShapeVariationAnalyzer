@@ -126,6 +126,7 @@ if __name__ == '__main__':
     print(X_pca.shape)
 
     X_pca_ = np.mean(X_pca, axis=0, keepdims=True)
+    X_pca_var = np.std(X_pca, axis=0, keepdims=True)
     X_pca_var = np.var(X_pca, axis=0, keepdims=True)
 
     pca_model = {}
