@@ -49,15 +49,12 @@ def generate_data(pca_model):
 	print('Mean',X_pca_)
 
 	#between -1 and 1
-	alpha=0.5*(np.random.random_sample(np.size(X_pca_)))-1
-	print(alpha)
+	alpha = 2.0*(np.random.random_sample(np.size(X_pca_))) - 1.0
+	print('alpha', alpha)
 
-	data_compressed = 2 * X_pca_var * alpha + X_pca_
+	data_compressed = 1.5*X_pca_var * alpha + X_pca_
 	print('data compressed',data_compressed)
-	print('shape data compressed',np.shape(data_compressed))
 	data_generated = pca.inverse_transform(data_compressed) + X_
-
-	print('data generated',data_generated)
 
 	return data_generated
 
@@ -84,7 +81,7 @@ if __name__ == '__main__':
 
 		for point in pointdata:
 			shapedatapoints.SetPoint(ipoint, point[0], point[1], point[2])
-	    	ipoint += 1
+			ipoint += 1
 
 		print('Writing files...')
 		writer = vtk.vtkPolyDataWriter()
@@ -93,7 +90,7 @@ if __name__ == '__main__':
 		writer.SetInputData(shapedata)
 		writer.SetFileTypeToASCII()
 		writer.Update()
-    	print(filename)
+		print(filename)
     
 
 
