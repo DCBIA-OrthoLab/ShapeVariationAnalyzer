@@ -31,7 +31,7 @@ parser.add_argument('--model', help='Model file computed with regularization_tra
 parser.add_argument('--sampleMesh', help='Evaluate an image sample in vtk format')
 parser.add_argument('--out', help='Write output of evaluation', default="", type=str)
 parser.add_argument('--pickle', help='Pickle file, check the script readImages to generate this file.')
-parser.add_argument('--batch', help='Batch size for evaluation', default=1)
+parser.add_argument('--batch', help='Batch size for evaluation', default=64)
 
 args = parser.parse_args()
 
@@ -48,7 +48,6 @@ valid_labels = data["valid_labels"]
 test_dataset = data["test_dataset"]
 test_labels = data["test_labels"]
 f.close()
-
 
 # Reformat into a TensorFlow-friendly shape:
 # - convolutions need the image data formatted as a cube (width by height by #channels)
@@ -151,7 +150,7 @@ with graph.as_default():
   # test_prediction = model(tf_test_dataset)
 
   with tf.Session() as sess:
-    sess.run(tf.initialize_all_variables())
+    sess.run(tf.global_variables_initializer())
     saver = tf.train.Saver()
     saver.restore(sess, model)
 
@@ -161,6 +160,17 @@ with graph.as_default():
       offset = (step * batch_size) % (valid_dataset.shape[0] - batch_size)
       batch_data = valid_dataset[offset:(offset + batch_size), :]
       batch_labels = valid_labels[offset:(offset + batch_size), :]
+
+      accuracy = sess.run([accuracy_eval], feed_dict={x: batch_data, y_: batch_labels, keep_prob: 1})
+      
+      print('OUTPUT: Step %d: accuracy = %.3f' % (step, accuracy[0]))
+
+    print('Evaluate test dataset') 
+    for step in range(int(len(test_dataset))):
+
+      offset = (step * batch_size) % (test_dataset.shape[0] - batch_size)
+      batch_data = test_dataset[offset:(offset + batch_size), :]
+      batch_labels = test_labels[offset:(offset + batch_size), :]
 
       accuracy = sess.run([accuracy_eval], feed_dict={x: batch_data, y_: batch_labels, keep_prob: 1})
       

@@ -33,7 +33,7 @@ parser.add_argument('--learning_rate', help='Learning rate, default=1e-5', type=
 parser.add_argument('--decay_rate', help='decay rate, default=0.96', type=float, default=0.96)
 parser.add_argument('--decay_steps', help='decay steps, default=10000', type=int, default=10000)
 parser.add_argument('--batch', help='Batch size for evaluation, default=64', type=int, default=64)
-parser.add_argument('--iterations', help='Number of iterations, default=1000', type=int, default=1000)
+parser.add_argument('--iterations', help='Number of iterations, default=1000', type=int, default=10000)
 parser.add_argument('--reg_constant', help='Regularization constant, default=0.0', type=float, default=0.0)
 
 args = parser.parse_args()
@@ -183,11 +183,11 @@ with graph.as_default():
       batch_data = train_dataset[offset:(offset + batch_size), :]
       batch_labels = train_labels[offset:(offset + batch_size), :]
 
-      _, loss_value, summary = sess.run([train_step, loss, summary_op], feed_dict={x: batch_data, y_: batch_labels, keep_prob: 0.5})
+      _, loss_value, summary, accuracy = sess.run([train_step, loss, summary_op, accuracy_eval], feed_dict={x: batch_data, y_: batch_labels, keep_prob: 0.5})
 
       if step % 100 == 0:
         print('OUTPUT: Step %d: loss = %.3f' % (step, loss_value))
-        print('Accuracy:' % (accuracy_eval))
+        print('Accuracy = %.3f ' % (accuracy))
         # output some data to the log files for tensorboard
         summary_writer.add_summary(summary, step)
         summary_writer.flush()
