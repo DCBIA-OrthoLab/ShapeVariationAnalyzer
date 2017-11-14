@@ -37,6 +37,7 @@ parser.add_argument('--model', type=str, help='pickle file with the pca decompos
 parser.add_argument('--mean', type=str, help='mean shape', required=True)
 parser.add_argument('--shape', help='shape to fit the model', required=True)
 parser.add_argument('--output', type=str, help='output model fitted', default='output.vtk')
+parser.add_argument('--init', type=int, help='Use iterative closest point initialization', default=1)
 
 pca = 0
 pointlocator = 0
@@ -86,42 +87,47 @@ if __name__ == '__main__':
         pca_model = pickle.load( inputmodel )
 
 
-    icp = vtk.vtkIterativeClosestPointTransform()
-    icp.SetSource(meanshape)
-    icp.SetTarget(shape)
-    icp.SetCheckMeanDistance(1)
-    icp.SetMaximumMeanDistance(0.001)
-    icp.SetMaximumNumberOfIterations(10000)
-    icp.SetMaximumNumberOfLandmarks(500)
-    icp.GetLandmarkTransform().SetModeToAffine()
-    icp.SetMeanDistanceModeToRMS()
-    icp.SetStartByMatchingCentroids(True)
-
-    transformpolydata = vtk.vtkTransformPolyDataFilter()
-    transformpolydata.SetInputData(meanshape)
-    transformpolydata.SetTransform(icp)
-    transformpolydata.Update()
-    initialshape = transformpolydata.GetOutput()
-
-    writer = vtk.vtkPolyDataWriter()
-    writer.SetFileName(args.output)
-    writer.SetInputData(initialshape)
-    writer.SetFileTypeToASCII()
-    writer.Update()
-
-
-    initialshapedatapoints = initialshape.GetPoints()
-    initpoints = []
-    for i in range(initialshapedatapoints.GetNumberOfPoints()):
-        p = initialshapedatapoints.GetPoint(i)
-        initpoints.append(p)
-
-    initpoints = np.array(initpoints)
-    initpoints = initpoints.reshape(1 ,-1)
-
     pca = pca_model["pca"]
     X_ = pca_model["X_"]
-    initcoeff = pca.transform(initpoints - X_)
+
+    if args.init == 1:
+        print("Initializing with Iterative ClosestPoint Transform", args.init)
+        icp = vtk.vtkIterativeClosestPointTransform()
+        icp.SetSource(meanshape)
+        icp.SetTarget(shape)
+        icp.SetCheckMeanDistance(1)
+        icp.SetMaximumMeanDistance(0.001)
+        icp.SetMaximumNumberOfIterations(10000)
+        icp.SetMaximumNumberOfLandmarks(500)
+        icp.GetLandmarkTransform().SetModeToAffine()
+        icp.SetMeanDistanceModeToRMS()
+        icp.SetStartByMatchingCentroids(True)
+
+        transformpolydata = vtk.vtkTransformPolyDataFilter()
+        transformpolydata.SetInputData(meanshape)
+        transformpolydata.SetTransform(icp)
+        transformpolydata.Update()
+        initialshape = transformpolydata.GetOutput()
+
+        writer = vtk.vtkPolyDataWriter()
+        writer.SetFileName(args.output)
+        writer.SetInputData(initialshape)
+        writer.SetFileTypeToASCII()
+        writer.Update()
+
+
+        initialshapedatapoints = initialshape.GetPoints()
+        initpoints = []
+        for i in range(initialshapedatapoints.GetNumberOfPoints()):
+            p = initialshapedatapoints.GetPoint(i)
+            initpoints.append(p)
+
+        initpoints = np.array(initpoints)
+        initpoints = initpoints.reshape(1 ,-1)
+        
+        initcoeff = pca.transform(initpoints - X_)
+    else:
+        initcoeff = pca_model["X_pca_"]
 
     shapepoints = shape.GetPoints()
     pointlocator = vtk.vtkPointLocator()

@@ -25,6 +25,8 @@ import os
 import argparse
 import timeit
 import pickle
+import matplotlib.pyplot as plt
+
 
 
 # #############################################################################
@@ -34,6 +36,7 @@ parser = argparse.ArgumentParser(description='Multivariate Functional Shape Data
 parser.add_argument('--shapeDir', type=str, help='Directory with vtk files .vtk', required=True)
 parser.add_argument('--outputMean', help='output directory', default='mean.vtk')
 parser.add_argument('--outputModel', help='output filename for model', default='model.pickle')
+parser.add_argument('--plot', type=int, help='plot PCA explained variance', default=0)
 
 def readData(shapedir):
     """
@@ -119,6 +122,32 @@ if __name__ == '__main__':
             break
     
     print("num_components=",num_components)
+
+    if args.plot != 0:
+        plt.figure(1, figsize=(4, 3))
+        plt.clf()
+        plt.axes([.2, .2, .7, .7])
+        plt.plot(pca.explained_variance_, linewidth=2)
+        plt.axis('tight')
+        plt.xlabel('n_components')
+        plt.ylabel('explained_variance_')
+
+        # # Prediction
+        # n_components = [20, 40, 64]
+        # Cs = np.logspace(-4, 4, 3)
+
+        # # Parameters of pipelines can be set using ‘__’ separated parameter names:
+        # estimator = GridSearchCV(pipe,
+        #                          dict(pca__n_components=n_components,
+        #                               logistic__C=Cs))
+        # estimator.fit(X_digits, y_digits)
+
+        plt.axvline(num_components,
+                    linestyle=':', label='n_components=' + str(num_components))
+        plt.legend(prop=dict(size=12))
+        plt.show()
+
+
     pca = PCA(n_components=num_components)
     X_pca = pca.fit_transform(X - X_)
 
@@ -127,7 +156,6 @@ if __name__ == '__main__':
 
     X_pca_ = np.mean(X_pca, axis=0, keepdims=True)
     X_pca_var = np.std(X_pca, axis=0, keepdims=True)
-    X_pca_var = np.var(X_pca, axis=0, keepdims=True)
 
     pca_model = {}
     pca_model["pca"] = pca
