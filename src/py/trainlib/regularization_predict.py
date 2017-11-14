@@ -32,13 +32,13 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--model', help='Model file computed with regularization_train.py', required=True)
 parser.add_argument('--sampleMesh', help='Evaluate an image sample in vtk format')
 parser.add_argument('--sampleDir', help='Evaluate a directory with vtk files')
-parser.add_argument('--out', help='Write output of evaluation', default="", type=str)
+parser.add_argument('--out', help='Write output of evaluation', default=None, type=str)
 
 args = parser.parse_args()
 
 sampleMesh = args.sampleMesh
 sampleDir = args.sampleDir
-outvariablesfilename = args.out
+outfilename = args.out
 model = args.model
 num_labels = 8
 num_features = 3 + num_labels + 4
@@ -243,9 +243,16 @@ with graph.as_default():
     saver = tf.train.Saver()
     saver.restore(sess, model)
 
-    pr = sess.run([predict], feed_dict={x: valid_dataset, keep_prob: 1})
+    pred = sess.run([predict], feed_dict={x: valid_dataset, keep_prob: 1})
     
-    print(pr[0])        
+    if outfilename != None:
+      with open(outfilename, "w") as outfile:
+        for pr in pred[0]:
+          outfile.write(str(pr))
+          outfile.write("\n")
+    else:
+      for pr in pred[0]:
+        print(pr)        
 
     #test_accuracy = evaluate_accuracy(test_prediction.eval(feed_dict={keep_prob: 1.0}), test_labels)
     #print("test accuracy %g"%test_accuracy)
