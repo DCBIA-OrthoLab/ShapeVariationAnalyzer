@@ -48,7 +48,6 @@ void SurfaceFeaturesExtractor::init_output()
  */
 void SurfaceFeaturesExtractor::compute_normals()
 {
-	// puts(" :: Function compute_normals");
 	vtkSmartPointer<vtkPolyDataNormals> NormalFilter = vtkSmartPointer<vtkPolyDataNormals>::New();
 	NormalFilter->SetInputData(this->intermediateSurface);
 
@@ -61,7 +60,6 @@ void SurfaceFeaturesExtractor::compute_normals()
 
 	NormalFilter->Update();
 	this->intermediateSurface = NormalFilter->GetOutput();
-
 }
 
 /** 
@@ -202,10 +200,10 @@ void SurfaceFeaturesExtractor::compute_shapeindex()			// S
         	value = 0;
 
 		shapeIndexArray->InsertNextTuple1(value);
-
-		this->intermediateSurface->GetPointData()->SetActiveScalars("Shape_Index");
-		this->intermediateSurface->GetPointData()->SetScalars(shapeIndexArray);
 	}
+
+	this->intermediateSurface->GetPointData()->SetActiveScalars("Shape_Index");
+	this->intermediateSurface->GetPointData()->SetScalars(shapeIndexArray);
 }
 
 void SurfaceFeaturesExtractor::compute_curvedness()			// C
