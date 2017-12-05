@@ -28,7 +28,7 @@ print("Tensorflow version:", tf.__version__)
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--model', help='Model file computed with regularization_train.py', required=True)
-parser.add_argument('--sampleMesh', help='Evaluate an image sample in vtk format')
+#parser.add_argument('--sampleMesh', help='Evaluate an image sample in vtk format')
 parser.add_argument('--out', help='Write output of evaluation', default="", type=str)
 parser.add_argument('--pickle', help='Pickle file, check the script readImages to generate this file.')
 parser.add_argument('--batch', help='Batch size for evaluation', default=64)
@@ -43,8 +43,8 @@ num_labels = 8
 
 f = open(pickle_file, 'rb')
 data = pickle.load(f)
-valid_dataset = data["valid_dataset"]
-valid_labels = data["valid_labels"]
+#valid_dataset = data["valid_dataset"]
+#valid_labels = data["valid_labels"]
 test_dataset = data["test_dataset"]
 test_labels = data["test_labels"]
 f.close()

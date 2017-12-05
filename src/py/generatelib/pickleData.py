@@ -1,7 +1,7 @@
 import numpy as np
 import os
 from six.moves import cPickle as pickle
-import neuralNetwork as nn
+#import neuralNetwork as nn
 import inputData
 import argparse
 
@@ -19,14 +19,18 @@ train_size = 7000
 valid_size = 1000
 test_size = 72
 
+
 inputdata = inputData.inputData()
 train_folders = inputdata.get_folder_classes_list(valid_train)       # Folder class liste
 test_folders = inputdata.get_folder_classes_list(tests)
 
-print(train_folders, test_folders)
 
-train_datasets = inputdata.maybe_pickle(train_folders, 9)
+print('folders',train_folders, test_folders)
+
+train_datasets = inputdata.maybe_pickle(train_folders, 7)
 test_datasets = inputdata.maybe_pickle(test_folders, 5)
+
+print('pickled',train_datasets,test_datasets)
 
 valid_dataset, valid_labels, train_dataset, train_labels = inputdata.merge_datasets(train_datasets, train_size, valid_size)
 _, _, test_dataset, test_labels = inputdata.merge_datasets(test_datasets, test_size)
@@ -40,6 +44,8 @@ train_dataset, train_labels = inputdata.randomize(train_dataset, train_labels)
 test_dataset, test_labels = inputdata.randomize(test_dataset, test_labels)
 valid_dataset, valid_labels = inputdata.randomize(valid_dataset, valid_labels)
 
+print(test_labels)
+print('test_dataset',test_dataset)
 
 # ----------------------------------------------------------------------------- #
 # Save the data for later reuse

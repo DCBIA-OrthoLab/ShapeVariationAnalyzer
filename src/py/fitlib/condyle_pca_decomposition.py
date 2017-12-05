@@ -37,6 +37,8 @@ parser.add_argument('--shapeDir', type=str, help='Directory with vtk files .vtk'
 parser.add_argument('--outputMean', help='output directory', default='mean.vtk')
 parser.add_argument('--outputModel', help='output filename for model', default='model.pickle')
 parser.add_argument('--plot', type=int, help='plot PCA explained variance', default=0)
+parser.add_argument('--min_explained', type=float, help='min described by pca components', default=0.98)
+
 
 def readData(shapedir):
     """
@@ -111,14 +113,14 @@ if __name__ == '__main__':
     pca = PCA()
     pca.fit(X - X_)
 
-    min_explained = 0.98
+    #min_explained = 0.98
     sum_explained = 0.0
     num_components = 0
     
     for evr in pca.explained_variance_ratio_:
         sum_explained += evr
         num_components += 1
-        if sum_explained >= min_explained:
+        if sum_explained >= args.min_explained:
             break
     
     print("num_components=",num_components)

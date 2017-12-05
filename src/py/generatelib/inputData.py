@@ -45,7 +45,6 @@ class inputData():
 
             reader_poly.Update()
             geometry = reader_poly.GetOutput()
-
             if not geometry.GetNumberOfPoints() == self.NUM_POINTS:
                 raise Exception('Unexpected number of points in the shape: ' + str(geometry.GetNumberOfPoints()) + ' vs. ' + str(self.NUM_POINTS))
 
@@ -224,6 +223,7 @@ class inputData():
         train_dataset, train_labels = self.make_arrays(train_size, self.NUM_POINTS, self.NUM_FEATURES)
         vsize_per_class = valid_size // num_classes
         tsize_per_class = train_size // num_classes
+
 
         start_v, start_t = 0, 0
         end_v, end_t = vsize_per_class, tsize_per_class
