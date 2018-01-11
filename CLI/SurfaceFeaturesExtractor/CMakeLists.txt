@@ -1,6 +1,6 @@
 #-----------------------------------------------------------------------------
 set(MODULE_NAME surfacefeaturesextractor)
-
+cmake_minimum_required(VERSION 3.9)
 #-----------------------------------------------------------------------------
 
 # SlicerExecutionModel
