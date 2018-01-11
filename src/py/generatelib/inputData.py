@@ -55,8 +55,11 @@ class inputData():
             # *****
             # ***** Get normals (3 useful components) - already normalized *****
             normalArray = geometry.GetPointData().GetNormals()
-            nbCompNormal = normalArray.GetElementComponentSize() - 1  # -1 car 4eme comp = 1ere du pt suivant
+            coordArray = geometry.GetPoints().GetData()
 
+            #trianArray = geometry.GetCell(1).GetPointId(1)
+
+            nbCompNormal = normalArray.GetElementComponentSize() - 1  # -1 car 4eme comp = 1ere du pt suivant
             # ***** Get distances to each mean group (nbGlicroups components) and normalization *****
             listGroupMean = list()
             for i in range(0, self.NUM_CLASSES):
@@ -96,13 +99,21 @@ class inputData():
             gaussCurveMin, gaussCurveMax = gaussCurveRange[0], gaussCurveRange[1]
             gaussCurveDepth = gaussCurveMax - gaussCurveMin
 
+
             # For each point of the current shape
             currentData = np.ndarray(shape=(self.NUM_POINTS, self.NUM_FEATURES), dtype=np.float32)
+            coordData = np.ndarray(shape=(self.NUM_POINTS,3),dtype=np.float32)
+            triangData = np.ndarray(shape=(self.NUM_POINTS,3),dtype=np.float32)
+
             for i in range(0, self.NUM_POINTS):
 
                 # Stock normals in currentData
                 for numComponent in range(0, nbCompNormal):
                     currentData[i, numComponent] = normalArray.GetComponent(i, numComponent)
+                    coordData[i, numComponent] = coordArray.GetComponent(i,numComponent)
+                    #triangData[i,numComponent] = polydata.GetComponent(i,numComponent)
+
+             
 
                 for numComponent in range(0, self.NUM_CLASSES):
                     currentData[i, numComponent + nbCompNormal] = listGroupMean[numComponent].GetTuple1(i)
@@ -119,20 +130,77 @@ class inputData():
                 value = 2 * (gaussCurvArray.GetTuple1(i) - gaussCurveMin) / gaussCurveDepth - 1
                 currentData[i, self.NUM_CLASSES + nbCompNormal + 3] = value
 
-
+##################################################################################################
+###                     HEAT KERNEL SIGNATURE
+##################################################################################################
+    
+		#print('triangles',triangData)
+		
+    
         except IOError as e:
             print('Could not read:', shape, ':', e, '- it\'s ok, skipping.')
 
         # print('Full dataset tensor:', dataset.shape)
         # print('Mean:', np.mean(dataset))
         # print('Standard deviation:', np.std(dataset))
-        return currentData
+    
+        #print('new_feature_map',np.shape(new_feature_map))
+        print('current data',np.shape(currentData))
+        print('coord data',np.shape(coordData))
+
+
+        return currentData,coordData
 
 
     #
     # Function load_features_classe(folder, min_num_shapes)
     #   Call load_features for an entire folder/classe. Check if there's enough shapes in a classe.
     #
+
+    def compute_laplace_beltrami(verts_coord,tris):
+        ### computes a sparse matrix representing the discretized laplace-beltrami operator
+        ### vertices: (num_points,3) array float
+        ### tris: (num_triangles,3) array int 
+        n = len(verts_coord)
+        W_ij = np.empty(0)
+        I = np.empty(0, np.int32)
+        J = np.empty(0, np.int32)
+        for i1, i2, i3 in [(0, 1, 2), (1, 2, 0), (2, 0, 1)]: # for edge i2 --> i3 facing vertex i1
+            vi1 = tris[:,i1] # vertex index of i1
+            vi2 = tris[:,i2]
+            vi3 = tris[:,i3]
+            # vertex vi1 faces the edge between vi2--vi3
+            # compute the angle at v1
+            # add cotangent angle at v1 to opposite edge v2--v3
+            # the cotangent weights are symmetric
+            u = verts_coord[vi2] - verts_coord[vi1]
+            v = verts_coord[vi3] - verts_coord[vi1]
+            cotan = (u * v).sum(axis=1) / veclen(np.cross(u, v))
+            W_ij = np.append(W_ij, 0.5 * cotan)
+            I = np.append(I, vi2)
+            J = np.append(J, vi3)
+            W_ij = np.append(W_ij, 0.5 * cotan)
+            I = np.append(I, vi3)
+            J = np.append(J, vi2)
+        L = sparse.csr_matrix((W_ij, (I, J)), shape=(n, n))
+        # compute diagonal entries
+        L = L - sparse.spdiags(L * np.ones(n), 0, n, n)
+        L = L.tocsr()
+        # area matrix
+        e1 = verts_coord[tris[:,1]] - verts_coord[tris[:,0]]
+        e2 = verts_coord[tris[:,2]] - verts_coord[tris[:,0]]
+        n = np.cross(e1, e2)
+        triangle_area = .5 * veclen(n)
+        # compute per-vertex area
+        vertex_area = np.zeros(len(verts_coord))
+        ta3 = triangle_area / 3
+        for i in xrange(tris.shape[1]):
+            bc = np.bincount(tris[:,i].astype(int), ta3)
+            vertex_area[:len(bc)] += bc
+        VA = sparse.spdiags(vertex_area, 0, len(verts_coord), len(verts_coord))
+        return L, VA
+
+
     def load_features_classe(self, vtklist, min_num_shapes):
         # vtk_filenames = os.listdir(folder)  # Juste le nom du vtk file
 
@@ -142,21 +210,28 @@ class inputData():
 
         vtk_filenames = vtklist
         dataset = np.ndarray(shape=(len(vtk_filenames), self.NUM_POINTS, self.NUM_FEATURES), dtype=np.float32)
-
+        coordData_map = np.ndarray(shape=(len(vtk_filenames),self.NUM_POINTS,3),dtype=np.float32)
         num_shapes = 0
         for shape in vtk_filenames:
 
             # Prepare data
-            currentData = self.load_features(shape)
+            currentData,coordData = self.load_features(shape)
+            #L,VA = self.compute_laplace_beltrami(coordData,triangData)
 
             # Stack the current finished data in dataset
             dataset[num_shapes, :, :] = currentData
+            coordData_map[num_shapes,:,:] = coordData
             num_shapes = num_shapes + 1
 
         dataset = dataset[0:num_shapes, :, :]
+        coordData_map = coordData_map[0:num_shapes,:,:]
+
+        #laplacian_coord, VA = self.compute_laplace_beltrami(coordData_map,tri_indices)
+
         if num_shapes < min_num_shapes:
             raise Exception('Many fewer images than expected: %d < %d' % (num_shapes, min_num_shapes))
 
+        #print('full feature map',feature_map)
         print('Full dataset tensor:', dataset.shape)
         print('Mean:', np.mean(dataset))
         print('Standard deviation:', np.std(dataset))
