@@ -43,6 +43,8 @@ parser = argparse.ArgumentParser(description='Shape Variation Analyzer')
 #parser.add_argument('--model', type=str, help='pickle file with the pca decomposition', required=True)
 #parser.add_argument('--shapeDir', type=str, help='Directory with vtk files .vtk', required=True)
 parser.add_argument('-dataPath', action='store', dest='dirwithSub', help='folder with subclasses', required=True)
+parser.add_argument('--train_size', help='train ratio', required=True, type=float)
+parser.add_argument('--validation_size', help='validation ratio from test data', default=0.5, type=float)
 #parser.add_argument('-outputdataPath', action='store', dest='dirwithSubGenerated', help='folder with subclasses after generation of data', required=True)
 #parser.add_argument('--outputGenerated', help='output folder for shapes', default='./out')
 #parser.add_argument('--num_shapes', type=int, help='number shapes to be generated', default=10)
@@ -283,21 +285,26 @@ if __name__ == '__main__':
 	# #print('Validation:', valid_dataset.shape, valid_labels.shape)
 	# print('Testing:', test_dataset.shape, test_labels.shape)
 
-	pickle_file = 'dataset.pickle'
+	pickle_file = 'datasets.pickle'
 	total_number_shapes=data_for_training.shape[0]
 
+	shuffled_dataset, shuffled_labels = inputdata.randomize(data_for_training, labels_res)
 	#Divides data vector in 3 groups randomly : training, validation, testing
 	print('premier index',int(total_number_shapes))
 	try:
+
+		num_train = int(args.train_size*total_number_shapes)
+		num_valid = int((total_number_shapes - num_train)*args.validation_size)
+
 		f = open(pickle_file, 'wb')
 		
 		save = {
-        'train_dataset': data_for_training[0:int(total_number_shapes/3),:,:],
-        'train_labels': labels_res[1:int(total_number_shapes/3)],
-        'valid_dataset': data_for_training[int(total_number_shapes/3):int(2*total_number_shapes/3),:,:],
-        'valid_labels': labels_res[1:int(total_number_shapes/3)],
-        'test_dataset': data_for_training[int(2*total_number_shapes/3):int(total_number_shapes),:,:],
-        'test_labels': labels_res[1:int(total_number_shapes/3)],
+        'train_dataset': shuffled_dataset[0:num_train],
+        'train_labels': shuffled_labels[0:num_train],
+        'valid_dataset': shuffled_dataset[num_train: num_train + num_valid],
+        'valid_labels': shuffled_labels[num_train: num_train + num_valid],
+        'test_dataset': shuffled_dataset[num_train + num_valid:],
+        'test_labels': shuffled_labels[num_train + num_valid:]
 		}
 		pickle.dump(save, f, pickle.HIGHEST_PROTOCOL)
     	#f.close()
