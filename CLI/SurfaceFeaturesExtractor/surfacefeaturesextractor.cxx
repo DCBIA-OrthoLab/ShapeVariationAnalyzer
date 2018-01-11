@@ -11,6 +11,11 @@ int main (int argc, char *argv[])
 {
 	PARSE_ARGS;
     
+    if(inputMesh.compare("") == 0){
+        cout<<"type --help to learn how to use this program."<<endl;
+        return 1;
+    }
+
     vtkSmartPointer<vtkPolyDataReader> reader = vtkSmartPointer<vtkPolyDataReader>::New();
     vtkSmartPointer<vtkPolyDataWriter> writer = vtkSmartPointer<vtkPolyDataWriter>::New();
     vtkSmartPointer<SurfaceFeaturesExtractor> Filter = vtkSmartPointer<SurfaceFeaturesExtractor>::New();
