@@ -30,12 +30,11 @@ print("Tensorflow version:", tf.__version__)
 parser = argparse.ArgumentParser()
 parser.add_argument('--pickle', help='Pickle file, check the script pickleData to generate this file.', required=True)
 parser.add_argument('--out', help='Output dirname, default=./out', default="./out")
-parser.add_argument('--model', help='Output modelname, default=model, the output name will be <outdir>/model-<num iterations>', default="model")
+parser.add_argument('--model', help='Output modelname, default=model, the output name will be <outdir>/model-<num step>', default="model")
 parser.add_argument('--learning_rate', help='Learning rate, default=1e-5', type=float, default=1e-5)
 parser.add_argument('--decay_rate', help='decay rate, default=0.96', type=float, default=0.96)
 parser.add_argument('--decay_steps', help='decay steps, default=10000', type=int, default=10000)
 parser.add_argument('--batch_size', help='Batch size for evaluation, default=32', type=int, default=32)
-parser.add_argument('--iterations', help='Number of iterations, default=1000', type=int, default=10000)
 parser.add_argument('--reg_constant', help='Regularization constant, default=0.0', type=float, default=0.0)
 parser.add_argument('--num_epochs', help='Number of epochs', type=int, default=10)
 parser.add_argument('--num_labels', help='Number of labels', type=int, default=7)
@@ -50,7 +49,6 @@ decay_rate = args.decay_rate
 decay_steps = args.decay_steps
 batch_size = args.batch_size
 num_epochs = args.num_epochs
-iterations = args.iterations
 reg_constant = args.reg_constant
 num_labels = args.num_labels
 
@@ -107,7 +105,6 @@ print('decay_rate', decay_rate)
 print('decay_steps', decay_steps)
 print('batch_size', batch_size)
 print('num_epochs', num_epochs)
-print('iterations', iterations)
 
 # Let's build a small network with two convolutional layers, followed by one fully connected layer. Convolutional networks are more expensive computationally, so we'll limit its depth and number of fully connected nodes.
 
