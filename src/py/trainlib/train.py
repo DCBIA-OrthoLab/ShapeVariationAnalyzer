@@ -221,7 +221,10 @@ with graph.as_default():
         break
       
 
-    saver.save(sess, os.path.join(outvariablesdirname, modelname), global_step=step)
+    outmodelname = os.path.join(outvariablesdirname, modelname)
+    print('Step:', step)
+    print('Saving model:', outmodelname)
+    saver.save(sess, outmodelname, global_step=step)
 
     #test_accuracy = evaluate_accuracy(test_prediction.eval(feed_dict={keep_prob: 1.0}), test_labels)
     #print("test accuracy %g"%test_accuracy)
