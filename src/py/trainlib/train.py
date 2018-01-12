@@ -21,7 +21,7 @@ import tensorflow as tf
 from six.moves import cPickle as pickle
 from six.moves import range
 import argparse
-import regularization_nn as nn
+import neuralNetwork as nn
 import os
 
 print("Tensorflow version:", tf.__version__)
@@ -32,9 +32,11 @@ parser.add_argument('--out', help='Output filename, default=./model, the output 
 parser.add_argument('--learning_rate', help='Learning rate, default=1e-5', type=float, default=1e-5)
 parser.add_argument('--decay_rate', help='decay rate, default=0.96', type=float, default=0.96)
 parser.add_argument('--decay_steps', help='decay steps, default=10000', type=int, default=10000)
-parser.add_argument('--batch', help='Batch size for evaluation, default=64', type=int, default=64)
+parser.add_argument('--batch_size', help='Batch size for evaluation, default=64', type=int, default=64)
 parser.add_argument('--iterations', help='Number of iterations, default=1000', type=int, default=10000)
 parser.add_argument('--reg_constant', help='Regularization constant, default=0.0', type=float, default=0.0)
+parser.add_argument('--num_epochs', help='Number of epochs', type=int, default=10)
+parser.add_argument('--num_labels', help='Number of labels', type=int, default=7)
 
 args = parser.parse_args()
 
@@ -43,10 +45,10 @@ outvariablesfilename = args.out
 learning_rate = args.learning_rate
 decay_rate = args.decay_rate
 decay_steps = args.decay_steps
-batch_size = args.batch
+batch_size = args.batch_size
 iterations = args.iterations
 reg_constant = args.reg_constant
-num_labels = 8
+num_labels = args.num_labels
 
 f = open(pickle_file, 'rb')
 data = pickle.load(f)
@@ -122,6 +124,16 @@ graph = tf.Graph()
 with graph.as_default():
 
 # run inference on the input data
+  tf_train_dataset = tf.data.Dataset.from_tensor_slices(train_dataset)
+  tf_train_labels = tf.data.Dataset.from_tensor_slices(train_labels)
+  # tf_train_dataset, tf_train_labels = placeholder_inputs(classifier.batch_size, name='data')
+
+  dataset = tf.data.Dataset.zip((tf_train_dataset, tf_train_labels))
+  dataset = dataset.repeat(args.num_epochs)
+  dataset = dataset.repeat(args.batch_size)
+  iterator = dataset.make_initializable_iterator()
+  next_train_batch = iterator.get_next()
+
   x = tf.placeholder(tf.float32,shape=(batch_size, size_features))
   y_ = tf.placeholder(tf.float32, shape=(batch_size, num_labels))
   
