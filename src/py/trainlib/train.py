@@ -23,16 +23,18 @@ from six.moves import range
 import argparse
 import neuralNetwork as nn
 import os
+from datetime import datetime
 
 print("Tensorflow version:", tf.__version__)
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--pickle', help='Pickle file, check the script pickleData to generate this file.', required=True)
-parser.add_argument('--out', help='Output filename, default=./model, the output name will be ./model-<num iterations>', default="./model")
+parser.add_argument('--out', help='Output dirname, default=./out', default="./out")
+parser.add_argument('--model', help='Output modelname, default=model, the output name will be <outdir>/model-<num iterations>', default="model")
 parser.add_argument('--learning_rate', help='Learning rate, default=1e-5', type=float, default=1e-5)
 parser.add_argument('--decay_rate', help='decay rate, default=0.96', type=float, default=0.96)
 parser.add_argument('--decay_steps', help='decay steps, default=10000', type=int, default=10000)
-parser.add_argument('--batch_size', help='Batch size for evaluation, default=64', type=int, default=64)
+parser.add_argument('--batch_size', help='Batch size for evaluation, default=32', type=int, default=32)
 parser.add_argument('--iterations', help='Number of iterations, default=1000', type=int, default=10000)
 parser.add_argument('--reg_constant', help='Regularization constant, default=0.0', type=float, default=0.0)
 parser.add_argument('--num_epochs', help='Number of epochs', type=int, default=10)
@@ -41,11 +43,13 @@ parser.add_argument('--num_labels', help='Number of labels', type=int, default=7
 args = parser.parse_args()
 
 pickle_file = args.pickle
-outvariablesfilename = args.out
+outvariablesdirname = args.out
+modelname = args.model
 learning_rate = args.learning_rate
 decay_rate = args.decay_rate
 decay_steps = args.decay_steps
 batch_size = args.batch_size
+num_epochs = args.num_epochs
 iterations = args.iterations
 reg_constant = args.reg_constant
 num_labels = args.num_labels
@@ -102,6 +106,7 @@ print('learning_rate', learning_rate)
 print('decay_rate', decay_rate)
 print('decay_steps', decay_steps)
 print('batch_size', batch_size)
+print('num_epochs', num_epochs)
 print('iterations', iterations)
 
 # Let's build a small network with two convolutional layers, followed by one fully connected layer. Convolutional networks are more expensive computationally, so we'll limit its depth and number of fully connected nodes.
@@ -126,16 +131,15 @@ with graph.as_default():
 # run inference on the input data
   tf_train_dataset = tf.data.Dataset.from_tensor_slices(train_dataset)
   tf_train_labels = tf.data.Dataset.from_tensor_slices(train_labels)
-  # tf_train_dataset, tf_train_labels = placeholder_inputs(classifier.batch_size, name='data')
 
   dataset = tf.data.Dataset.zip((tf_train_dataset, tf_train_labels))
   dataset = dataset.repeat(args.num_epochs)
-  dataset = dataset.repeat(args.batch_size)
+  dataset = dataset.batch(batch_size)
   iterator = dataset.make_initializable_iterator()
-  next_train_batch = iterator.get_next()
+  next_train_data, next_train_labels = iterator.get_next()
 
-  x = tf.placeholder(tf.float32,shape=(batch_size, size_features))
-  y_ = tf.placeholder(tf.float32, shape=(batch_size, num_labels))
+  x = tf.placeholder(tf.float32,shape=(None, size_features))
+  y_ = tf.placeholder(tf.float32, shape=(None, num_labels))
   
   keep_prob = tf.placeholder(tf.float32)
 
@@ -187,28 +191,40 @@ with graph.as_default():
     sess.run(tf.global_variables_initializer())
     saver = tf.train.Saver()
     # specify where to write the log files for import to TensorBoard
-    summary_writer = tf.summary.FileWriter(os.path.dirname(outvariablesfilename), sess.graph)
+    now = datetime.now()
+    summary_writer = tf.summary.FileWriter(os.path.join(outvariablesdirname, now.strftime("%Y%m%d-%H%M%S")), sess.graph)
 
+    sess.run([iterator.initializer])
+    step = 0
 
-    for step in range(iterations):
-      offset = (step * batch_size) % (train_labels.shape[0] - batch_size)
-      batch_data = train_dataset[offset:(offset + batch_size), :]
-      batch_labels = train_labels[offset:(offset + batch_size), :]
+    while True:
+      try:
 
-      _, loss_value, summary, accuracy = sess.run([train_step, loss, summary_op, accuracy_eval], feed_dict={x: batch_data, y_: batch_labels, keep_prob: 0.5})
+        batch_data, batch_labels = sess.run([next_train_data, next_train_labels])
 
-      if step % 100 == 0:
-        print('OUTPUT: Step %d: loss = %.3f' % (step, loss_value))
-        print('Accuracy = %.3f ' % (accuracy))
-        # output some data to the log files for tensorboard
-        summary_writer.add_summary(summary, step)
-        summary_writer.flush()
+        _, loss_value, summary, accuracy = sess.run([train_step, loss, summary_op, accuracy_eval], feed_dict={x: batch_data, y_: batch_labels, keep_prob: 0.5})
 
-        # less frequently output checkpoint files.  Used for evaluating the model
-      if step % 1000 == 0:
-        save_path = saver.save(sess, outvariablesfilename, global_step=step)
+        if step % 100 == 0:
+          print('OUTPUT: Step %d: loss = %.3f' % (step, loss_value))
+          print('Accuracy = %.3f ' % (accuracy))
+          # output some data to the log files for tensorboard
+          summary_writer.add_summary(summary, step)
+          summary_writer.flush()
 
-    saver.save(sess, outvariablesfilename, global_step=step)
+          # less frequently output checkpoint files.  Used for evaluating the model
+        if step % 1000 == 0:
+          save_path = saver.save(sess, os.path.join(outvariablesdirname, modelname), global_step=step)
+
+        step += 1
+
+      except tf.errors.OutOfRangeError:
+        break
+      
+
+    outmodelname = os.path.join(outvariablesdirname, modelname)
+    print('Step:', step)
+    print('Saving model:', outmodelname)
+    saver.save(sess, outmodelname, global_step=step)
 
     #test_accuracy = evaluate_accuracy(test_prediction.eval(feed_dict={keep_prob: 1.0}), test_labels)
     #print("test accuracy %g"%test_accuracy)
