@@ -105,6 +105,7 @@ print('learning_rate', learning_rate)
 print('decay_rate', decay_rate)
 print('decay_steps', decay_steps)
 print('batch_size', batch_size)
+print('num_epochs', num_epochs)
 print('iterations', iterations)
 
 # Let's build a small network with two convolutional layers, followed by one fully connected layer. Convolutional networks are more expensive computationally, so we'll limit its depth and number of fully connected nodes.
@@ -132,7 +133,7 @@ with graph.as_default():
 
   dataset = tf.data.Dataset.zip((tf_train_dataset, tf_train_labels))
   dataset = dataset.repeat(args.num_epochs)
-  dataset = dataset.batch(args.batch_size)
+  dataset = dataset.batch(batch_size)
   iterator = dataset.make_initializable_iterator()
   next_train_data, next_train_labels = iterator.get_next()
 
