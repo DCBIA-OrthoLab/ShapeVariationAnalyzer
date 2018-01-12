@@ -49,6 +49,7 @@ learning_rate = args.learning_rate
 decay_rate = args.decay_rate
 decay_steps = args.decay_steps
 batch_size = args.batch_size
+num_epochs = args.num_epochs
 iterations = args.iterations
 reg_constant = args.reg_constant
 num_labels = args.num_labels
