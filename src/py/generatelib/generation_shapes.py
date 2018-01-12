@@ -193,30 +193,20 @@ def PCA_plot(dataset,labels,dataset_res,labels_res):
 	plt.scatter(dataset[:,0],dataset[:,1],alpha=0.2)
 	#dataset_new = pca.inverse_transform(dataset_pca)
 	plt.figure(1)
-
-	plt.subplot(221)
-	plt.scatter(dataset[:,0],dataset[:,1],alpha=0.5,c=labels,cmap=plt.cm.get_cmap('nipy_spectral',8))
-	plt.title('Original data (218 shapes)')
-	
-
-	plt.subplot(222)
+	plt.subplot(121)
 	plt.scatter(dataset_pca[:,0],dataset_pca[:,1],edgecolor='none',alpha=0.5,c=labels,cmap=plt.cm.get_cmap('nipy_spectral',8))
-	plt.title('Original data reconstructed with pca')
+	plt.title('Original data with pca (268 shapes)')
 	
-	plt.subplot(223)
 	pca.fit(dataset_res)
 	dataset_res_pca=pca.transform(dataset_res)
-	dataset_res_new = pca.inverse_transform(dataset_res_pca)
-	plt.scatter(dataset_res[:,0],dataset_res[:,1],alpha=0.5,edgecolor='none',c=labels_res,cmap=plt.cm.get_cmap('nipy_spectral',8))
-	plt.title('Resampled data (520 shapes)')
 	
 
-	plt.subplot(224)
+	plt.subplot(122)
 	plt.scatter(dataset_res_pca[:,0],dataset_res_pca[:,1],edgecolor='none',alpha=0.5,c=labels_res,cmap=plt.cm.get_cmap('nipy_spectral',8))
-	plt.title('Resampled data reconstructed with pca')
+	plt.title('Resampled data with pca (735 shapes)')
 
-	for i in range(1,4,2):
-		plt.subplot(2,2,i+1)
+	for i in range(1,3):
+		plt.subplot(1,2,i)
 		plt.xlabel('component 1')
 		plt.ylabel('component 2')
 		plt.colorbar()
