@@ -114,7 +114,7 @@ def writeData(data_for_training,outputdataPath):
 def get_labels(pickle_file):
 #get labels of a dataset and returns the labels array and the dataset with features
 
-	num_classes=len(pickle_file)
+	#num_classes=len(pickle_file)
 	#num_shapes = 268 #should be changed!!
 	labels = []
 	shape =[]
@@ -225,76 +225,71 @@ if __name__ == '__main__':
 
 	args = parser.parse_args()
 	dataPath=args.dirwithSub
-	#outputdataPath=args.dirwithSubGenerated
-	total_features = 15
-	nb_points = 1002
+	
 	train_size = 7000
 	valid_size = 1000
 	test_size = 72
 
 	inputdata = inputData.inputData()
+	total_features = inputdata.NUM_FEATURES
+	nb_points = inputdata.NUM_POINTS
+
 	data_folders = inputdata.get_folder_classes_list(dataPath)
 	pickled_datasets = inputdata.maybe_pickle(data_folders, 5)
 
 	dataset,labels = get_labels(pickled_datasets)
+	dataset_reshaped = dataset.reshape(-1,nb_points,total_features)
 
-	dataset_res,labels_res=generate_with_SMOTE(dataset,labels)
-	data_for_training=dataset_res.reshape(len(labels_res),nb_points,total_features)
+	#shuffle real dataset
+	shuffled_real_dataset, shuffled_real_labels = inputdata.randomize(dataset_reshaped, labels)
+	#reshape the shuffled dataset for generating new data through SMOTE
+	shuffled_real_dataset = shuffled_real_dataset.reshape(shuffled_real_dataset.shape[0],-1)
 
-	print('dataset_res',np.shape(data_for_training))
-	print('labels_res',np.shape(labels_res))
-	print('labels_res',labels_res)
+	smote_dataset_res,smote_labels_res=generate_with_SMOTE(shuffled_real_dataset,shuffled_real_labels)
 
-	PCA_plot(dataset,labels,dataset_res,labels_res)
+	#plot real dataset and resampled dataset after SMOTE
+	PCA_plot(dataset,labels,smote_dataset_res,smote_labels_res)
 
-	force = False
-	# #pickled_generated_datasets = inputdata.maybe_pickle(data_folders, 5)
-	# dataset_names = []
+	smote_dataset_res=smote_dataset_res.reshape(len(smote_labels_res),nb_points,total_features)
 
-	# for classfolder in data_folders :
-	# 	set_filename = classfolder + 'fortrain.pickle'
-	# 	dataset_names.append(set_filename)
-	# 	if os.path.exists(set_filename) and not force:
-	# 		print('%s already present - Skipping pickling.' % set_filename)
-	# 	else:
-	# 		vtklist = glob.glob(os.path.join(classfolder, "*.vtk"))
-	# 		print('Pickling %s.' % set_filename)
-	# 	try:
-	# 		with open(set_filename, 'wb') as f:
-	# 			pickle.dump(data_for_training, f, pickle.HIGHEST_PROTOCOL)
-	# 	except Exception as e:
-	# 		print('Unable to save data to', set_filename, ':', e)
-
-
-
-	# print(dataset_names)
-
-	# valid_dataset, valid_labels, train_dataset, train_labels = inputdata.merge_datasets(dataset_names, train_size, valid_size=0)
-
-	# print('Training:', train_dataset.shape, train_labels.shape)
-	# #print('Validation:', valid_dataset.shape, valid_labels.shape)
-	# print('Testing:', test_dataset.shape, test_labels.shape)
 
 	pickle_file = 'datasets.pickle'
-	total_number_shapes=data_for_training.shape[0]
+	total_number_shapes=smote_dataset_res.shape[0]
+	num_real_shapes = dataset.shape[0]
+	#shuffling the SMOTE data not the real
+	shuffled_dataset, shuffled_labels = inputdata.randomize(smote_dataset_res[num_real_shapes:], smote_labels_res[num_real_shapes:])
 
-	shuffled_dataset, shuffled_labels = inputdata.randomize(data_for_training, labels_res)
+	data = np.concatenate([shuffled_real_dataset.reshape(-1),shuffled_dataset.reshape(-1)], axis=0)
+	data = data.reshape(-1,1002,14)
+	labels = np.concatenate([shuffled_real_labels, shuffled_labels], axis=0)
+	#print('shuffled dataset',np.shape(shuffled_dataset))
 	#Divides data vector in 3 groups randomly : training, validation, testing
-	print('premier index',int(total_number_shapes))
-	try:
 
-		num_train = int(args.train_size*total_number_shapes)
+	try:
+		num_train = int(0.2*num_real_shapes)
+		#num_train = int(args.train_size*total_number_shapes)
 		num_valid = int((total_number_shapes - num_train)*args.validation_size)
+		
 
 		f = open(pickle_file, 'wb')
 		
 		save = {
-        'train_dataset': shuffled_dataset[0:num_train],
-        'train_labels': shuffled_labels[0:num_train],
-        'valid_dataset': shuffled_dataset[num_train: num_train + num_valid],
-        'valid_labels': shuffled_labels[num_train: num_train + num_valid],
-        'test_dataset': shuffled_dataset[num_train + num_valid:],
-        'test_labels': shuffled_labels[num_train + num_valid:]
+        #'train_dataset': shuffled_dataset[0:num_train],
+        #'train_labels': shuffled_labels[0:num_train],
+		#'valid_dataset': shuffled_dataset[num_train: num_train + num_valid],
+        #'valid_labels': shuffled_labels[num_train: num_train + num_valid],
+        #'test_dataset': shuffled_dataset[num_train + num_valid:],
+        #'test_labels': shuffled_labels[num_train + num_valid:]
+
+        #train dataset is 20% of the real dataset (not SMOTE)
+		'train_dataset': shuffled_real_dataset[0:num_train],
+        'train_labels': shuffled_real_labels[0:num_train],
+
+        #valid and test dataset uses SMOTE data
+        'valid_dataset': data[num_train: num_train + num_valid],
+        'valid_labels': labels[num_train: num_train + num_valid],
+        'test_dataset': data[num_train + num_valid:],
+        'test_labels': labels[num_train + num_valid:]
 		}
 		pickle.dump(save, f, pickle.HIGHEST_PROTOCOL)
     	#f.close()
