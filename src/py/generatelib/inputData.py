@@ -3,16 +3,17 @@ import numpy as np
 import vtk
 import pickle
 import glob
+import scipy.io as sio
 
 
 class inputData():
-    def __init__(self, parent = None, num_points_param = 1002, num_classes_param = 8):
+    def __init__(self, parent = None, num_points_param = 1002, num_classes_param = 7):
         if parent:
             parent.title = " "
 
         self.NUM_POINTS = num_points_param
         self.NUM_CLASSES = num_classes_param
-        self.NUM_FEATURES = 3 + self.NUM_CLASSES + 4  # Normals + NUM_CLASSES + curvatures
+        self.NUM_FEATURES = 3 + self.NUM_CLASSES + 4 +19  # Normals + NUM_CLASSES + curvatures
 
 
     #
@@ -99,6 +100,13 @@ class inputData():
             gaussCurveMin, gaussCurveMax = gaussCurveRange[0], gaussCurveRange[1]
             gaussCurveDepth = gaussCurveMax - gaussCurveMin
 
+            for j in range(0,18):
+                #heat_kernel = []
+                heatKernelName = "heat_kernel_signature_"+str(j)
+                heatKernelArray = geometry.GetPointData().GetScalars(heatKernelName)
+                #heatKernelRange = heatKernelArray.GetRange()
+                #print('heat range',heatKernelRange)
+            #heatKernelRange = heatKernelArray.GetRange()
 
             # For each point of the current shape
             currentData = np.ndarray(shape=(self.NUM_POINTS, self.NUM_FEATURES), dtype=np.float32)
@@ -130,12 +138,11 @@ class inputData():
                 value = 2 * (gaussCurvArray.GetTuple1(i) - gaussCurveMin) / gaussCurveDepth - 1
                 currentData[i, self.NUM_CLASSES + nbCompNormal + 3] = value
 
-##################################################################################################
-###                     HEAT KERNEL SIGNATURE
-##################################################################################################
-    
-		#print('triangles',triangData)
-		
+                for numComponent in range(0,18):
+                    currentData[i,numComponent] = heatKernelArray.GetComponent(i,numComponent)
+
+      
+	
     
         except IOError as e:
             print('Could not read:', shape, ':', e, '- it\'s ok, skipping.')
@@ -201,7 +208,7 @@ class inputData():
         return L, VA
 
 
-    def load_features_classe(self, vtklist, min_num_shapes):
+    def load_features_classe (self, vtklist, min_num_shapes):
         # vtk_filenames = os.listdir(folder)  # Juste le nom du vtk file
 
         # Delete .DS_Store file if there is one
@@ -216,6 +223,7 @@ class inputData():
 
             # Prepare data
             currentData,coordData = self.load_features(shape)
+
             #L,VA = self.compute_laplace_beltrami(coordData,triangData)
 
             # Stack the current finished data in dataset
@@ -249,7 +257,15 @@ class inputData():
         # for d in data_folders:
         #     if os.path.isdir(os.path.join(data_folders, d)):
         #         folders.append(os.path.join(data_folders, d))
-        
+
+        #print('################')
+        #mat_contents = sio.loadmat('shapes.mat',squeeze_me=True)
+        #shape_matlab = mat_contents['shape']
+        #shape1 = shape_matlab[0]
+        #heat_kernel = shape1['sihks']
+        #H = heat_kernel * 1
+        #print('multiplie',H.shape)
+
         for classfolder in classFolders:
 
             set_filename = classfolder + '.pickle'
@@ -266,12 +282,15 @@ class inputData():
                 vtklist = glob.glob(os.path.join(classfolder, "*.vtk"))
                 print('Pickling %s.' % set_filename)
                 dataset = self.load_features_classe(vtklist, min_num_shapes_per_class)
+
+             
+
                 try:
                     with open(set_filename, 'wb') as f:
                         pickle.dump(dataset, f, pickle.HIGHEST_PROTOCOL)
                 except Exception as e:
                     print('Unable to save data to', set_filename, ':', e)
-
+        
         return dataset_names
 
 
@@ -379,6 +398,7 @@ class inputData():
     def randomize(self,dataset, labels):
         permutation = np.random.permutation(labels.shape[0])
         shuffled_dataset = dataset[permutation, :, :]
+
         shuffled_labels = labels[permutation]
         return shuffled_dataset, shuffled_labels
 
