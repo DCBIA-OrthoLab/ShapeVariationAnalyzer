@@ -21,7 +21,7 @@ import tensorflow as tf
 from six.moves import cPickle as pickle
 from six.moves import range
 import argparse
-import regularization_nn as nn
+import neuralNetwork as nn
 import os
 
 print("Tensorflow version:", tf.__version__)
@@ -31,20 +31,21 @@ parser.add_argument('--model', help='Model file computed with regularization_tra
 #parser.add_argument('--sampleMesh', help='Evaluate an image sample in vtk format')
 parser.add_argument('--out', help='Write output of evaluation', default="", type=str)
 parser.add_argument('--pickle', help='Pickle file, check the script readImages to generate this file.')
-parser.add_argument('--batch', help='Batch size for evaluation', default=64)
+parser.add_argument('--batch_size', help='Batch size for evaluation', default=32, type=int)
+parser.add_argument('--num_labels', help='Number of labels', type=int, default=7)
 
 args = parser.parse_args()
 
 pickle_file = args.pickle
 outvariablesfilename = args.out
-batch_size = args.batch
+batch_size = args.batch_size
 model = args.model
-num_labels = 8
+num_labels = args.num_labels
 
 f = open(pickle_file, 'rb')
 data = pickle.load(f)
-#valid_dataset = data["valid_dataset"]
-#valid_labels = data["valid_labels"]
+valid_dataset = data["valid_dataset"]
+valid_labels = data["valid_labels"]
 test_dataset = data["test_dataset"]
 test_labels = data["test_labels"]
 f.close()
@@ -76,7 +77,7 @@ def reformat(dataset, labels):
 valid_dataset, valid_labels = reformat(valid_dataset, valid_labels)
 test_dataset, test_labels = reformat(test_dataset, test_labels)
 
-size_features = valid_dataset.shape[1]
+size_features = test_dataset.shape[1]
 
 print('Validation set', valid_dataset.shape, valid_labels.shape)
 print('Test set', test_dataset.shape, test_labels.shape)
@@ -154,7 +155,9 @@ with graph.as_default():
     saver = tf.train.Saver()
     saver.restore(sess, model)
 
-
+    totalacc = 0.0
+    totalstep = 0
+    print('Evaluate validation dataset') 
     for step in range(int(len(valid_dataset)/batch_size)):
 
       offset = (step * batch_size) % (valid_dataset.shape[0] - batch_size)
@@ -165,6 +168,9 @@ with graph.as_default():
       
       print('OUTPUT: Step %d: accuracy = %.3f' % (step, accuracy[0]))
 
+      totalacc += accuracy[0]
+      totalstep += 1
+
     print('Evaluate test dataset') 
     for step in range(int(len(test_dataset))):
 
@@ -174,10 +180,13 @@ with graph.as_default():
 
       accuracy = sess.run([accuracy_eval], feed_dict={x: batch_data, y_: batch_labels, keep_prob: 1})
       
-      print('OUTPUT: Step %d: accuracy = %.3f' % (step, accuracy[0]))        
+      print('OUTPUT: Step %d: accuracy = %.3f' % (step, accuracy[0]))
+
+      totalacc += accuracy[0]
+      totalstep += 1
 
     #test_accuracy = evaluate_accuracy(test_prediction.eval(feed_dict={keep_prob: 1.0}), test_labels)
-    #print("test accuracy %g"%test_accuracy)
+    print("Total accuracy %.3f"%(totalacc/totalstep))
     
   
   

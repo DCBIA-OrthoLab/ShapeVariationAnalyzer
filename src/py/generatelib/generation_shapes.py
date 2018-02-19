@@ -18,7 +18,6 @@ comes in to choose a direction that is not flat.
 # License: BSD 3 clause
 
 from sklearn.decomposition import PCA
-import numpy as np
 from scipy import stats
 import vtk
 import os
@@ -34,17 +33,22 @@ from sklearn.decomposition import PCA
 import math
 import inputData
 import glob
+import numpy as np
+
 
 
 # #############################################################################
 # Generate data
 
-parser = argparse.ArgumentParser(description='Shape Variation Analyzer')
+parser = argparse.ArgumentParser(description='Shape Variation Analyzer', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 #parser.add_argument('--model', type=str, help='pickle file with the pca decomposition', required=True)
 #parser.add_argument('--shapeDir', type=str, help='Directory with vtk files .vtk', required=True)
 parser.add_argument('--dataPath', action='store', dest='dirwithSub', help='folder with subclasses', required=True)
 parser.add_argument('--train_size', help='train ratio', type=float, default=0.8)
 parser.add_argument('--validation_size', help='validation ratio from test data', default=0.5, type=float)
+parser.add_argument('--feature_names', help='Extract the following features from the polydatas', nargs='+', default=["Normals", "Mean_Curvature", "distanceGroup"], type=str)
+parser.add_argument('--out', dest="pickle_file", help='Pickle file output', default="datasets.pickle", type=str)
+
 #parser.add_argument('-outputdataPath', action='store', dest='dirwithSubGenerated', help='folder with subclasses after generation of data', required=True)
 #parser.add_argument('--outputGenerated', help='output folder for shapes', default='./out')
 #parser.add_argument('--num_shapes', type=int, help='number shapes to be generated', default=10)
@@ -184,39 +188,57 @@ def PCA_plot(dataset,labels,dataset_res,labels_res):
 
 #plot original dat and data resampled after a PCA decomposition
 	
-	pca = PCA(n_components=2)
+	pca = PCA(n_components=200)
 	pca.fit(dataset)
 	dataset_pca=pca.transform(dataset)
 	print('original shape: ',dataset.shape)
 	print('transformed shape:',dataset_pca.shape)
-	print('Ratio variance',pca.explained_variance_ratio_)
-	plt.scatter(dataset[:,0],dataset[:,1],alpha=0.2)
+	#print('Ratio variance',pca.explained_variance_ratio_)
+	#plt.scatter(dataset[:,0],dataset[:,1],alpha=0.2)
 	#dataset_new = pca.inverse_transform(dataset_pca)
-	plt.figure(1)
+	plt.figure(2)
 	plt.subplot(121)
-	plt.scatter(dataset_pca[:,0],dataset_pca[:,1],edgecolor='none',alpha=0.5,c=labels,cmap=plt.cm.get_cmap('nipy_spectral',8))
-	plt.title('Original data with pca (268 shapes)')
+	plt.scatter(dataset_pca[:,0],dataset_pca[:,1],edgecolor='none',alpha=0.5,c=labels,cmap=plt.cm.get_cmap('nipy_spectral',np.shape(np.unique(labels))[0]))
+	plt.title('Original data with pca (' + str(dataset.shape[0]) + ' samples)')
 	
-	pca.fit(dataset_res)
+	#pca.fit(dataset_res)
 	dataset_res_pca=pca.transform(dataset_res)
-	
 
 	plt.subplot(122)
-	plt.scatter(dataset_res_pca[:,0],dataset_res_pca[:,1],edgecolor='none',alpha=0.5,c=labels_res,cmap=plt.cm.get_cmap('nipy_spectral',8))
-	plt.title('Resampled data with pca (735 shapes)')
+	plt.scatter(dataset_res_pca[:,0],dataset_res_pca[:,1],edgecolor='none',alpha=0.5,c=labels_res,cmap=plt.cm.get_cmap('nipy_spectral',np.shape(np.unique(labels_res))[0]))
+	plt.title('Resampled data with pca (' + str(dataset_res_pca.shape[0]) + ' samples)')
 
 	for i in range(1,3):
 		plt.subplot(1,2,i)
 		plt.xlabel('component 1')
 		plt.ylabel('component 2')
+	
 		plt.colorbar()
 
-
-	plt.figure(2)
-	plt.plot(np.cumsum(pca.explained_variance_ratio_))
+	
+	cumsum = np.cumsum(pca.explained_variance_ratio_)
+	plt.figure(1)
+	plt.plot(cumsum)
 	plt.xlabel('nb of components')
 	plt.ylabel('cumulative explained variance')
+	plt.axhline(y=0.95, linestyle=':', label='.95 explained', color="#f23e3e")
+	numcomponents = len(np.where(cumsum < 0.95)[0])
+	plt.axvline(x=numcomponents, linestyle=':', label=(str(numcomponents) + ' components'), color="#31f9ad")
+	plt.legend(loc=0)
+	
+
+	histo = np.bincount(labels)
+	histo_range = np.array(range(histo.shape[0]))
+	plt.figure(3)
+	plt.bar(histo_range, histo)
+	plt.xlabel('Groups')
+	plt.ylabel('Number of samples')
+
+	for xy in zip(histo_range, histo):
+	    plt.annotate(xy[1], xy=xy, ha="center", color="#4286f4")
+
 	plt.show()
+	
 
 
 if __name__ == '__main__':
@@ -225,71 +247,53 @@ if __name__ == '__main__':
 
 	args = parser.parse_args()
 	dataPath=args.dirwithSub
-	
-	train_size = 7000
-	valid_size = 1000
-	test_size = 72
+	pickle_file = args.pickle_file
 
+	# Get the data from the folders with vtk files
 	inputdata = inputData.inputData()
-	total_features = inputdata.NUM_FEATURES
-	nb_points = inputdata.NUM_POINTS
-
 	data_folders = inputdata.get_folder_classes_list(dataPath)
-	pickled_datasets = inputdata.maybe_pickle(data_folders, 5)
-
+	pickled_datasets = inputdata.maybe_pickle(data_folders, 5, feature_names=args.feature_names)
+	# Create the labels, i.e., enumerate the groups
 	dataset,labels = get_labels(pickled_datasets)
-	dataset_reshaped = dataset.reshape(-1,nb_points,total_features)
 
-	#shuffle real dataset
-	shuffled_real_dataset, shuffled_real_labels = inputdata.randomize(dataset_reshaped, labels)
-	#reshape the shuffled dataset for generating new data through SMOTE
-	shuffled_real_dataset = shuffled_real_dataset.reshape(shuffled_real_dataset.shape[0],-1)
+	# Comput the total number of shapes and train/test size
+	total_number_shapes=dataset.shape[0]
+	num_train = int(args.train_size*total_number_shapes)
+	num_valid = int((total_number_shapes - num_train)*args.validation_size)
 
-	smote_dataset_res,smote_labels_res=generate_with_SMOTE(shuffled_real_dataset,shuffled_real_labels)
+	# Randomize the original dataset
+	shuffled_dataset, shuffled_labels = inputdata.randomize(dataset, labels)
+	shuffled_dataset = np.reshape(shuffled_dataset, (total_number_shapes, -1))
 
-	#plot real dataset and resampled dataset after SMOTE
-	PCA_plot(dataset,labels,smote_dataset_res,smote_labels_res)
+	# Generate SMOTE with out including the valid/test samples, in some cases, this may raise an error
+	# as the number of samples in one class is less than 5 and SMOTE cannot continue. Just run it again
+	dataset_res,labels_res=generate_with_SMOTE(shuffled_dataset[0:num_train],shuffled_labels[0:num_train])
 
-	smote_dataset_res=smote_dataset_res.reshape(len(smote_labels_res),nb_points,total_features)
+	# SANITY CHECKS
+	print('dataset',np.shape(dataset))
+	print('labels',np.shape(labels))
+	print('dataset_res',np.shape(dataset_res))
+	print('labels_res',np.shape(labels_res))
 
+	print('num_train', num_train)
+	print('num_valid', num_valid)
+	print('number of labels',np.shape(np.unique(labels)))
+	print('number of labels resampled',np.shape(np.unique(labels_res)))
+	print('Labels resampled',np.unique(labels_res).tolist())
 
-	pickle_file = 'datasets.pickle'
-	total_number_shapes=smote_dataset_res.shape[0]
-	num_real_shapes = dataset.shape[0]
-	#shuffling the SMOTE data not the real
-	shuffled_dataset, shuffled_labels = inputdata.randomize(smote_dataset_res[num_real_shapes:], smote_labels_res[num_real_shapes:])
-
-	data = np.concatenate([shuffled_real_dataset.reshape(-1),shuffled_dataset.reshape(-1)], axis=0)
-	data = data.reshape(-1,1002,14)
-	labels = np.concatenate([shuffled_real_labels, shuffled_labels], axis=0)
-	#print('shuffled dataset',np.shape(shuffled_dataset))
-	#Divides data vector in 3 groups randomly : training, validation, testing
+	PCA_plot(dataset,labels,dataset_res,labels_res)
 
 	try:
-		num_train = int(0.2*num_real_shapes)
-		#num_train = int(args.train_size*total_number_shapes)
-		num_valid = int((total_number_shapes - num_train)*args.validation_size)
-		
 
 		f = open(pickle_file, 'wb')
 		
 		save = {
-        #'train_dataset': shuffled_dataset[0:num_train],
-        #'train_labels': shuffled_labels[0:num_train],
-		#'valid_dataset': shuffled_dataset[num_train: num_train + num_valid],
-        #'valid_labels': shuffled_labels[num_train: num_train + num_valid],
-        #'test_dataset': shuffled_dataset[num_train + num_valid:],
-        #'test_labels': shuffled_labels[num_train + num_valid:]
-
-        #train dataset is 20% of the real dataset (not SMOTE)
-		'train_dataset': shuffled_real_dataset[0:num_train],
-        'train_labels': shuffled_real_labels[0:num_train],
-
-        #valid and test dataset uses SMOTE data
-        'valid_dataset': data[num_train: num_train + num_valid],
+        'train_dataset': dataset_res,
+        'train_labels': labels_res,
+		'valid_dataset': dataset[num_train: num_train + num_valid],
         'valid_labels': labels[num_train: num_train + num_valid],
-        'test_dataset': data[num_train + num_valid:],
-        'test_labels': labels[num_train + num_valid:]
+        'test_dataset': dataset[num_train + num_valid:],
+        'test_labels': labels[num_train + num_valid:]        
 		}
 		pickle.dump(save, f, pickle.HIGHEST_PROTOCOL)
     	#f.close()
@@ -297,16 +301,4 @@ if __name__ == '__main__':
 	except Exception as e:
 		print('Unable to save data to', pickle_file, ':', e)
 		raise
-
-
-
-
-	
-
-
-
-    
-
-
-
 
