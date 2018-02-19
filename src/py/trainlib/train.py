@@ -27,7 +27,7 @@ from datetime import datetime
 
 print("Tensorflow version:", tf.__version__)
 
-parser = argparse.ArgumentParser()
+parser = argparse.ArgumentParser(description='Shape Variation Analyzer', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument('--pickle', help='Pickle file, check the script pickleData to generate this file.', required=True)
 parser.add_argument('--out', help='Output dirname, default=./out', default="./out")
 parser.add_argument('--model', help='Output modelname, default=model, the output name will be <outdir>/model-<num step>', default="model")
@@ -58,8 +58,8 @@ train_dataset = data["train_dataset"]
 train_labels = data["train_labels"]
 valid_dataset = data["valid_dataset"]
 valid_labels = data["valid_labels"]
-test_dataset = data["test_dataset"]
-test_labels = data["test_labels"]
+# test_dataset = data["test_dataset"]
+# test_labels = data["test_labels"]
 # img_head = data["img_head"]
 # img_size = img_head["sizes"]
 # img_size = [img_size[3], img_size[2], img_size[1], img_size[0]]
@@ -92,14 +92,14 @@ def reformat(dataset, labels):
 
 train_dataset, train_labels = reformat(train_dataset, train_labels)
 valid_dataset, valid_labels = reformat(valid_dataset, valid_labels)
-test_dataset, test_labels = reformat(test_dataset, test_labels)
+# test_dataset, test_labels = reformat(test_dataset, test_labels)
 
 size_features = train_dataset.shape[1]
 
 
 print('Training set', train_dataset.shape, train_labels.shape)
 print('Validation set', valid_dataset.shape, valid_labels.shape)
-print('Test set', test_dataset.shape, test_labels.shape)
+# print('Test set', test_dataset.shape, test_labels.shape)
 print('learning_rate', learning_rate)
 print('decay_rate', decay_rate)
 print('decay_steps', decay_steps)
@@ -133,7 +133,7 @@ with graph.as_default():
   dataset = dataset.repeat(args.num_epochs)
   dataset = dataset.batch(batch_size)
   iterator = dataset.make_initializable_iterator()
-  next_train_data, next_train_labels = iterator.get_next()
+  next_train_data, next_train_labels = iterator.get_next()  
 
   x = tf.placeholder(tf.float32,shape=(None, size_features))
   y_ = tf.placeholder(tf.float32, shape=(None, num_labels))
@@ -143,7 +143,7 @@ with graph.as_default():
   #tf_valid_dataset = tf.constant(valid_dataset)
   # tf_test_dataset = tf.constant(test_dataset)
 
-  y_conv = nn.inference(x, size_features, num_labels=num_labels, keep_prob=keep_prob, batch_size=batch_size, regularization_constant=reg_constant)
+  y_conv = nn.inference(x, size_features, num_labels=num_labels, keep_prob=keep_prob, batch_size=batch_size, regularization_constant=reg_constant, is_training=True)
 
 # calculate the loss from the results of inference and the labels
   loss = nn.loss(y_conv, y_)
@@ -217,6 +217,9 @@ with graph.as_default():
       except tf.errors.OutOfRangeError:
         break
       
+    for i in range(0, np.shape(valid_dataset)[0], batch_size):
+      _, accuracy = sess.run([y_conv, accuracy_eval], feed_dict={x: valid_dataset[i:i + batch_size], y_: valid_labels[i:i + batch_size], keep_prob: 1})
+      print('Validation accuracy = %.3f ' % (accuracy))
 
     outmodelname = os.path.join(outvariablesdirname, modelname)
     print('Step:', step)

@@ -12,7 +12,7 @@ def print_tensor_shape(tensor, string):
     if __debug__:
         print('DEBUG ' + string, tensor.get_shape())
 
-def inference(images, size, num_labels=2, keep_prob=1, batch_size=1, regularization_constant=0.0):
+def inference(images, size, num_labels=2, keep_prob=1, batch_size=1, regularization_constant=0.0, is_training=False):
 
 #   input: tensor of images
 #   output: tensor of computed logits
@@ -22,6 +22,9 @@ def inference(images, size, num_labels=2, keep_prob=1, batch_size=1, regularizat
     #print("Image size:", size)
     #num_channels = size[0], depth = size[0], height = size[1], width = size[2], num_channels = size[3]
     print_tensor_shape(images, "images")
+
+    images = tf.layers.batch_normalization(images, training=is_training)
+
 # Convolution layer
     with tf.name_scope('Matmul1'):
 
