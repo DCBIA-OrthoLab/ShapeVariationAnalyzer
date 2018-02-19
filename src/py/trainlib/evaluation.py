@@ -171,7 +171,11 @@ with graph.as_default():
       totalacc += accuracy[0]
       totalstep += 1
 
+    print("Valid accuracy %.3f"%(totalacc/totalstep))
+
     print('Evaluate test dataset') 
+    totalacc = 0.0
+    totalstep = 0
     for step in range(int(len(test_dataset))):
 
       offset = (step * batch_size) % (test_dataset.shape[0] - batch_size)
@@ -186,7 +190,7 @@ with graph.as_default():
       totalstep += 1
 
     #test_accuracy = evaluate_accuracy(test_prediction.eval(feed_dict={keep_prob: 1.0}), test_labels)
-    print("Total accuracy %.3f"%(totalacc/totalstep))
+    print("Test accuracy %.3f"%(totalacc/totalstep))
     
   
   
