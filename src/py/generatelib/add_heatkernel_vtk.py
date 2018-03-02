@@ -58,6 +58,7 @@ if __name__ == '__main__':
 						heat_kernel_data = numpy_support.numpy_to_vtk(heat_kernel_2.ravel(),deep=True,array_type=vtk.VTK_FLOAT)
 
 
+
 						heat_kernel_data.SetNumberOfComponents(1);
 						heat_kernel_data.SetName('heat_kernel_signature_'+str(j));
 						
