@@ -23,24 +23,23 @@ from six.moves import range
 import argparse
 import neuralNetwork as nn
 import os
+from datetime import datetime
 
 print("Tensorflow version:", tf.__version__)
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--model', help='Model file computed with regularization_train.py', required=True)
-#parser.add_argument('--sampleMesh', help='Evaluate an image sample in vtk format')
-parser.add_argument('--out', help='Write output of evaluation', default="", type=str)
-parser.add_argument('--pickle', help='Pickle file, check the script readImages to generate this file.')
-parser.add_argument('--batch_size', help='Batch size for evaluation', default=32, type=int)
+parser.add_argument('--model', help='Model file computed with train.py', required=True)
+parser.add_argument('--out', help='Directory to write output of evaluation', required=True, type=str)
+parser.add_argument('--pickle', help='Pickle file, check the script readImages to generate this file.', required=True,)
 parser.add_argument('--num_labels', help='Number of labels', type=int, default=7)
 
 args = parser.parse_args()
 
 pickle_file = args.pickle
-outvariablesfilename = args.out
-batch_size = args.batch_size
+outsummarydirname = args.out
 model = args.model
 num_labels = args.num_labels
+batch_size = 1
 
 f = open(pickle_file, 'rb')
 data = pickle.load(f)
@@ -81,116 +80,77 @@ size_features = test_dataset.shape[1]
 
 print('Validation set', valid_dataset.shape, valid_labels.shape)
 print('Test set', test_dataset.shape, test_labels.shape)
-print('batch_size', batch_size)
-
-
-# Let's build a small network with two convolutional layers, followed by one fully connected layer. Convolutional networks are more expensive computationally, so we'll limit its depth and number of fully connected nodes.
-
-# In[ ]:
-
-#batch_size = 64
-# patch_size = 8
-# depth = 32
-# depth2 = 64
-# num_hidden = 256
-# stride = [1, 1, 1, 1]
-
-# def evaluate_accuracy(prediction, labels):    
-#   accuracy = tf.reduce_sum(tf.squared_difference(prediction, labels))
-#   return accuracy.eval()
+print('num_labels', num_labels)
 
 graph = tf.Graph()
 
 with graph.as_default():
 
 # run inference on the input data
-  x = tf.placeholder(tf.float32,shape=(batch_size, size_features))
-  y_ = tf.placeholder(tf.float32, shape=(batch_size, num_labels))
+  x = tf.placeholder(tf.float32,shape=(None, size_features))
+  y_ = tf.placeholder(tf.float32, shape=(None, num_labels))
   
   keep_prob = tf.placeholder(tf.float32)
 
-  #tf_valid_dataset = tf.constant(valid_dataset)
-  # tf_test_dataset = tf.constant(test_dataset)
+  y_conv = nn.inference(x, size_features, num_labels=num_labels)
+  
+  logits_eval = tf.nn.softmax(y_conv)
+  label_eval = tf.argmax(logits_eval, axis=1)
+  
+  auc_eval,fn_eval,fp_eval,tn_eval,tp_eval = nn.metrics(logits_eval, y_)
 
-  y_conv = nn.inference(x, size_features, num_labels, keep_prob, batch_size)
+  tf.summary.scalar("auc_0", auc_eval[0])
+  tf.summary.scalar("auc_1", auc_eval[1])
+  tf.summary.scalar("fn_eval", fn_eval[1])
+  tf.summary.scalar("fp_eval", fp_eval[1])
+  tf.summary.scalar("tn_eval", tn_eval[1])
+  tf.summary.scalar("tp_eval", tp_eval[1])
+  
 
-# calculate the loss from the results of inference and the labels
-  #loss = nn.loss(y_conv, y_)
-
-  accuracy_eval = nn.evaluation(y_conv, y_)
-
-  #tf.summary.scalar(loss.op.name, loss)
-
-  #intersection_sum, label_sum, example_sum, precision = nn.evaluation(y_conv, y_)
-
-  #tf.summary.scalar ("Precision op", precision)
-
-# setup the training operations
-  #train_step = nn.training(loss, learning_rate, decay_steps, decay_rate)
-  # setup the summary ops to use TensorBoard
-
-  # setup the training operations
-  #train_step = nn.training(loss, learning_rate, decay_steps, decay_rate)
-  #train_step = nn.training(loss, learning_rate, decay_steps, decay_rate)
-
-  # intersection_sum, label_sum, example_sum = evaluation(y_conv, y_)
-
-  # valid_prediction = model(tf_valid_dataset)
-  #cross_entropy = tf.reduce_sum(tf.squared_difference(y_conv, y_))
-
-  #regularizers = tf.nn.l2_loss(W_fc1) + tf.nn.l2_loss(W_fc2)
-  #cross_entropy += 0.1 * regularizers
-
-  #cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(y_conv, y_))
-  #train_step = tf.train.GradientDescentOptimizer(1e-4).minimize(cross_entropy)  
-
-  # accuracy = cross_entropy
-
-  # valid_prediction = model(tf_valid_dataset)
-  # evaluation(valid_prediction)
-  # test_prediction = model(tf_test_dataset)
+  summary_op = tf.summary.merge_all()
 
   with tf.Session() as sess:
-    sess.run(tf.global_variables_initializer())
+    sess.run(tf.local_variables_initializer())
     saver = tf.train.Saver()
     saver.restore(sess, model)
 
+    now = datetime.now()
+    summary_writer = tf.summary.FileWriter(os.path.join(outsummarydirname, now.strftime("%Y%m%d-%H%M%S")), sess.graph)
+
     totalacc = 0.0
     totalstep = 0
-    print('Evaluate validation dataset') 
-    for step in range(int(len(valid_dataset)/batch_size)):
+    
+    # _, accuracy, auc = sess.run([y_conv, accuracy_eval, auc_eval], feed_dict={x: valid_dataset[0:1], y_: valid_labels[0:1], keep_prob: 1.0})
 
-      offset = (step * batch_size) % (valid_dataset.shape[0] - batch_size)
-      batch_data = valid_dataset[offset:(offset + batch_size), :]
-      batch_labels = valid_labels[offset:(offset + batch_size), :]
+    # print('Evaluate validation dataset') 
+    # print('Step,Accuracy,Auc')
+    # for step in range(len(valid_dataset)):
+    #   _, accuracy, auc = sess.run([y_conv, accuracy_eval, auc_eval], feed_dict={x: valid_dataset[step:step + 1], y_: valid_labels[step:step + 1], keep_prob: 1.0})
+    #   print("%d,%.3f,%.3f"%(step,accuracy[0],auc[0]))
 
-      accuracy = sess.run([accuracy_eval], feed_dict={x: batch_data, y_: batch_labels, keep_prob: 1})
+    #   totalacc += accuracy[0]
+    #   totalstep += 1
+
+    # print("Valid accuracy %.3f"%(totalacc/totalstep))
+
+    print('Evaluate test dataset')
+    for step in range(len(test_dataset)):
       
-      print('OUTPUT: Step %d: accuracy = %.3f' % (step, accuracy[0]))
+      batch_data = test_dataset[step:step + 1]
+      batch_labels = test_labels[step: step + 1]
 
-      totalacc += accuracy[0]
-      totalstep += 1
+      logits,label,auc,summary = sess.run([logits_eval,label_eval,auc_eval,summary_op], feed_dict={x: batch_data, y_: batch_labels, keep_prob: 1})
 
-    print("Valid accuracy %.3f"%(totalacc/totalstep))
+      summary_writer.add_summary(summary, step)
+      summary_writer.flush()
 
-    print('Evaluate test dataset') 
-    totalacc = 0.0
-    totalstep = 0
-    for step in range(int(len(test_dataset))):
+      # print(logits,label)
+      # print("%d,%.3f,%.3f"%(step,accuracy[0],auc[0]))
 
-      offset = (step * batch_size) % (test_dataset.shape[0] - batch_size)
-      batch_data = test_dataset[offset:(offset + batch_size), :]
-      batch_labels = test_labels[offset:(offset + batch_size), :]
-
-      accuracy = sess.run([accuracy_eval], feed_dict={x: batch_data, y_: batch_labels, keep_prob: 1})
-      
-      print('OUTPUT: Step %d: accuracy = %.3f' % (step, accuracy[0]))
-
-      totalacc += accuracy[0]
-      totalstep += 1
-
-    #test_accuracy = evaluate_accuracy(test_prediction.eval(feed_dict={keep_prob: 1.0}), test_labels)
-    print("Test accuracy %.3f"%(totalacc/totalstep))
+      # totalacc += accuracy[0]
+      # totalstep += 1
+    
+    # print("Test accuracy %.3f"%(totalacc/totalstep))
     
   
   

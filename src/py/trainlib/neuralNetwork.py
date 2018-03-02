@@ -12,7 +12,7 @@ def print_tensor_shape(tensor, string):
     if __debug__:
         print('DEBUG ' + string, tensor.get_shape())
 
-def inference(images, size, num_labels=2, keep_prob=1, batch_size=1, regularization_constant=0.0, is_training=False):
+def inference(images, size, num_labels=2, keep_prob=1, batch_size=1, is_training=False):
 
 #   input: tensor of images
 #   output: tensor of computed logits
@@ -129,22 +129,24 @@ def inference(images, size, num_labels=2, keep_prob=1, batch_size=1, regularizat
         bias5_op = matmul5_op + W_bias5
         print_tensor_shape( bias5_op, 'bias5_op shape')
 
+    return bias5_op
 
-    #Regularization of all the weights in the network for the loss function
-    with tf.name_scope('Regularization'):
-      Reg_constant = tf.constant(regularization_constant)
-      reg_op = tf.nn.l2_loss(W_matmul1) + tf.nn.l2_loss(W_matmul2)  + tf.nn.l2_loss(W_matmul3) + tf.nn.l2_loss(W_matmul4) + tf.nn.l2_loss(W_matmul5)
-      reg_op = reg_op*Reg_constant
-      tf.summary.scalar('reg_op', reg_op)
-
-    return bias5_op + reg_op
-
-def evaluation(logits, labels):
+def evaluation(logits, labels, metrics_collections=None):
     #return tf.reduce_mean(tf.cast(tf.equal(tf.argmax(logits,1), tf.argmax(labels,1)), tf.float32))
-    values, indices = tf.nn.top_k(labels, 1);
-    correct = tf.reshape(tf.nn.in_top_k(logits, tf.cast(tf.reshape( indices, [-1 ] ), tf.int32), 1), [-1] )
-    print_tensor_shape( correct, 'correct shape')
-    return tf.reduce_mean(tf.cast(correct, tf.float32), name='accuracy')
+    # values, indices = tf.nn.top_k(labels, 1);
+    # correct = tf.reshape(tf.nn.in_top_k(logits, tf.cast(tf.reshape( indices, [-1 ] ), tf.int32), 1), [-1] )
+    # print_tensor_shape( correct, 'correct shape')
+    # return tf.reduce_mean(tf.cast(correct, tf.float32), name='accuracy')
+    return tf.metrics.accuracy(predictions=tf.argmax(logits, axis=1), labels=tf.argmax(labels, axis=1), name='accuracy', metrics_collections=metrics_collections)
+
+def metrics(logits, labels, metrics_collections=None):
+  auc_eval = tf.metrics.auc(predictions=logits, labels=labels, name='auc', metrics_collections=metrics_collections)
+  fn_eval = tf.metrics.false_negatives(predictions=logits, labels=labels, name='false_negatives', metrics_collections=metrics_collections)
+  fp_eval = tf.metrics.false_positives(predictions=logits, labels=labels, name='false_positives', metrics_collections=metrics_collections)
+  tn_eval = tf.metrics.true_negatives(predictions=logits, labels=labels, name='true_negatives', metrics_collections=metrics_collections)
+  tp_eval = tf.metrics.true_positives(predictions=logits, labels=labels, name='true_positives', metrics_collections=metrics_collections)
+  return auc_eval,fn_eval,fp_eval,tn_eval,tp_eval
+
 
 def training(loss, learning_rate, decay_steps, decay_rate):
     # input: loss: loss tensor from loss()
@@ -164,20 +166,22 @@ def training(loss, learning_rate, decay_steps, decay_rate):
     global_step = tf.Variable(0, name='global_step', trainable=False)
 
   # create learning_decay
-    lr = tf.train.exponential_decay( learning_rate,
-                                     global_step,
-                                     decay_steps,
-                                     decay_rate, staircase=True )
+    # lr = tf.train.exponential_decay( learning_rate,
+    #                                  global_step,
+    #                                  decay_steps,
+    #                                  decay_rate, staircase=True )
 
-    tf.summary.scalar('2learning_rate', lr )
+    # tf.summary.scalar('2learning_rate', lr )
 
   # Create the gradient descent optimizer with the given learning rate.
-#    optimizer = tf.train.GradientDescentOptimizer(learning_rate)
-    optimizer = tf.train.GradientDescentOptimizer(lr)
+    optimizer = tf.train.AdamOptimizer(learning_rate)
 
   # Use the optimizer to apply the gradients that minimize the loss
   # (and also increment the global step counter) as a single training step.
-    train_op = optimizer.minimize(loss, global_step=global_step)
+
+    update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+    with tf.control_dependencies(update_ops):
+      train_op = optimizer.minimize(loss, global_step=global_step)
 
     return train_op
 
@@ -186,8 +190,6 @@ def loss(logits, labels):
     print_tensor_shape( logits, 'logits shape')
     print_tensor_shape( labels, 'labels shape')
 
-    cross_entropy = tf.nn.softmax_cross_entropy_with_logits(logits=logits, labels=labels, name='cross_entropy')
-
-    loss = tf.reduce_mean(cross_entropy, name='cross_entropy_mean')
+    loss = tf.losses.softmax_cross_entropy(logits=logits, onehot_labels=labels)
 
     return loss

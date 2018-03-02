@@ -92,6 +92,7 @@ def reformat(dataset, labels):
 
 train_dataset, train_labels = reformat(train_dataset, train_labels)
 valid_dataset, valid_labels = reformat(valid_dataset, valid_labels)
+
 # test_dataset, test_labels = reformat(test_dataset, test_labels)
 
 size_features = train_dataset.shape[1]
@@ -133,7 +134,15 @@ with graph.as_default():
   dataset = dataset.repeat(args.num_epochs)
   dataset = dataset.batch(batch_size)
   iterator = dataset.make_initializable_iterator()
-  next_train_data, next_train_labels = iterator.get_next()  
+  next_train_data, next_train_labels = iterator.get_next()
+
+  tf_valid_dataset = tf.data.Dataset.from_tensor_slices(valid_dataset)
+  tf_valid_labels = tf.data.Dataset.from_tensor_slices(valid_labels)
+  valid_dataset = tf.data.Dataset.zip((tf_valid_dataset, tf_valid_labels))
+  valid_dataset = valid_dataset.repeat(1)
+  valid_dataset = valid_dataset.batch(batch_size)
+  valid_iterator = valid_dataset.make_initializable_iterator()
+  next_valid_data, next_valid_labels = valid_iterator.get_next()
 
   x = tf.placeholder(tf.float32,shape=(None, size_features))
   y_ = tf.placeholder(tf.float32, shape=(None, num_labels))
@@ -143,7 +152,7 @@ with graph.as_default():
   #tf_valid_dataset = tf.constant(valid_dataset)
   # tf_test_dataset = tf.constant(test_dataset)
 
-  y_conv = nn.inference(x, size_features, num_labels=num_labels, keep_prob=keep_prob, batch_size=batch_size, regularization_constant=reg_constant, is_training=True)
+  y_conv = nn.inference(x, size_features, num_labels=num_labels, keep_prob=keep_prob, batch_size=batch_size, is_training=True)
 
 # calculate the loss from the results of inference and the labels
   loss = nn.loss(y_conv, y_)
@@ -162,8 +171,21 @@ with graph.as_default():
   #train_step = nn.training(loss, learning_rate, decay_steps, decay_rate)
   train_step = nn.training(loss, learning_rate, decay_steps, decay_rate)
 
-  accuracy_eval = nn.evaluation(y_conv, y_)
-  tf.summary.scalar(accuracy_eval.op.name, accuracy_eval)
+  logits = tf.nn.softmax(y_conv)
+
+  accuracy_eval = nn.evaluation(logits, y_)
+  tf.summary.scalar("accuracy_0", accuracy_eval[0])
+  tf.summary.scalar("accuracy_1", accuracy_eval[1])
+
+
+  auc_eval,fn_eval,fp_eval,tn_eval,tp_eval = nn.metrics(logits, y_)
+  tf.summary.scalar("auc_0", auc_eval[0])
+  tf.summary.scalar("auc_1", auc_eval[1])
+  tf.summary.scalar("fn_eval", fn_eval[1])
+  tf.summary.scalar("fp_eval", fp_eval[1])
+  tf.summary.scalar("tn_eval", tn_eval[1])
+  tf.summary.scalar("tp_eval", tp_eval[1])
+
 
   summary_op = tf.summary.merge_all()
 
@@ -185,7 +207,7 @@ with graph.as_default():
   # test_prediction = model(tf_test_dataset)
 
   with tf.Session() as sess:
-    sess.run(tf.global_variables_initializer())
+    sess.run([tf.global_variables_initializer(), tf.local_variables_initializer()])
     saver = tf.train.Saver()
     # specify where to write the log files for import to TensorBoard
     now = datetime.now()
@@ -199,11 +221,11 @@ with graph.as_default():
 
         batch_data, batch_labels = sess.run([next_train_data, next_train_labels])
 
-        _, loss_value, summary, accuracy = sess.run([train_step, loss, summary_op, accuracy_eval], feed_dict={x: batch_data, y_: batch_labels, keep_prob: 0.5})
+        _, loss_value, summary, accuracy, auc = sess.run([train_step, loss, summary_op, accuracy_eval, auc_eval], feed_dict={x: batch_data, y_: batch_labels, keep_prob: 0.5})
 
         if step % 100 == 0:
           print('OUTPUT: Step %d: loss = %.3f' % (step, loss_value))
-          print('Accuracy = %.3f ' % (accuracy))
+          print('Accuracy = %.3f, Auc = %.3f ' % (accuracy[0], auc[0]))
           # output some data to the log files for tensorboard
           summary_writer.add_summary(summary, step)
           summary_writer.flush()
@@ -211,23 +233,21 @@ with graph.as_default():
           # less frequently output checkpoint files.  Used for evaluating the model
         if step % 1000 == 0:
           save_path = saver.save(sess, os.path.join(outvariablesdirname, modelname), global_step=step)
+          sess.run([valid_iterator.initializer])
+          while True:
+            try:
+              batch_valid_data, batch_valid_labels = sess.run([next_valid_data, next_valid_labels])
+              _, accuracy, auc = sess.run([y_conv, accuracy_eval, auc_eval], feed_dict={x: batch_valid_data, y_: batch_valid_labels, keep_prob: 1})
+              print('Validation accuracy = %.3f, Auc = %.3f ' % (accuracy[0], auc[0]))
+            except tf.errors.OutOfRangeError:
+              break
 
         step += 1
 
       except tf.errors.OutOfRangeError:
         break
-      
-    for i in range(0, np.shape(valid_dataset)[0], batch_size):
-      _, accuracy = sess.run([y_conv, accuracy_eval], feed_dict={x: valid_dataset[i:i + batch_size], y_: valid_labels[i:i + batch_size], keep_prob: 1})
-      print('Validation accuracy = %.3f ' % (accuracy))
 
     outmodelname = os.path.join(outvariablesdirname, modelname)
     print('Step:', step)
     print('Saving model:', outmodelname)
     saver.save(sess, outmodelname, global_step=step)
-
-    #test_accuracy = evaluate_accuracy(test_prediction.eval(feed_dict={keep_prob: 1.0}), test_labels)
-    #print("test accuracy %g"%test_accuracy)
-    
-  
-  
