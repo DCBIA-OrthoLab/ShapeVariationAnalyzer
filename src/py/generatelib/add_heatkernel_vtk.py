@@ -49,7 +49,7 @@ if __name__ == '__main__':
 		shape_matlab = mat_contents['shape']
 		for vtkfilename in vtklist:
 			if vtkfilename.endswith((".vtk")):
-				print i
+				print(i)
 				reader = vtk.vtkPolyDataReader()
 				reader.SetFileName(vtkfilename)
 				reader.Update()
