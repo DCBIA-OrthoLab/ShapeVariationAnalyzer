@@ -144,11 +144,6 @@ class inputData():
                             pointidlisttemp = vtk.vtkIdList()
                             cellidlisttemp = vtk.vtkIdList()
 
-                            print("cell dd")
-                            geometry.GetCellEdgeNeighbors(ci, pointidlist.GetId(0), pointidlist.GetId(1), cellidlisttemp)
-                            print("cell dd111")
-                            print("cell Numids", cellidlisttemp.GetNumberOfIds())
-
                             npfeatures = []
 
                             for pid in range(pointidlist.GetNumberOfIds()):
