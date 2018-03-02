@@ -44,11 +44,8 @@ parser = argparse.ArgumentParser(description='Shape Variation Analyzer', formatt
 #parser.add_argument('--model', type=str, help='pickle file with the pca decomposition', required=True)
 #parser.add_argument('--shapeDir', type=str, help='Directory with vtk files .vtk', required=True)
 parser.add_argument('--dataPath', action='store', dest='dirwithSub', help='folder with subclasses', required=True)
-parser.add_argument('--template', help='Template sphere, output from SPHARM-PDM or similar tool', required=True)
-parser.add_argument('--levels', help='Linear subdivision levels', nargs="+", type=int, default=[8,6,4,2])
 parser.add_argument('--train_size', help='train ratio', type=float, default=0.8)
 parser.add_argument('--validation_size', help='validation ratio from test data', default=0.5, type=float)
-parser.add_argument('--feature_points', help='Extract the following features from the polydatas GetPointData', nargs='+', default=["Normals", "Mean_Curvature", "distanceGroup"], type=str)
 parser.add_argument('--out', dest="pickle_file", help='Pickle file output', default="datasets.pickle", type=str)
 
 
@@ -67,6 +64,47 @@ def writeData(data_for_training,outputdataPath):
 
 
 
+def get_normals(vtkclassdict):
+
+	inputdata = inputData.inputData()
+	labels = []
+	dataset_concatenated = []
+
+	# This looks really confusing but is really not
+
+	for folderclass, vtklist in vtkclassdict.items():
+
+		try:
+			with open(folderclass + ".pickle",'rb') as f:
+
+				dataset=pickle.load(f)
+				normal_features = []
+
+				for vtkfilename in vtklist:
+
+					#We'll load the same files and get the normals
+					features = inputdata.load_features(vtkfilename, feature_polys=["Normals"])
+					normal_features.append(features)
+
+				dsshape = np.shape(dataset)
+				#This reshaping stuff is to get the list of points, i.e., all connected points
+				#and the corresponding label which is the normal in this case
+				#The data in the dataset contains lists with different sizes
+
+				labels.extend(np.array(normal_features).reshape(dsshape[0]*dsshape[1]*dsshape[2], -1))
+				dataset_concatenated.extend(dataset.reshape(dsshape[0]*dsshape[1]*dsshape[2], dsshape[3], -1))
+
+		except Exception as e:
+			print('Unable to process', pickle_file,':',e)
+			raise
+
+	# lens = np.array([len(dataset_concatenated[i]) for i in range(len(dataset_concatenated))])
+	# mask = np.arange(lens.max()) < lens[:,None]
+	# padded = np.zeros(mask.shape + (3,))
+	# padded[mask] = np.vstack((dataset_concatenated[:]))
+
+	# return np.array(padded), np.array(labels)
+	return np.array(dataset_concatenated), np.array(labels)
 
 def get_labels(pickle_file):
 #get labels of a dataset and returns the labels array and the dataset with features
@@ -205,9 +243,16 @@ if __name__ == '__main__':
 	# Get the data from the folders with vtk files
 	inputdata = inputData.inputData()
 	data_folders = inputdata.get_folder_classes_list(dataPath)
-	pickled_datasets = inputdata.maybe_pickle(data_folders, 5, feature_points=args.feature_points)
+
+	pickled_datasets = inputdata.maybe_pickle(data_folders, 5, feature_polys=["Points"])
 	# Create the labels, i.e., enumerate the groups
-	dataset,labels = get_labels(pickled_datasets)
+
+	vtklistdict = inputdata.get_vtklist(data_folders)
+
+	dataset,labels = get_normals(vtklistdict)
+
+	print("dataset", np.shape(dataset))
+	print("labels", np.shape(labels))
 
 	# Comput the total number of shapes and train/test size
 	total_number_shapes=dataset.shape[0]
@@ -216,11 +261,9 @@ if __name__ == '__main__':
 
 	# Randomize the original dataset
 	shuffled_dataset, shuffled_labels = inputdata.randomize(dataset, labels)
-	shuffled_dataset = np.reshape(shuffled_dataset, (total_number_shapes, -1))
-
-	# Generate SMOTE with out including the valid/test samples, in some cases, this may raise an error
-	# as the number of samples in one class is less than 5 and SMOTE cannot continue. Just run it again
-	dataset_res,labels_res=generate_with_SMOTE(shuffled_dataset[0:num_train],shuffled_labels[0:num_train])
+	
+	dataset_res = shuffled_dataset
+	labels_res = shuffled_labels
 
 	# SANITY CHECKS
 	print('dataset',np.shape(dataset))
@@ -230,11 +273,8 @@ if __name__ == '__main__':
 
 	print('num_train', num_train)
 	print('num_valid', num_valid)
-	print('number of labels',np.shape(np.unique(labels)))
-	print('number of labels resampled',np.shape(np.unique(labels_res)))
-	print('Labels resampled',np.unique(labels_res).tolist())
 
-	PCA_plot(dataset,labels,dataset_res,labels_res)
+	# PCA_plot(dataset,labels,dataset_res,labels_res)
 
 	try:
 
