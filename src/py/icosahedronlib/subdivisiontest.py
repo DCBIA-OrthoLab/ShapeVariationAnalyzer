@@ -1,17 +1,23 @@
 import vtk
+import LinearSubdivisionFilter
 import numpy as np 
 
 #Coords in unit sphere for icosahedron
 
-def get_subdiv_points(icosahedron, subdivisionlevel):
-	points = icosahedron.GetPoints()
-	for cellid in range(icosahedron.GetNumberOfCells()):
-		idlist = vtk.vtkIdList()
-		icosahedron.GetCellPoints(cellid, idlist)
-		
-		idlist.GetId(0)
-		idlist.GetId(1)
-		idlist.GetId()
+def normalize_points(poly):
+
+	polypoints = poly.GetPoints()
+
+	for pid in range(polypoints.GetNumberOfPoints()):
+		spoint = polypoints.GetPoint(pid)
+		spoint = np.array(spoint)
+		norm = np.linalg.norm(spoint)
+		spoint = spoint/norm
+		polypoints.SetPoint(pid, spoint[0], spoint[1], spoint[2])
+
+	poly.SetPoints(polypoints)
+
+	return poly
 
 
 def main():
@@ -32,34 +38,25 @@ def main():
 
 	sourceObjects.append(icosahedronsource.GetOutput())
 	icosahedron = sourceObjects[-1]
-
-	for sl in range(1, subdivisionlevel):
-		subdivpoints = get_subdiv_points(icosahedron, sl)
-
-		surfrecon = vtk.vtkSurfaceReconstructionFilter()
-		surfrecon.SetInputData(subdivpoints)
+	
+	for sl in range(2, subdivisionlevel):
 
 		# subdivfilter = vtk.vtkLinearSubdivisionFilter()
-		# subdivfilter.SetInputData(icosahedron)
-		# subdivfilter.SetNumberOfSubdivisions(sl)
-		# subdivfilter.Update()
+		subdivfilter = LinearSubdivisionFilter.LinearSubdivisionFilter()
+		subdivfilter.SetInputData(icosahedron)
+		subdivfilter.SetNumberOfSubdivisions(sl)
+		subdivfilter.Update()
 		
-		# subdivpoly = subdivfilter.GetOutput()
-		# subdivpoints = subdivpoly.GetPoints()
+		subdivpoly = subdivfilter.GetOutput()
+		subdivpoly = normalize_points(subdivpoly)
 
-		# for pid in range(subdivpoints.GetNumberOfPoints()):
-		# 	spoint = subdivpoints.GetPoint(pid)
-		# 	spoint = np.array(spoint)
-		# 	norm = np.linalg.norm(spoint)
-		# 	spoint = spoint/norm
-		# 	subdivpoints.SetPoint(pid, spoint[0], spoint[1], spoint[2])
-		# subdivpoly.SetPoints(subdivpoints)
-
-		# print("\nlevel", sl + 1)
-		# print("Points", subdivpoly.GetNumberOfPoints())
-		# print("Polys", subdivpoly.GetNumberOfPolys())
+		print("\nlevel", sl)
+		print("Points", subdivpoly.GetNumberOfPoints())
+		print("Polys", subdivpoly.GetNumberOfPolys())
 		
-		# sourceObjects.append(subdivpoly)
+		sourceObjects.append(subdivpoly)
+
+
 
 	renderers = list()
 	mappers = list()
@@ -74,6 +71,11 @@ def main():
 
 	backProperty = vtk.vtkProperty()
 	backProperty.SetColor(colors.GetColor3d("Red"))
+
+	reader = vtk.vtkPolyDataReader()
+	reader.SetFileName("ALLM_rotSphere.vtk")
+	reader.Update()
+	sourceObjects.append(reader.GetOutput())
 
     # Create a source, renderer, mapper, and actor
     # for each object.
@@ -95,7 +97,7 @@ def main():
 		textactors[i].SetPosition(120, 16)
 		renderers.append(vtk.vtkRenderer())
 
-	gridDimensions = 2
+	gridDimensions = 3
 
     # We need a renderer even if there is no actor.
 	for i in range(len(sourceObjects), gridDimensions ** 2):
@@ -120,6 +122,7 @@ def main():
 			    continue
 
 			renderers[index].AddActor(actors[index])
+			renderers[index].AddActor(actors[0])
 			renderers[index].AddActor(textactors[index])
 			renderers[index].SetBackground(colors.GetColor3d("BkgColor"))
 			renderers[index].ResetCamera()
