@@ -44,6 +44,7 @@ parser = argparse.ArgumentParser(description='Shape Variation Analyzer', formatt
 #parser.add_argument('--model', type=str, help='pickle file with the pca decomposition', required=True)
 #parser.add_argument('--shapeDir', type=str, help='Directory with vtk files .vtk', required=True)
 parser.add_argument('--dataPath', action='store', dest='dirwithSub', help='folder with subclasses', required=True)
+parser.add_argument('--template', help='Sphere template, computed using SPHARM-PDM', type=str, required=True)
 parser.add_argument('--train_size', help='train ratio', type=float, default=0.8)
 parser.add_argument('--validation_size', help='validation ratio from test data', default=0.5, type=float)
 parser.add_argument('--out', dest="pickle_file", help='Pickle file output', default="datasets.pickle", type=str)
@@ -62,7 +63,25 @@ def writeData(data_for_training,outputdataPath):
 			writer.SetFileName(os.path.join(outputdataPath),vtkfilename)
 			writer.Write()
 
+def get_conversion_matrices(geometry):
+	
+	points_to_cells = np.zeros((geometry.GetNumberOfCells(), geometry.GetNumberOfPoints()))
+	
+	for cid in range(geometry.GetNumberOfCells()):
+		pointidlist = vtk.vtkIdList()
+		geometry.GetCellPoints(cid, pointidlist)
+		for pid in range(pointidlist.GetNumberOfIds()):
+			points_to_cells[cid][pointidlist.GetId(pid)] = 1
 
+	cells_to_points = np.zeros((geometry.GetNumberOfPoints(), geometry.GetNumberOfCells()))
+
+	for pid in range(geometry.GetNumberOfPoints()):
+		pointidlist = vtk.vtkIdList()
+		geometry.GetPointCells(pid, pointidlist)
+		for cid in range(pointidlist.GetNumberOfIds()):
+			cells_to_points[pid][pointidlist.GetId(cid)] = 1
+
+	return points_to_cells, cells_to_points
 
 def get_normals(vtkclassdict):
 
@@ -83,16 +102,20 @@ def get_normals(vtkclassdict):
 				for vtkfilename in vtklist:
 
 					#We'll load the same files and get the normals
-					features = inputdata.load_features(vtkfilename, feature_polys=["Normals"])
+					features = inputdata.load_features(vtkfilename, feature_points=["Normals"])
 					normal_features.append(features)
 
-				dsshape = np.shape(dataset)
+				
 				#This reshaping stuff is to get the list of points, i.e., all connected points
 				#and the corresponding label which is the normal in this case
 				#The data in the dataset contains lists with different sizes
+				normal_features = np.array(normal_features)
+				
+				featshape = np.shape(normal_features)				
+				labels.extend(normal_features.reshape(featshape[0], featshape[1], -1))
 
-				labels.extend(np.array(normal_features).reshape(dsshape[0]*dsshape[1]*dsshape[2], -1))
-				dataset_concatenated.extend(dataset.reshape(dsshape[0]*dsshape[1]*dsshape[2], dsshape[3], -1))
+				dsshape = np.shape(dataset)
+				dataset_concatenated.extend(dataset.reshape(dsshape[0], dsshape[2], dsshape[3], -1))
 
 		except Exception as e:
 			print('Unable to process', pickle_file,':',e)
@@ -239,6 +262,13 @@ if __name__ == '__main__':
 	args = parser.parse_args()
 	dataPath=args.dirwithSub
 	pickle_file = args.pickle_file
+	template = args.template
+
+	reader = vtk.vtkPolyDataReader()
+	reader.SetFileName(template)
+	reader.Update()
+
+	points_to_cells, cells_to_points = get_conversion_matrices(reader.GetOutput())
 
 	# Get the data from the folders with vtk files
 	inputdata = inputData.inputData()
@@ -250,9 +280,6 @@ if __name__ == '__main__':
 	vtklistdict = inputdata.get_vtklist(data_folders)
 
 	dataset,labels = get_normals(vtklistdict)
-
-	print("dataset", np.shape(dataset))
-	print("labels", np.shape(labels))
 
 	# Comput the total number of shapes and train/test size
 	total_number_shapes=dataset.shape[0]
@@ -273,6 +300,10 @@ if __name__ == '__main__':
 
 	print('num_train', num_train)
 	print('num_valid', num_valid)
+	print('num_test', total_number_shapes - num_valid - num_train)
+
+	print("points_to_cells", np.shape(points_to_cells))
+	print("cells_to_points", np.shape(cells_to_points))
 
 	# PCA_plot(dataset,labels,dataset_res,labels_res)
 
@@ -286,7 +317,9 @@ if __name__ == '__main__':
 		'valid_dataset': dataset[num_train: num_train + num_valid],
         'valid_labels': labels[num_train: num_train + num_valid],
         'test_dataset': dataset[num_train + num_valid:],
-        'test_labels': labels[num_train + num_valid:]        
+        'test_labels': labels[num_train + num_valid:],
+        'points_to_cells': points_to_cells, 
+        'cells_to_points': cells_to_points        
 		}
 		pickle.dump(save, f, pickle.HIGHEST_PROTOCOL)
     	#f.close()

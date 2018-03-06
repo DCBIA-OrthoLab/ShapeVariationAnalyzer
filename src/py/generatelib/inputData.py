@@ -141,9 +141,6 @@ class inputData():
                         for ci in range(geometry.GetNumberOfPolys()):
                             geometry.GetCellPoints(ci, pointidlist)
 
-                            pointidlisttemp = vtk.vtkIdList()
-                            cellidlisttemp = vtk.vtkIdList()
-
                             npfeatures = []
 
                             for pid in range(pointidlist.GetNumberOfIds()):
