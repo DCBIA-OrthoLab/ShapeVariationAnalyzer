@@ -1,0 +1,40 @@
+#!/usr/bin/env python
+
+import sys,os
+from sys import platform as _platform
+
+def printXML(cliPath):
+    xmlFP = open(cliPath + ".xml", "r")
+    print(xmlFP.read())
+    xmlFP.close()
+
+def main ():
+    for path in sys.path:
+        if "Slicer" in path and "bin" in path:
+            if _platform == "linux" or _platform == "linux2" or _platform == "darwin":
+                pathSlicerPython = os.path.join(path.split("bin")[0],"bin", "SlicerPython")
+                break
+            elif _platform == "win32":
+                pathSlicerPython = os.path.join(path.split("bin")[0],"bin", "SlicerPython.exe")
+                break
+    currentPath = os.path.dirname(os.path.abspath(__file__))
+    remainingArgs = [pathSlicerPython, os.path.join(currentPath ,"Wrapper","envTensorFlowWrapper.py"), os.path.join(currentPath,"Resources", "Classifier","trainNeuralNetwork.py")]
+    for arg in sys.argv[1:]:
+        if arg in ("-x", "--xml"):
+            printXML(sys.argv[0])
+            return
+        else:
+            remainingArgs.append(arg)
+
+    command = "%s %s -pgm %s -args \"{'%s': '%s', '%s': '%s'}\"" % tuple(remainingArgs)
+
+    exit(os.system(command))
+
+if __name__ == '__main__':
+    try:
+        main()
+    except Exception, e:
+        print ('ERROR, UNEXPECTED EXCEPTION')
+        print str(e)
+        import traceback
+        traceback.print_exc()
