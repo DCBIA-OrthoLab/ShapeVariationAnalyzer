@@ -4,6 +4,7 @@ import pickle
 import glob
 import scipy.io as sio
 import numpy as np
+from collections import OrderedDict
 
 class inputData():
     def __init__(self, parent = None, num_points_param = 1002, num_classes_param = 7):
@@ -30,11 +31,12 @@ class inputData():
 
     def get_vtklist(self, classFolders):
 
-        vtk_list_classes = {}
-
+        vtk_list_classes = OrderedDict()
+        
         for classfolder in classFolders:
             vtk_list_classes[classfolder] = glob.glob(os.path.join(classfolder, "*.vtk"))
 
+            
         return vtk_list_classes
     #
     #   Gets all the scalar array names in the polydata for the points
@@ -206,7 +208,6 @@ class inputData():
         vtkdict = self.get_vtklist(classFolders)
 
         for classfolder, vtklist in vtkdict.items():
-
             set_filename = classfolder + '.pickle'
             dataset_names.append(set_filename)
 
