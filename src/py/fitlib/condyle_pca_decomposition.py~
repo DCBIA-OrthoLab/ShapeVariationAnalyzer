@@ -87,6 +87,55 @@ def readData(shapedir):
     return y_design.reshape(y_design.shape[0], -1), firstshapedata
 
 
+def processPCA(X, shapedata,min_explained ):
+    X_ = np.mean(X, axis=0, keepdims=True)
+    print(X.shape, X_.shape)
+
+    pointdata = X_.reshape(-1).reshape(-1, 3)
+    polydatapoints = shapedata.GetPoints()
+    ipoint = 0
+    for point in pointdata:
+        polydatapoints.SetPoint(ipoint, point[0], point[1], point[2])
+        ipoint += 1
+
+    writer = vtk.vtkPolyDataWriter()
+    meanshapeoutputfilename = args.outputMean
+    writer.SetFileName(meanshapeoutputfilename)
+    writer.SetInputData(shapedata)
+    writer.SetFileTypeToASCII()
+    writer.Update()
+    
+    
+    pca = PCA()
+    pca.fit(X - X_)
+
+    sum_explained = 0.0
+    num_components = 0
+    
+    for evr in pca.explained_variance_ratio_:
+        sum_explained += evr
+        num_components += 1
+        if sum_explained >= args.min_explained:
+            break
+    
+    print("num_components=",num_components)
+
+    pca = PCA(n_components=num_components)
+
+    X_pca = pca.fit_transform(X - X_)
+
+    print(pca.explained_variance_ratio_)
+    print(X_pca.shape)
+
+    X_pca_ = np.mean(X_pca, axis=0, keepdims=True)
+    X_pca_var = np.std(X_pca, axis=0, keepdims=True)
+
+    pca_model = {}
+    pca_model["pca"] = pca
+    pca_model["X_"] = X_
+    pca_model["X_pca_"] = X_pca_
+    pca_model["X_pca_var"] = X_pca_var
+    return pca_model
 
 
 if __name__ == '__main__':
