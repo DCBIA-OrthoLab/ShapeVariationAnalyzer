@@ -248,12 +248,30 @@
          <string>PCA exploration</string>
         </property>
         <layout class="QGridLayout" name="gridLayout_8">
+         <item row="6" column="0">
+          <layout class="QGridLayout" name="gridLayout">
+           <item row="0" column="0">
+            <widget class="QPushButton" name="pushButton_saveExploration">
+             <property name="text">
+              <string>Save Exploration</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QPushButton" name="pushButton_toggleMean">
+             <property name="text">
+              <string>Toggle Mean Shape</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
          <item row="5" column="0">
           <layout class="QGridLayout" name="gridLayout_2">
            <item row="2" column="0">
             <widget class="QLabel" name="label_maxSlider">
              <property name="text">
-              <string>Maximum number of sliders</string>
+              <string>Maximum number of eignvalues</string>
              </property>
             </widget>
            </item>
@@ -279,7 +297,41 @@
            </item>
           </layout>
          </item>
-         <item row="11" column="0">
+         <item row="8" column="0">
+          <layout class="QGridLayout" name="gridLayout_10">
+           <item row="0" column="1">
+            <widget class="QComboBox" name="comboBox_colorMode"/>
+           </item>
+           <item row="1" column="1">
+            <widget class="QSpinBox" name="spinBox_colorModeParam_1"/>
+           </item>
+           <item row="0" column="0">
+            <widget class="QLabel" name="label_colorMode">
+             <property name="text">
+              <string>Color Mode</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="1">
+            <widget class="QSpinBox" name="spinBox_colorModeParam_2"/>
+           </item>
+           <item row="1" column="0">
+            <widget class="QLabel" name="label_colorModeParam1">
+             <property name="text">
+              <string>Param 1</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="0">
+            <widget class="QLabel" name="label_colorModeParam2">
+             <property name="text">
+              <string>|</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item row="13" column="0">
           <layout class="QGridLayout" name="gridLayout_PCAsliders">
            <item row="0" column="2">
             <widget class="QLabel" name="label_valueExploration">
@@ -302,6 +354,68 @@
              </property>
             </widget>
            </item>
+           <item row="1" column="1">
+            <layout class="QGridLayout" name="gridLayout_11">
+             <item row="0" column="2">
+              <widget class="QLabel" name="label_normalLabel_3">
+               <property name="text">
+                <string/>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="3">
+              <widget class="QLabel" name="label_normalLabel_4">
+               <property name="text">
+                <string>|</string>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignCenter</set>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="4">
+              <widget class="QLabel" name="label_normalLabel_5">
+               <property name="text">
+                <string/>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="6">
+              <widget class="QLabel" name="label_normalLabel_7">
+               <property name="text">
+                <string>|  |</string>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="5">
+              <widget class="QLabel" name="label_normalLabel_6">
+               <property name="text">
+                <string>|   </string>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="1">
+              <widget class="QLabel" name="label_normalLabel_2">
+               <property name="text">
+                <string>  |</string>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="0">
+              <widget class="QLabel" name="label_normalLabel_1">
+               <property name="text">
+                <string>|  |</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
           </layout>
          </item>
          <item row="0" column="0">
@@ -321,7 +435,7 @@
            </item>
           </layout>
          </item>
-         <item row="7" column="0">
+         <item row="9" column="0">
           <layout class="QGridLayout" name="gridLayout_9">
            <item row="2" column="1">
             <widget class="QComboBox" name="comboBox_groupPCA"/>
@@ -335,31 +449,6 @@
            </item>
            <item row="2" column="2">
             <widget class="ctkColorPickerButton" name="ctkColorPickerButton_groupColor" native="true"/>
-           </item>
-           <item row="1" column="2">
-            <widget class="QCheckBox" name="checkBox_showColorMap">
-             <property name="text">
-              <string>Show distance map</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </item>
-         <item row="6" column="0">
-          <layout class="QGridLayout" name="gridLayout">
-           <item row="0" column="0">
-            <widget class="QPushButton" name="pushButton_saveExploration">
-             <property name="text">
-              <string>Save Exploration</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="1">
-            <widget class="QPushButton" name="pushButton_toggleMean">
-             <property name="text">
-              <string>Toggle Mean Shape</string>
-             </property>
-            </widget>
            </item>
           </layout>
          </item>
