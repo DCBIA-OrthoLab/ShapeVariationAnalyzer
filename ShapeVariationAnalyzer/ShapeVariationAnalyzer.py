@@ -235,10 +235,10 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.tableWidget_VTKFiles.setColumnWidth(0, 200)
         horizontalHeader = self.tableWidget_VTKFiles.horizontalHeader()
         horizontalHeader.setStretchLastSection(False)
-        horizontalHeader.setResizeMode(0,qt.QHeaderView.Stretch)
+        '''horizontalHeader.setResizeMode(0,qt.QHeaderView.Stretch)
         horizontalHeader.setResizeMode(1,qt.QHeaderView.ResizeToContents)
         horizontalHeader.setResizeMode(2,qt.QHeaderView.ResizeToContents)
-        horizontalHeader.setResizeMode(3,qt.QHeaderView.ResizeToContents)
+        horizontalHeader.setResizeMode(3,qt.QHeaderView.ResizeToContents)'''
         self.tableWidget_VTKFiles.verticalHeader().setVisible(True)
 
         # --------------------------------------------------------- #
