@@ -535,7 +535,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
 
         # Load automatically the CSV file in the pathline in the next tab "Creation of New Classification Groups"
         self.pathLineEdit_previewGroups.setCurrentPath(filepath)
-        self.pathLineEdit_selectionClassificationGroups.setCurrentPath(filepath)
+        self.pathLineEdit_CSVFilePCA.setCurrentPath(filepath)
         #self.pathLineEdit_CSVFileDataset.setCurrentPath(filepath)
 
     # ---------------------------------------------------- #
