@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1600</width>
-    <height>1935</height>
+    <width>833</width>
+    <height>1858</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -184,259 +184,51 @@
     </widget>
    </item>
    <item>
-    <widget class="ctkCollapsibleButton" name="CollapsibleButton_computeAverageGroups" native="true">
-     <property name="checked" stdset="0">
-      <bool>false</bool>
-     </property>
+    <widget class="ctkCollapsibleButton" name="collapsibleButton_PCA" native="true">
      <property name="text" stdset="0">
-      <string>Computation of mean group</string>
-     </property>
-     <layout class="QGridLayout" name="gridLayout">
-      <item row="2" column="0">
-       <widget class="ctkCollapsibleGroupBox" name="CollapsibleGroupBox">
-        <property name="title">
-         <string>Preview of Group's Mean</string>
-        </property>
-        <layout class="QVBoxLayout" name="verticalLayout_4">
-         <item>
-          <layout class="QHBoxLayout" name="horizontalLayout_meanGroupCSV">
-           <item>
-            <widget class="QLabel" name="label_meanGroup">
-             <property name="text">
-              <string>CSV File mean shapes:</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="ctkPathLineEdit" name="pathLineEdit_meanGroup" native="true"/>
-           </item>
-          </layout>
-         </item>
-         <item>
-          <layout class="QHBoxLayout" name="horizontalLayout">
-           <item>
-            <widget class="QLabel" name="label_healthyGroup">
-             <property name="text">
-              <string>Healthy group:</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QComboBox" name="comboBox_healthyGroup"/>
-           </item>
-          </layout>
-         </item>
-         <item>
-          <widget class="QPushButton" name="pushButton_previewGroups">
-           <property name="text">
-            <string>Preview</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="qMRMLTreeView" name="MRMLTreeView_classificationGroups">
-           <property name="sceneModelType" stdset="0">
-            <string>ModelHierarchy</string>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </widget>
-      </item>
-      <item row="1" column="0">
-       <widget class="QGroupBox" name="groupBox_3">
-        <property name="title">
-         <string>Selection of Groups</string>
-        </property>
-        <layout class="QVBoxLayout" name="verticalLayout_8">
-         <item>
-          <layout class="QHBoxLayout" name="horizontalLayout_7">
-           <item>
-            <widget class="QLabel" name="label_CSVFileComputeMean">
-             <property name="text">
-              <string>CSV File</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="ctkPathLineEdit" name="PathLineEdit_selectionClassificationGroups" native="true"/>
-           </item>
-          </layout>
-         </item>
-         <item>
-          <widget class="QPushButton" name="pushButton_computeMeanGroup">
-           <property name="text">
-            <string>Compute mean group</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <layout class="QHBoxLayout" name="horizontalLayout_exportMeanGroups">
-           <item>
-            <widget class="ctkDirectoryButton" name="directoryButton_exportMeanGroups" native="true"/>
-           </item>
-           <item>
-            <widget class="QPushButton" name="pushButton_exportMeanGroups">
-             <property name="text">
-              <string>Export</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </item>
-        </layout>
-       </widget>
-      </item>
-     </layout>
-    </widget>
-   </item>
-   <item>
-    <widget class="ctkCollapsibleButton" name="collapsibleButton_classificationNetwork" native="true">
-     <property name="text" stdset="0">
-      <string> Morphological classifier</string>
+      <string>PCA</string>
      </property>
      <property name="checked" stdset="0">
       <bool>false</bool>
      </property>
      <layout class="QGridLayout" name="gridLayout_4">
-      <item row="2" column="2">
-       <widget class="QGroupBox" name="groupBox_evalNetwork">
+      <item row="0" column="0">
+       <widget class="QGroupBox" name="groupBox_PCA_options">
         <property name="title">
-         <string>Classify shape(s)</string>
-        </property>
-        <layout class="QVBoxLayout" name="verticalLayout_9">
-         <item>
-          <layout class="QGridLayout" name="gridLayout_2">
-           <item row="2" column="1">
-            <widget class="ctkPathLineEdit" name="PathLineEdit_CSVInputData" native="true"/>
-           </item>
-           <item row="2" column="0">
-            <widget class="QLabel" name="label_CSVFile">
-             <property name="text">
-              <string>CSV File</string>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="1">
-            <widget class="qMRMLNodeComboBox" name="MRMLNodeComboBox_VTKInputData" native="true">
-             <property name="nodeTypes" stdset="0">
-              <stringlist>
-               <string>vtkMRMLModelNode</string>
-              </stringlist>
-             </property>
-             <property name="showHidden" stdset="0">
-              <bool>false</bool>
-             </property>
-             <property name="noneEnabled" stdset="0">
-              <bool>true</bool>
-             </property>
-             <property name="addEnabled" stdset="0">
-              <bool>false</bool>
-             </property>
-             <property name="removeEnabled" stdset="0">
-              <bool>false</bool>
-             </property>
-             <property name="selectNodeUponCreation" stdset="0">
-              <bool>false</bool>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="0">
-            <widget class="QLabel" name="label_VTKFile">
-             <property name="text">
-              <string>VTK file</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="1">
-            <widget class="ctkPathLineEdit" name="ctkPathLineEdit_networkPath" native="true"/>
-           </item>
-           <item row="0" column="0">
-            <widget class="QLabel" name="label_NetworkPath">
-             <property name="text">
-              <string>Network path</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </item>
-         <item>
-          <widget class="QPushButton" name="pushButton_preprocessNewData">
-           <property name="text">
-            <string>Preprocess new data</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <layout class="QGridLayout" name="gridLayout_8">
-           <item row="0" column="0">
-            <widget class="QPushButton" name="pushButton_exportToClassify">
-             <property name="text">
-              <string>Export to classify</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="1">
-            <widget class="QPushButton" name="pushButton_classifyIndex">
-             <property name="text">
-              <string>Classify</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </item>
-        </layout>
-       </widget>
-      </item>
-      <item row="0" column="2" rowspan="2">
-       <widget class="QGroupBox" name="groupBox_createNetwork">
-        <property name="title">
-         <string>Create Network</string>
+         <string>Selection of groups</string>
         </property>
         <layout class="QGridLayout" name="gridLayout_5">
-         <item row="12" column="0">
+         <property name="verticalSpacing">
+          <number>6</number>
+         </property>
+         <item row="1" column="0">
           <layout class="QGridLayout" name="gridLayout_6">
-           <item row="2" column="0">
-            <widget class="QLabel" name="label_stateNetwork">
-             <property name="text">
-              <string>Computing network...</string>
-             </property>
-            </widget>
-           </item>
            <item row="0" column="0">
-            <widget class="QPushButton" name="pushButton_preprocessData">
+            <widget class="QPushButton" name="pushButton_PCA">
              <property name="text">
-              <string>Preprocess data</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="1">
-            <widget class="QPushButton" name="pushButton_ExportUntrainedNetwork">
-             <property name="text">
-              <string>Export Untrained Network</string>
+              <string>Process and Export</string>
              </property>
             </widget>
            </item>
            <item row="1" column="0">
-            <widget class="QPushButton" name="pushButton_trainNetwork">
+            <widget class="QLabel" name="label_statePCA">
              <property name="text">
-              <string>Train Network</string>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="1">
-            <widget class="QPushButton" name="pushButton_ExportNetwork">
-             <property name="text">
-              <string>Export Classifier</string>
+              <string>Computing PCA...</string>
              </property>
             </widget>
            </item>
           </layout>
          </item>
-         <item row="9" column="0">
+         <item row="0" column="0">
           <layout class="QGridLayout" name="gridLayout_3">
-           <item row="1" column="1">
-            <widget class="ctkPathLineEdit" name="pathLineEdit_CSVFileMeansShape" native="true"/>
+           <property name="horizontalSpacing">
+            <number>6</number>
+           </property>
+           <property name="verticalSpacing">
+            <number>1</number>
+           </property>
+           <item row="0" column="1">
+            <widget class="ctkPathLineEdit" name="pathLineEdit_CSVFilePCA" native="true"/>
            </item>
            <item row="0" column="0">
             <widget class="QLabel" name="label_CSVFileDataset">
@@ -445,111 +237,220 @@
              </property>
             </widget>
            </item>
-           <item row="0" column="1">
-            <widget class="ctkPathLineEdit" name="pathLineEdit_CSVFileDataset" native="true"/>
-           </item>
-           <item row="1" column="0">
-            <widget class="QLabel" name="label_CSVFileMeanShapes">
+          </layout>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QGroupBox" name="groupBox_4">
+        <property name="title">
+         <string>PCA exploration</string>
+        </property>
+        <layout class="QGridLayout" name="gridLayout_8">
+         <item row="6" column="0">
+          <layout class="QGridLayout" name="gridLayout">
+           <item row="0" column="0">
+            <widget class="QPushButton" name="pushButton_saveExploration">
              <property name="text">
-              <string>CSV File mean shapes</string>
+              <string>Save Exploration</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QPushButton" name="pushButton_toggleMean">
+             <property name="text">
+              <string>Toggle Mean Shape</string>
              </property>
             </widget>
            </item>
           </layout>
          </item>
-         <item row="11" column="0">
-          <widget class="QPushButton" name="pushButton_generateData">
-           <property name="text">
-            <string>Generate data (SMOTE)</string>
-           </property>
-          </widget>
+         <item row="5" column="0">
+          <layout class="QGridLayout" name="gridLayout_2">
+           <item row="2" column="0">
+            <widget class="QLabel" name="label_maxSlider">
+             <property name="text">
+              <string>Maximum number of eignvalues</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="1">
+            <widget class="QSpinBox" name="spinBox_maxSlider"/>
+           </item>
+           <item row="1" column="1">
+            <widget class="QSpinBox" name="spinBox_minVariance">
+             <property name="maximum">
+              <number>99</number>
+             </property>
+             <property name="value">
+              <number>2</number>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="QLabel" name="label_minVariance">
+             <property name="text">
+              <string>Minimum explained variance (%)</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
          </item>
-         <item row="10" column="0">
-          <widget class="ctkCollapsibleGroupBox" name="collapsibleGroupBox_advancedParameters">
-           <property name="maximumSize">
-            <size>
-             <width>16777215</width>
-             <height>16777215</height>
-            </size>
-           </property>
-           <property name="title">
-            <string>Advanced parameters</string>
-           </property>
-           <layout class="QGridLayout" name="gridLayout_7">
-            <item row="0" column="1">
-             <widget class="ctkCheckableComboBox" name="checkableComboBox_choiceOfFeatures"/>
-            </item>
-            <item row="2" column="0">
-             <widget class="QCheckBox" name="checkBox_numsteps">
-              <property name="text">
-               <string>Number of steps</string>
-              </property>
-             </widget>
-            </item>
-            <item row="2" column="1">
-             <widget class="QSpinBox" name="spinBox_numsteps"/>
-            </item>
-            <item row="0" column="0">
-             <widget class="QCheckBox" name="checkBox_features">
-              <property name="text">
-               <string>Features</string>
-              </property>
-             </widget>
-            </item>
-            <item row="1" column="1">
-             <layout class="QHBoxLayout" name="horizontalLayout_6">
-              <item>
-               <widget class="QLabel" name="label_healthyGroup_features">
-                <property name="text">
-                 <string>Control group</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QComboBox" name="comboBox_controlGroup_features"/>
-              </item>
-             </layout>
-            </item>
-            <item row="3" column="0">
-             <widget class="QCheckBox" name="checkBox_numberOfLayers">
-              <property name="text">
-               <string>Number of hidden layers</string>
-              </property>
-             </widget>
-            </item>
-            <item row="3" column="1">
-             <widget class="QSpinBox" name="spinBox_numberOfLayers"/>
-            </item>
-           </layout>
-          </widget>
+         <item row="8" column="0">
+          <layout class="QGridLayout" name="gridLayout_10">
+           <item row="0" column="1">
+            <widget class="QComboBox" name="comboBox_colorMode"/>
+           </item>
+           <item row="1" column="1">
+            <widget class="QSpinBox" name="spinBox_colorModeParam_1"/>
+           </item>
+           <item row="0" column="0">
+            <widget class="QLabel" name="label_colorMode">
+             <property name="text">
+              <string>Color Mode</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="1">
+            <widget class="QSpinBox" name="spinBox_colorModeParam_2"/>
+           </item>
+           <item row="1" column="0">
+            <widget class="QLabel" name="label_colorModeParam1">
+             <property name="text">
+              <string>Param 1</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="0">
+            <widget class="QLabel" name="label_colorModeParam2">
+             <property name="text">
+              <string>|</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
          </item>
-         <item row="4" column="0">
-          <widget class="QLabel" name="labelAlgorithmsPlot">
-           <property name="text">
-            <string/>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="0">
-          <widget class="QCheckBox" name="checkBoxGenerateData">
-           <property name="text">
-            <string>Generate Data with SMOTE</string>
-           </property>
-          </widget>
-         </item>
-         <item row="2" column="0">
-          <widget class="QPushButton" name="pushButtonRunMLalgorithm">
-           <property name="text">
-            <string>Run Machine Learning algorithms to compare</string>
-           </property>
-          </widget>
+         <item row="13" column="0">
+          <layout class="QGridLayout" name="gridLayout_PCAsliders">
+           <item row="0" column="2">
+            <widget class="QLabel" name="label_valueExploration">
+             <property name="text">
+              <string>Value</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QPushButton" name="pushButton_resetSliders">
+             <property name="text">
+              <string>Reset Sliders</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="0">
+            <widget class="QLabel" name="label_varianceExploration">
+             <property name="text">
+              <string>Explained Variance (%)</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <layout class="QGridLayout" name="gridLayout_11">
+             <item row="0" column="2">
+              <widget class="QLabel" name="label_normalLabel_3">
+               <property name="text">
+                <string/>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="3">
+              <widget class="QLabel" name="label_normalLabel_4">
+               <property name="text">
+                <string>|</string>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignCenter</set>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="4">
+              <widget class="QLabel" name="label_normalLabel_5">
+               <property name="text">
+                <string/>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="6">
+              <widget class="QLabel" name="label_normalLabel_7">
+               <property name="text">
+                <string>|  |</string>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="5">
+              <widget class="QLabel" name="label_normalLabel_6">
+               <property name="text">
+                <string>|   </string>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="1">
+              <widget class="QLabel" name="label_normalLabel_2">
+               <property name="text">
+                <string>  |</string>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="0">
+              <widget class="QLabel" name="label_normalLabel_1">
+               <property name="text">
+                <string>|  |</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+          </layout>
          </item>
          <item row="0" column="0">
-          <widget class="QLabel" name="labelComparision">
-           <property name="text">
-            <string>Compare machine learning algorithms</string>
+          <layout class="QGridLayout" name="gridLayout_7">
+           <property name="verticalSpacing">
+            <number>1</number>
            </property>
-          </widget>
+           <item row="0" column="0">
+            <widget class="QLabel" name="label_json">
+             <property name="text">
+              <string>JSON File</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="ctkPathLineEdit" name="pathLineEdit_exploration" native="true"/>
+           </item>
+          </layout>
+         </item>
+         <item row="9" column="0">
+          <layout class="QGridLayout" name="gridLayout_9">
+           <item row="2" column="1">
+            <widget class="QComboBox" name="comboBox_groupPCA"/>
+           </item>
+           <item row="2" column="0">
+            <widget class="QLabel" name="label_groupExploration">
+             <property name="text">
+              <string>Group</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="2">
+            <widget class="ctkColorPickerButton" name="ctkColorPickerButton_groupColor" native="true"/>
+           </item>
+          </layout>
          </item>
         </layout>
        </widget>
@@ -557,54 +458,9 @@
      </layout>
     </widget>
    </item>
-   <item>
-    <widget class="ctkCollapsibleButton" name="CollapsibleButton_Result" native="true">
-     <property name="text" stdset="0">
-      <string>Result / Analysis</string>
-     </property>
-     <property name="checked" stdset="0">
-      <bool>false</bool>
-     </property>
-     <layout class="QVBoxLayout" name="verticalLayout_2">
-      <item>
-       <widget class="QTableWidget" name="tableWidget_result"/>
-      </item>
-      <item>
-       <widget class="QPushButton" name="pushButton_exportResult">
-        <property name="text">
-         <string>Export Result</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <spacer name="verticalSpacer">
-        <property name="orientation">
-         <enum>Qt::Vertical</enum>
-        </property>
-        <property name="sizeHint" stdset="0">
-         <size>
-          <width>20</width>
-          <height>40</height>
-         </size>
-        </property>
-       </spacer>
-      </item>
-     </layout>
-    </widget>
-   </item>
   </layout>
  </widget>
  <customwidgets>
-  <customwidget>
-   <class>qMRMLNodeComboBox</class>
-   <extends>QWidget</extends>
-   <header>qMRMLNodeComboBox.h</header>
-  </customwidget>
-  <customwidget>
-   <class>qMRMLTreeView</class>
-   <extends>QTreeView</extends>
-   <header>qMRMLTreeView.h</header>
-  </customwidget>
   <customwidget>
    <class>qMRMLWidget</class>
    <extends>QWidget</extends>
@@ -637,6 +493,11 @@
    <class>ctkPathLineEdit</class>
    <extends>QWidget</extends>
    <header>ctkPathLineEdit.h</header>
+  </customwidget>
+  <customwidget>
+   <class>ctkColorPickerButton</class>
+   <extends>QWidget</extends>
+   <header>ctkcolorpickerbutton.h</header>
   </customwidget>
  </customwidgets>
  <resources/>
