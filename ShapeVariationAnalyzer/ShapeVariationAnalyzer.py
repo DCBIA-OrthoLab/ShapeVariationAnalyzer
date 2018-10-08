@@ -1000,7 +1000,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         if self.comboBox_colorMode.currentText == 'Group color':
 
 
-            self.logic.pca_exploration.logic.setColorMode(0)
+            self.logic.pca_exploration.setColorMode(0)
             self.spinBox_colorModeParam1.hide()
             self.spinBox_colorModeParam2.hide()
             self.label_colorModeParam1.hide()
@@ -1119,7 +1119,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
 
     def onCheckEvaluationState(self):
 
-        if self.evaluationThread.GetStatusString()!='Completed':
+        if self.evaluationThread.GetStatusString()=='Running':
             seconds = time.time()-self.starting_time
             m, s = divmod(seconds, 60)
             h, m = divmod(m, 60)
