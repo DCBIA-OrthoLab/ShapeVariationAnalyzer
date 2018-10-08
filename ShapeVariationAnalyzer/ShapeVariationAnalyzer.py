@@ -7,19 +7,24 @@ from types import *
 import math
 import shutil
 
-#import inputData
+
 import pickle
 import numpy as np
 import zipfile
 import json
 import subprocess
 
-#import PythonQt as Qt
+
 from copy import deepcopy
 
 from sklearn.decomposition import PCA
 from scipy import stats
-from scipy import special
+#from scipy import special
+
+import threading
+import time
+
+import shapca
 
 
 class ShapeVariationAnalyzer(ScriptedLoadableModule):
@@ -56,6 +61,8 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
 
         # Global Variables
         self.logic = ShapeVariationAnalyzerLogic(self)
+
+        #print(dir(self.logic))
         
         self.dictVTKFiles = dict()
         self.dictGroups = dict()
@@ -111,6 +118,8 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.label_colorMode=self.logic.get('label_colorMode')
         self.label_colorModeParam1=self.logic.get('label_colorModeParam1')
         self.label_colorModeParam2=self.logic.get('label_colorModeParam2')
+        self.label_numberShape=self.logic.get('label_numberShape')
+        self.label_importEval=self.logic.get('label_importEval')
 
         self.label_normalLabel_1=self.logic.get('label_normalLabel_1')
         self.label_normalLabel_2=self.logic.get('label_normalLabel_2')
@@ -125,6 +134,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
 
         self.pathLineEdit_CSVFilePCA = self.logic.get('pathLineEdit_CSVFilePCA')  
         self.pathLineEdit_exploration = self.logic.get('pathLineEdit_exploration')
+        self.pathLineEdit_importEval = self.logic.get('pathLineEdit_importEval')
 
         self.comboBox_groupPCA = self.logic.get('comboBox_groupPCA')
         self.comboBox_colorMode = self.logic.get('comboBox_colorMode')
@@ -133,6 +143,8 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.pushButton_resetSliders = self.logic.get('pushButton_resetSliders')  
         self.pushButton_saveExploration=self.logic.get('pushButton_saveExploration')
         self.pushButton_toggleMean=self.logic.get('pushButton_toggleMean')
+        self.pushButton_evaluateModels=self.logic.get('pushButton_evaluateModels')
+        self.pushButton_importEval=self.logic.get('pushButton_importEval')
 
         self.label_statePCA = self.logic.get('label_statePCA')
 
@@ -142,6 +154,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.spinBox_maxSlider=self.logic.get('spinBox_maxSlider')
         self.spinBox_colorModeParam1=self.logic.get('spinBox_colorModeParam_1')
         self.spinBox_colorModeParam2=self.logic.get('spinBox_colorModeParam_2')
+        self.spinBox_numberShape=self.logic.get('spinBox_numberShape')
 
         self.ctkColorPickerButton_groupColor=self.logic.get('ctkColorPickerButton_groupColor')
 
@@ -164,6 +177,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.spinBox_maxSlider.setValue(8)
 
         self.spinBox_colorModeParam1.setMinimum(1)
+
         self.spinBox_colorModeParam2.setMinimum(1)
 
         self.spinBox_colorModeParam1.setMaximum(10000)
@@ -171,6 +185,11 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
 
         self.spinBox_colorModeParam1.setValue(1)
         self.spinBox_colorModeParam2.setValue(1)
+
+        self.spinBox_numberShape.setMinimum(100)
+        self.spinBox_numberShape.setMaximum(1000000)
+        self.spinBox_numberShape.setValue(10000)
+
         
 
         self.label_statePCA.hide()
@@ -194,7 +213,9 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.label_varianceExploration.hide()
         self.pushButton_saveExploration.hide()
         self.pushButton_toggleMean.hide()
+        self.pushButton_evaluateModels.hide()
         self.spinBox_minVariance.hide()
+
         self.spinBox_maxSlider.hide()
         self.label_minVariance.hide()
         self.label_maxSlider.hide()
@@ -204,6 +225,13 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.label_colorMode.hide()
         self.label_colorModeParam1.hide()
         self.label_colorModeParam2.hide()
+
+        self.label_numberShape.hide()
+        self.spinBox_numberShape.hide()
+
+        self.label_importEval.hide()
+        self.pathLineEdit_importEval.hide()
+        self.pushButton_importEval.hide()
 
         #     disable/enable and hide/show widget
 
@@ -279,6 +307,8 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.pushButton_resetSliders.connect('clicked()', self.onResetSliders)
         self.pushButton_saveExploration.connect('clicked()',self.onSaveExploration)
         self.pushButton_toggleMean.connect('clicked()',self.onToggleMeanShape)
+        self.pushButton_evaluateModels.connect('clicked()',self.onEvaluateModels)
+        self.pushButton_importEval.connect('clicked()',self.onImportEvaluation)
 
         self.comboBox_groupPCA.connect('activated(QString)',self.explorePCA)
         self.comboBox_colorMode.connect('activated(QString)',self.onColorModeChange)
@@ -292,6 +322,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
 
         self.ctkColorPickerButton_groupColor.connect('colorChanged(QColor)',self.onGroupColorChanged)
 
+        self.evaluationFlag="DONE"
 
     # function called each time that the user "enter" in Diagnostic Index interface
     def enter(self):
@@ -358,6 +389,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.label_varianceExploration.hide()
         self.pushButton_saveExploration.hide()
         self.pushButton_toggleMean.hide()
+        self.pushButton_evaluateModels.hide()
         self.spinBox_minVariance.hide()
         self.spinBox_maxSlider.hide()
         self.label_minVariance.hide()
@@ -368,10 +400,28 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.label_colorModeParam1.hide()
         self.label_colorModeParam2.hide()
 
+        self.label_numberShape.hide()
+        self.spinBox_numberShape.hide()
+
+        self.label_importEval.hide()
+        self.pathLineEdit_importEval.hide()
+        self.pushButton_importEval.hide()
+
 
         self.pushButton_PCA.setEnabled(False) 
+        self.pathLineEdit_CSVFilePCA.disconnect('currentPathChanged(const QString)', self.onCSV_PCA)
         self.pathLineEdit_CSVFilePCA.setCurrentPath(" ")
+        self.pathLineEdit_CSVFilePCA.connect('currentPathChanged(const QString)', self.onCSV_PCA)
         self.pathLineEdit_exploration.setCurrentPath(" ")
+        self.pathLineEdit_importEval.setCurrentPath(" ")
+        if self.evaluationFlag!="DONE":
+            self.onKillEvaluation()
+        try:
+            self.pushButton_evaluateModels.clicked.disconnect()
+        except:
+            pass
+        self.pushButton_evaluateModels.setText("Evaluate models (It may take a long time)")
+        self.pushButton_evaluateModels.connect('clicked()',self.onEvaluateModels)
 
         self.spinBox_minVariance.setValue(2)
 
@@ -754,56 +804,42 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.pathLineEdit_selectionClassificationGroups.setCurrentPath(filepath)
         #self.pathLineEdit_CSVFileDataset.setCurrentPath(filepath)
 
+
+
     # ---------------------------------------------------- #
     #               Tab: PCA Analysis                      #
     # ---------------------------------------------------- #
 
     def onCSV_PCA(self):
         # print("------ onMeanGroupCSV ------")
-        self.logic.dictVTKFiles = dict()
 
-        # Check if it's a CSV file
-        condition1 = self.logic.checkExtension(self.pathLineEdit_CSVFilePCA.currentPath, ".csv")
-        if not condition1:
-            self.pathLineEdit_CSVFilePCA.setCurrentPath(" ")
+        try:
+            self.logic.pca_exploration.loadCSVFile(self.pathLineEdit_CSVFilePCA.currentPath)
+            self.pathLineEdit_exploration.setCurrentPath(" ")
+        except shapca.CSVFileError as e:
+            print('CSVFileError:'+e.value)
+            slicer.util.errorDisplay('Invalid CSV file')
             return
-
-        # Download the CSV file
-        self.logic.original_files=self.pathLineEdit_CSVFilePCA.currentPath
-        self.logic.table = self.logic.readCSVFile(self.pathLineEdit_CSVFilePCA.currentPath)
-        condition2 = self.logic.creationDictVTKFiles(self.logic.dictVTKFiles)
-        #condition3 = self.logic.checkOneMeshPerGroupInDict(self.dictVTKFiles)
-
-        # If the file is not conformed:
-        #    Re-initialization of the dictionary containing all the data
-        #    which will be used to create a new Classification Groups
-        if not (condition2):
-            self.logic.dictVTKFiles = dict()
-            return
-
 
         self.pushButton_PCA.setEnabled(True) 
 
     def onExportForExploration(self):
-        """ Function to export the CSV file in the directory chosen by the user
-            - Save the CSV file from the dictionary previously filled
-            - Load automatically this CSV file in the next tab: "Creation of New Classification Groups"
-        """
 
-        self.logic.processPCAForAll(0)
+
+        self.logic.pca_exploration.process()
 
         self.comboBox_groupPCA.setEnabled(True)
         self.comboBox_groupPCA.clear()
-        for key, value in self.logic.dictPCA.items():
+
+        dictPCA=self.logic.pca_exploration.getDictPCA()
+        for key, value in dictPCA.items():
             group_name = value["group_name"]
             if key != "All":
                 self.comboBox_groupPCA.addItem(str(key)+': '+group_name)
             else: 
                 self.comboBox_groupPCA.addItem(key)
 
-        self.logic.setCurrentPCAModel(0)
         self.setColorModeSpinBox()
-        self.logic.setColorMode(0)
 
         self.showmean=False
         self.generate3DVisualisationNodes()
@@ -817,14 +853,19 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.pathLineEdit_exploration.setCurrentPath(' ')
         self.pathLineEdit_exploration.connect('currentPathChanged(const QString)', self.onLoadExploration)
 
-        
 
+        if self.evaluationFlag=="DONE":
+            try:
+                self.pushButton_evaluateModels.clicked.disconnect()
+            except:
+                pass
+            self.pushButton_evaluateModels.setText("Evaluate models (It may take a long time)")
+            self.pushButton_evaluateModels.connect('clicked()',self.onEvaluateModels)
+        
         self.explorePCA()
 
-
-
     def onResetSliders(self):
-        self.logic.resetPCAPolyData()
+        self.logic.pca_exploration.resetPCAPolyData()
         #self.polyDataPCA.Modified()
         for slider in self.PCA_sliders:
             slider.setSliderPosition(0)
@@ -835,39 +876,32 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         X=1-(((ratio/1000.0)+1)/2.0)
         self.PCA_sliders_value_label[num_slider].setText(str(round(stats.norm.isf(X),3)))
 
-        self.logic.updatePolyDataExploration(num_slider,ratio)
+        self.logic.pca_exploration.updatePolyDataExploration(num_slider,ratio/1000.0)
         #self.polyDataPCA.Modified()
 
     def onLoadExploration(self):
 
         JSONfile=self.pathLineEdit_exploration.currentPath
+
         # Check if the path exists:
         if not os.path.exists(JSONfile):
             return
-
-        # print("------ Creation of a new Classification Groups ------")
-        # Check if it's a CSV file
-        condition1 = self.logic.checkExtension(JSONfile, ".json")
-        if not condition1:
-            self.pathLineEdit_previewGroups.setCurrentPath(" ")
+        try:
+            self.logic.pca_exploration.load(JSONfile)
+            self.pathLineEdit_CSVFilePCA.disconnect('currentPathChanged(const QString)', self.onCSV_PCA)
+            self.pathLineEdit_CSVFilePCA.setCurrentPath(" ")
+            self.pathLineEdit_CSVFilePCA.connect('currentPathChanged(const QString)', self.onCSV_PCA)
+        except shapca.JSONFileError as e:
+            print('JSONFileError:'+e.value)
+            slicer.util.errorDisplay('Invalid JSON file')
             return
 
-        with open(JSONfile,'r') as jsonfile:
-            json_dict = json.load(jsonfile)
-
-        PYCfile=json_dict["python_objects_path"]
-
-        with open(PYCfile, 'rb') as pycfile:
-            pickle_dict = pickle.load(pycfile)
-
-
-
-        self.logic.loadExploration(json_dict,pickle_dict)    
 
 
         self.comboBox_groupPCA.setEnabled(True)
         self.comboBox_groupPCA.clear()
-        for key, value in self.logic.dictPCA.items():
+        dictPCA=self.logic.pca_exploration.getDictPCA()
+        for key, value in dictPCA.items():
 
             group_name = value["group_name"]
             if key != "All":
@@ -875,9 +909,8 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
             else: 
                 self.comboBox_groupPCA.addItem(key)  
 
-        self.logic.setCurrentPCAModel(0)  
-        self.setColorModeSpinBox()
-        self.logic.setColorMode(0)      
+        
+        self.setColorModeSpinBox()    
         self.showmean=False
 
         self.generate3DVisualisationNodes()
@@ -887,11 +920,19 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         if index >= 0:
              self.comboBox_colorMode.setCurrentIndex(index)
         #slicer.mrmlScene.RemoveAllDefaultNodes()
+        if self.evaluationFlag=="DONE":
+            try:
+                self.pushButton_evaluateModels.clicked.disconnect()
+            except:
+                pass
+            self.pushButton_evaluateModels.setText("Evaluate models (It may take a long time)")
+            self.pushButton_evaluateModels.connect('clicked()',self.onEvaluateModels)
         self.explorePCA()
 
     def onGroupColorChanged(self,newcolor):
-        self.logic.changeCurrentGroupColor(newcolor)
-        r,g,b=self.logic.getColor()
+        newcolor=(newcolor.red()/255.0,newcolor.green()/255.0,newcolor.blue()/255.0)
+        self.logic.pca_exploration.changeCurrentGroupColor(newcolor)
+        r,g,b=self.logic.pca_exploration.getColor()
         displayNode = slicer.mrmlScene.GetFirstNodeByName("PCA Display")
         displayNode.SetColor(r,g,b)
         displayNode.Modified()
@@ -904,33 +945,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
 
         if JSONpath == '' or JSONpath==' ':
             return
-        directory = os.path.dirname(JSONpath)
-        basename = os.path.basename(JSONpath)
-        name,ext=os.path.splitext(basename)
-
-        PYCpath=os.path.join(directory,name+".pyc")
-
-        min_explained=self.spinBox_minVariance.value/100.0
-
-        json_dict,pickle_dict,polydata_dict=self.logic.extractData()
-
-        for ID,polydata in polydata_dict.items():
-            vtkfilepath=os.path.join(directory,'mean'+str(ID)+'.vtk')
-            self.logic.saveVTKFile(polydata,vtkfilepath)
-            json_dict[ID]["mean_file_path"]=vtkfilepath
-
-        json_dict["original_files"] = self.logic.original_files
-        json_dict["python_objects_path"] = PYCpath
-
-        with open(JSONpath,'w') as jsonfile:
-            json.dump(json_dict,jsonfile,indent=4)
-        print("Export JSON File: " + JSONpath)
-        sys.stdout.flush()
-
-        with open(PYCpath,'w') as pycfile:
-            pickle.dump(pickle_dict,pycfile)
-        print("Export PYC File: " + PYCpath)
-        sys.stdout.flush()
+        self.logic.pca_exploration.save(JSONpath)
 
         self.pathLineEdit_exploration.disconnect('currentPathChanged(const QString)', self.onLoadExploration)
         self.pathLineEdit_exploration.setCurrentPath(JSONpath)
@@ -955,7 +970,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
 
         ##extract the new number of sliders
         min_explained=self.spinBox_minVariance.value/100.0
-        num_components=self.logic.getRelativeNumComponent(min_explained)
+        num_components=self.logic.pca_exploration.getRelativeNumComponent(min_explained)
         if num_components>self.spinBox_maxSlider.value:
             num_components=self.spinBox_maxSlider.value
 
@@ -985,14 +1000,16 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         if self.comboBox_colorMode.currentText == 'Group color':
 
 
-            self.logic.setColorMode(0)
+            self.logic.pca_exploration.logic.setColorMode(0)
             self.spinBox_colorModeParam1.hide()
             self.spinBox_colorModeParam2.hide()
             self.label_colorModeParam1.hide()
             self.label_colorModeParam2.hide()
 
+            self.logic.disableExplorationScalarView()
+
         elif self.comboBox_colorMode.currentText == 'Unsigned distance to mean shape':
-            self.logic.setColorModeParam(self.spinBox_colorModeParam1.value,self.spinBox_colorModeParam2.value)
+            self.logic.pca_exploration.setColorModeParam(self.spinBox_colorModeParam1.value,self.spinBox_colorModeParam2.value)
 
             self.label_colorModeParam1.setText('Maximum Distance')
             
@@ -1001,10 +1018,28 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
             self.label_colorModeParam1.show()
             self.label_colorModeParam2.hide()
 
-            self.logic.setColorMode(1)
+            self.logic.pca_exploration.setColorMode(1)
+
+            explorationnode=slicer.mrmlScene.GetFirstNodeByName('PCA Exploration')
+            colornode = slicer.mrmlScene.GetFirstNodeByName('PCA Unsigned Distance Color Table')
+            if (explorationnode is not None) and (colornode is not None):
+
+                max_dist,_=self.logic.pca_exploration.getColorParam()
+
+                node = slicer.mrmlScene.GetFirstNodeByName("PCA Display")
+                node.SetScalarRange(0,max_dist)
+
+
+                explorationnode.GetDisplayNode().SetAndObserveColorNodeID(colornode.GetID())
+                #explorationnode.SetInterpolate(1)
+                explorationnode.Modified()
+
+
+
+            self.logic.enableExplorationScalarView()
 
         elif self.comboBox_colorMode.currentText == 'Signed distance to mean shape':
-            self.logic.setColorModeParam(self.spinBox_colorModeParam1.value,self.spinBox_colorModeParam2.value)
+            self.logic.pca_exploration.setColorModeParam(self.spinBox_colorModeParam1.value,self.spinBox_colorModeParam2.value)
 
             self.label_colorModeParam1.setText('Maximum Distance Outside')
             self.label_colorModeParam2.setText('Maximum Distance Inside')
@@ -1014,7 +1049,22 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
             self.label_colorModeParam1.show()
             self.label_colorModeParam2.show()
 
-            self.logic.setColorMode(2)
+            self.logic.pca_exploration.setColorMode(2)
+
+            explorationnode=slicer.mrmlScene.GetFirstNodeByName('PCA Exploration')
+            colornode = slicer.mrmlScene.GetFirstNodeByName('PCA Signed Distance Color Table')
+            if (explorationnode is not None) and (colornode is not None):
+
+                max_dist_outside,max_dist_inside=self.logic.pca_exploration.getColorParam()
+
+                node = slicer.mrmlScene.GetFirstNodeByName("PCA Display")
+                node.SetScalarRange(-max_dist_inside,max_dist_outside)
+
+                explorationnode.GetDisplayNode().SetAndObserveColorNodeID(colornode.GetID())
+                #explorationnode.SetInterpolate(1)
+                explorationnode.Modified()
+
+            self.logic.enableExplorationScalarView()
 
         else:
             print('Unexpected color mode option')
@@ -1022,8 +1072,9 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
 
     def onUpdateColorModeParam(self):
 
-        self.logic.setColorModeParam(self.spinBox_colorModeParam1.value,self.spinBox_colorModeParam2.value) 
-        self.logic.generateDistanceColor()
+        self.logic.pca_exploration.setColorModeParam(self.spinBox_colorModeParam1.value,self.spinBox_colorModeParam2.value) 
+        self.onColorModeChange()
+        #self.logic.pca_exploration.generateDistanceColor()
 
     def onDataSelected(self, mrlmlPlotSeriesIds, selectionCol):
         for i in range(mrlmlPlotSeriesIds.GetNumberOfValues()):
@@ -1032,18 +1083,144 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
             if plotserienode.GetName() == "PCA projection":
                 #print('Selection detected:')
                 valueIds=selectionCol.GetItemAsObject(i)
-                Id=valueIds.GetValue(0)
+
+                if valueIds.GetNumberOfValues()==1:
+                    Id=valueIds.GetValue(0)
 
                 #table=plotserienode.GetTableNode().GetTable()
 
                 #pc1=table.GetValue(Id,0).ToDouble()
                 #pc2=table.GetValue(Id,1).ToDouble()
 
-                self.logic.setCurrentLoadFromPopulation(Id)
-                self.explorePCA()      
+                    self.logic.pca_exploration.setCurrentShapeFromId(Id)
+                    self.explorePCA() 
+
+                else:
+                    Idlist=list()
+                    for i in range(valueIds.GetNumberOfValues()):
+                        Idlist.append(int(valueIds.GetValue(i)))
+                    self.logic.pca_exploration.setCurrentShapeFromIdList(Idlist)
+                    self.explorePCA() 
+
+
+    def onImportEvaluation(self):
+        jsonpath=slf.pathLineEdit_importEval.currentPath
+        self.logic.pca_exploration.importEvaluation(jsonpath)
+
+        if os.path.isfile(self.pathLineEdit_exploration.currentPath):
+            self.logic.pca_exploration.updateJSONFile(self.pathLineEdit_exploration.currentPath)
+
+        if self.logic.pca_exploration.evaluationExist():
+            compactnessPCN,specificityPCN,generalizationPCN=self.generateEvaluationPlots()
+            self.plotViewNode.SetPlotChartNodeID(compactnessPCN.GetID())
+            self.plotViewNode.SetPlotChartNodeID(specificityPCN.GetID())
+            self.plotViewNode.SetPlotChartNodeID(generalizationPCN.GetID())
+            self.updateEvaluationPlots()
+
+    def onCheckEvaluationState(self):
+
+        if self.evaluationThread.GetStatusString()!='Completed':
+            seconds = time.time()-self.starting_time
+            m, s = divmod(seconds, 60)
+            h, m = divmod(m, 60)
+            if h==0 and m==0:
+                t = "00:%02d" % (s)
+            elif h==0 :
+                t = "%02d:%02d" % (m, s)
+            else:
+                t = "%d:%02d:%02d" % (h, m, s)
+            if int(s) ==0:
+                print("Model evaluation "+self.evaluationThread.GetStatusString()+"  "+t)
+            self.pushButton_evaluateModels.setText("Abort evaluation ("+t+")")
+        else:
+            print('Evaluation done')
+            self.checkThreadTimer.stop()
+
+            if self.evaluationFlag=="JSON" and self.pathLineEdit_exploration.currentPath==self.eval_param["inputJson"]:
+                self.logic.pca_exploration.reloadJSONFile(self.eval_param["inputJson"])
+                compactnessPCN,specificityPCN,generalizationPCN=self.generateEvaluationPlots()
+                self.plotViewNode.SetPlotChartNodeID(compactnessPCN.GetID())
+                self.plotViewNode.SetPlotChartNodeID(specificityPCN.GetID())
+                self.plotViewNode.SetPlotChartNodeID(generalizationPCN.GetID())
+                self.updateEvaluationPlots()
+
+            if self.evaluationFlag=="CSV" and self.pathLineEdit_CSVFilePCA.currentPath==self.eval_param["inputCsv"]:
+                self.logic.pca_exploration.importEvaluation(self.eval_param["outputEvaluationJson"])
+                compactnessPCN,specificityPCN,generalizationPCN=self.generateEvaluationPlots()
+                self.plotViewNode.SetPlotChartNodeID(compactnessPCN.GetID())
+                self.plotViewNode.SetPlotChartNodeID(specificityPCN.GetID())
+                self.plotViewNode.SetPlotChartNodeID(generalizationPCN.GetID())
+                self.updateEvaluationPlots()
+
+            self.evaluationFlag="DONE"
+
+            self.pushButton_evaluateModels.disconnect('clicked()',self.onKillEvaluation)
+            self.pushButton_evaluateModels.connect('clicked()',self.onEvaluateModels)
+            self.pushButton_evaluateModels.setText("Evaluate models (It may take a long time)")
+
+            slicer.util.infoDisplay("Evaluation done.")
+
+    def onKillEvaluation(self):
+        
+        self.pushButton_evaluateModels.clicked.disconnect()
+        self.pushButton_evaluateModels.connect('clicked()',self.onEvaluateModels)
+        self.pushButton_evaluateModels.setText("Evaluate models (It may take a long time)")
+
+        self.checkThreadTimer.stop()
+
+        self.evaluationThread.Cancel()
+        minutes = int((time.time()-self.starting_time)/60)
+        print("Model evaluation "+self.evaluationThread.GetStatusString())
+        print('Evaluation Stopped after '+str(minutes)+' min')
+
+        self.evaluationFlag="DONE"
+
+    def onEvaluateModels(self):
+        jsonpath = self.pathLineEdit_exploration.currentPath
+        csvpath = self.pathLineEdit_CSVFilePCA.currentPath
+        shapeNumber=self.spinBox_numberShape.value
+
+
+        if os.path.isfile(jsonpath):
+            self.evaluationFlag="JSON"
+            self.starting_time=time.time()
+            self.eval_param = {}
+            self.eval_param["inputJson"] = jsonpath
+            self.eval_param["evaluation"] = str(len(self.PCA_sliders))
+            self.eval_param["shapeNum"] = str(shapeNumber)
+
+        else:
+            self.evaluationFlag="CSV"
+            self.starting_time=time.time()
+
+            dirname=os.path.dirname(csvpath)
+            basename=os.path.basename(csvpath)
+            newname=os.path.splitext(basename)[0]+'_Evaluation.json'
+            evaluationpath=os.path.join(dirname,newname)
+
+            self.eval_param = {}
+            self.eval_param["inputCsv"] = csvpath
+            self.eval_param["outputEvaluationJson"] = evaluationpath
+            self.eval_param["evaluation"] = str(len(self.PCA_sliders))
+            self.eval_param["shapeNum"] = str(shapeNumber)
+
+        moduleSPCA = slicer.modules.shapca
+        self.evaluationThread=slicer.cli.run(moduleSPCA, None, self.eval_param, wait_for_completion=False)
+
+
+        self.pushButton_evaluateModels.clicked.disconnect()
+        self.pushButton_evaluateModels.connect('clicked()',self.onKillEvaluation)
+        self.pushButton_evaluateModels.setText("Abort evaluation (00:00)")
+
+        self.checkThreadTimer=qt.QTimer()
+        self.checkThreadTimer.connect('timeout()', self.onCheckEvaluationState)
+        self.checkThreadTimer.start(1000)
+        return
+
+
+
 
     def explorePCA(self):
-
         #Detection of the selected group Id 
         if self.comboBox_groupPCA.currentText == "All":
             keygroup = "All"
@@ -1052,14 +1229,14 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
 
 
         #Setting PCA model to use
-        self.logic.setCurrentPCAModel(keygroup)
+        self.logic.pca_exploration.setCurrentPCAModel(keygroup)
 
         #get color of the group and set the color picker with this color
-        r,g,b=self.logic.getColor()
+        r,g,b=self.logic.pca_exploration.getColor()
         self.ctkColorPickerButton_groupColor.color=qt.QColor(int(r*255),int(g*255),int(b*255))
 
         #setting the maximum number of sliders
-        num_components=self.logic.getNumComponent()
+        num_components=self.logic.pca_exploration.getNumComponent()
 
         if self.spinBox_maxSlider.value> num_components:
             self.spinBox_maxSlider.setMaximum(num_components)
@@ -1072,26 +1249,23 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
 
         #computing the number of sliders to show
         min_explained=self.spinBox_minVariance.value/100.0
-        sliders_number=self.logic.getRelativeNumComponent(min_explained)
+        sliders_number=self.logic.pca_exploration.getRelativeNumComponent(min_explained)
         if sliders_number>self.spinBox_maxSlider.value:
             sliders_number=self.spinBox_maxSlider.value
 
         #create sliders
         for i in range(sliders_number):
             self.createAndAddSlider(i)
-            
-        #Initialize polydatas for exploration shape and mean shape
-        self.logic.initPolyDataMean()
-        self.logic.initPolyDataExploration()
 
-
-        #Initialize the plot view
+        #Update the plot view
         self.updateVariancePlot(sliders_number)
         self.updateProjectionPlot()
 
+        if self.logic.pca_exploration.evaluationExist():
+            self.updateEvaluationPlots()
+
 
         #showing QtWidgets
-
         self.label_normalLabel_1.show()
         self.label_normalLabel_2.show()
         self.label_normalLabel_3.show()
@@ -1109,6 +1283,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.label_varianceExploration.show()
         self.pushButton_saveExploration.show()
         self.pushButton_toggleMean.show()
+        self.pushButton_evaluateModels.show()
         self.spinBox_minVariance.show()
         self.spinBox_maxSlider.show()
         self.label_minVariance.show()
@@ -1116,10 +1291,15 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
 
         self.label_colorMode.show()
 
+        self.label_numberShape.show()
+        self.spinBox_numberShape.show()
 
+        self.label_importEval.show()
+        self.pathLineEdit_importEval.show()
+        self.pushButton_importEval.show()
 
     def setColorModeSpinBox(self):
-        data_std=self.logic.getDataStd()
+        data_std=self.logic.pca_exploration.getDataStd()
         std=np.max(data_std)
 
         self.spinBox_colorModeParam1.disconnect('valueChanged(int)',self.onUpdateColorModeParam)
@@ -1143,13 +1323,13 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.PCA_sliders_value_label=list()
 
     def createAndAddSlider(self,num_slider):
-        exp_ratio=self.logic.getExplainedRatio()
+        exp_ratio=self.logic.pca_exploration.getExplainedRatio()
         #create the slider
         slider =qt.QSlider(qt.Qt.Horizontal)
         slider.setMaximum(999)
         slider.setMinimum(-999)
         slider.setTickInterval(1)
-        position=self.logic.getCurrentRatio(num_slider)
+        position=self.logic.pca_exploration.getCurrentRatio(num_slider)
         #print(position)
         slider.setSliderPosition(position)
         #slider.setLayout(self.gridLayout_PCAsliders)
@@ -1179,20 +1359,18 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         #Connect
         self.PCA_sliders[num_slider].valueChanged.connect(lambda state, x=num_slider: self.onChangePCAPolyData(x))
 
-
-
-
-
-
     #Plots
     def generate2DVisualisationNodes(self):
         #clean previously created nodes
         self.delete2DVisualisationNodes()
 
         #generate PlotChartNodes to visualize the variance plot and the Projection plot
-        variancePlotChartNode = self.generateVariancePlot()
-        #variancePlotChartNode.connect('dataSelected(vtkStringArray, vtkCollection)',self.onPointSelect)
-        projectionPlotChartNode = self.generateProjectionPlot()
+        variancePCN = self.generateVariancePlot()
+
+        projectionPCN = self.generateProjectionPlot()
+
+        if self.logic.pca_exploration.evaluationExist():
+            compactnessPCN,specificityPCN,generalizationPCN = self.generateEvaluationPlots()
 
         # Switch to a layout that contains a plot view to create a plot widget
         layoutManager = slicer.app.layoutManager()
@@ -1201,21 +1379,20 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
 
         # Select chart in plot view
         plotWidget = layoutManager.plotWidget(0)
-        plotViewNode = plotWidget.mrmlPlotViewNode()
+        self.plotViewNode = plotWidget.mrmlPlotViewNode()
 
-        plotViewNode.SetPlotChartNodeID(projectionPlotChartNode.GetID())
-        plotViewNode.SetPlotChartNodeID(variancePlotChartNode.GetID())
+
+        if self.logic.pca_exploration.evaluationExist():
+            self.plotViewNode.SetPlotChartNodeID(compactnessPCN.GetID())
+            self.plotViewNode.SetPlotChartNodeID(specificityPCN.GetID())
+            self.plotViewNode.SetPlotChartNodeID(generalizationPCN.GetID())
+
+        self.plotViewNode.SetPlotChartNodeID(projectionPCN.GetID())
+        self.plotViewNode.SetPlotChartNodeID(variancePCN.GetID())
 
         plotView = plotWidget.plotView()
         plotView.dataSelected.disconnect()
         plotView.connect("dataSelected(vtkStringArray*, vtkCollection*)", self.onDataSelected)
-
-    
-
-
-
-
-                    
 
     def delete2DVisualisationNodes(self):
         node = slicer.mrmlScene.GetFirstNodeByName("PCA projection plot chart")
@@ -1254,6 +1431,22 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         if node is not None:
             slicer.mrmlScene.RemoveNode(node)
 
+        self.deleteFunctionPlot("Generalization")
+        self.deleteFunctionPlot("Specificity")
+        self.deleteFunctionPlot("Compactness")
+        
+    def deleteFunctionPlot(self,name_y):
+        node = slicer.mrmlScene.GetFirstNodeByName("PCA "+name_y+" table")
+        if node is not None:
+            slicer.mrmlScene.RemoveNode(node)
+        node = slicer.mrmlScene.GetFirstNodeByName(name_y)
+        if node is not None:
+            slicer.mrmlScene.RemoveNode(node)
+        node = slicer.mrmlScene.GetFirstNodeByName("PCA "+name_y+" plot chart")
+        if node is not None:
+            slicer.mrmlScene.RemoveNode(node)
+
+
     def generateProjectionPlot(self):
         projectionTableNode = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLTableNode","PCA projection table")
         table = projectionTableNode.GetTable()
@@ -1274,7 +1467,6 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         projectionPlotSeries.SetYColumnName("pc2")
         projectionPlotSeries.SetPlotType(slicer.vtkMRMLPlotSeriesNode.PlotTypeScatter)
         projectionPlotSeries.SetLineStyle(slicer.vtkMRMLPlotSeriesNode.LineStyleNone)
-        #projectionPlotSeries.SetMarkerStyle(slicer.vtkMRMLPlotSeriesNode.MarkerStyleSquare)
         projectionPlotSeries.SetUniqueColor()
 
         # Create projection plot chart node
@@ -1354,19 +1546,62 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
 
         return plotChartNode
 
+    def generateEvaluationPlots(self):
+        #compactness
+        compactnessPCN=self.generateFunctionPlot("Component","Compactness")
+        #specificity
+        specificityPCN=self.generateFunctionPlot("Component","Specificity")
+        #generalization
+        generalizationPCN=self.generateFunctionPlot("Component","Generalization")
+
+        return compactnessPCN,specificityPCN,generalizationPCN
+
+    def generateFunctionPlot(self,name_x,name_y):
+        self.deleteFunctionPlot(name_y)
+
+        TableNode = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLTableNode","PCA "+name_y+" table")
+        table = TableNode.GetTable()
+
+        x=vtk.vtkFloatArray()
+        y=vtk.vtkFloatArray()
+
+        x.SetName(name_x)
+        y.SetName(name_y)
+
+        table.AddColumn(x)
+        table.AddColumn(y)
+
+        #Sum Explained specificity plot serie
+        PlotSeries = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLPlotSeriesNode", name_y)
+        PlotSeries.SetAndObserveTableNodeID(TableNode.GetID())
+        PlotSeries.SetXColumnName(name_x)
+        PlotSeries.SetYColumnName(name_y)
+        PlotSeries.SetPlotType(slicer.vtkMRMLPlotSeriesNode.PlotTypeScatter)
+        PlotSeries.SetUniqueColor()
+
+        # Create specificity plot chart node
+        PCN = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLPlotChartNode","PCA "+name_y+" plot chart")
+        PCN.AddAndObservePlotSeriesNodeID(PlotSeries.GetID())
+        PCN.SetTitle(name_y)
+        PCN.SetXAxisTitle(name_x)
+        PCN.SetYAxisTitle(name_y) 
+
+        return PCN
+
+
     def updateVariancePlot(self,num_components):
 
         varianceTableNode = slicer.mrmlScene.GetFirstNodeByName("PCA variance table")
         table = varianceTableNode.GetTable()
         table.Initialize()
 
-        level95 , level1=self.logic.getPlotLevel(num_components)
+        level95 , level1=self.logic.pca_exploration.getPlotLevel(num_components)
         level95.SetName("level95%")
         level1.SetName("level1%")
         table.AddColumn(level95)
         table.AddColumn(level1)
 
-        x,evr,sumevr= self.logic.getPCAVarianceExplainedRatio(num_components)
+        x,evr,sumevr= self.logic.pca_exploration.getPCAVarianceExplainedRatio(num_components)
         x.SetName("Component")
         evr.SetName("ExplainedVarianceRatio")
         sumevr.SetName("SumExplainedVarianceRatio")
@@ -1380,17 +1615,42 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         table = projectionTableNode.GetTable()
         table.Initialize()
 
-        pc1,pc2=self.logic.getPCAProjections()
+        pc1,pc2=self.logic.pca_exploration.getPCAProjections()
 
         pc1.SetName("pc1")
         pc2.SetName("pc2")
 
         table.AddColumn(pc1)
-        table.AddColumn(pc2) 
+        table.AddColumn(pc2)
+
+    def updateEvaluationPlots(self):   
+        #compactness
+        x,compac,compac_err=self.logic.pca_exploration.getCompactness()
+        self.updateFunctionPlot("Component","Compactness",x,compac)
+
+        #specificity
+        x,spec,spec_err=self.logic.pca_exploration.getSpecificity()
+        self.updateFunctionPlot("Component","Specificity",x,spec)
+
+        #generalization
+        x,gene,gene_err=self.logic.pca_exploration.getGeneralization()
+        self.updateFunctionPlot("Component","Generalization",x,gene)
+
+
+
+    def updateFunctionPlot(self,name_x,name_y,x,y):
+        TableNode = slicer.mrmlScene.GetFirstNodeByName("PCA "+name_y+" table")
+        table = TableNode.GetTable()
+        table.Initialize()
+
+        x.SetName(name_x)
+        y.SetName(name_y)
+
+        table.AddColumn(x)
+        table.AddColumn(y)
 
 
     #polydata
-
     def generate3DVisualisationNodes(self):
         self.delete3DVisualisationNodes()
         ##For Mean shape
@@ -1398,10 +1658,10 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         
         #create Model Node
         PCANode = slicer.vtkMRMLModelNode()
-        PCANode.SetAndObservePolyData(self.logic.polydataMean)
+        PCANode.SetAndObservePolyData(self.logic.pca_exploration.getPolyDataMean())
         PCANode.SetName("PCA Mean")
         #create display node
-        R,G,B=self.logic.getColor()
+        
         modelDisplay = slicer.vtkMRMLModelDisplayNode()
         modelDisplay.SetColor(0.5,0.5,0.5) 
         modelDisplay.SetOpacity(0.8)
@@ -1422,10 +1682,10 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         
         #create Model Node
         PCANode = slicer.vtkMRMLModelNode()
-        PCANode.SetAndObservePolyData(self.logic.polydataExploration)
+        PCANode.SetAndObservePolyData(self.logic.pca_exploration.getPolyDataExploration())
         PCANode.SetName("PCA Exploration")
         #create display node
-        R,G,B=self.logic.getColor()
+        R,G,B=self.logic.pca_exploration.getColor()
         modelDisplay = slicer.vtkMRMLModelDisplayNode()
         modelDisplay.SetColor(R,G,B) 
         modelDisplay.SetOpacity(1)
@@ -1487,8 +1747,10 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         self.interface = interface
         self.table = vtk.vtkTable
         self.colorBar = {'Point1': [0, 0, 1, 0], 'Point2': [0.5, 1, 1, 0], 'Point3': [1, 1, 0, 0]}
+
+        self.pca_exploration=shapca.pcaExplorer()
         
-        #Exploration variable
+
   
     def get(self, objectName):
         """ Functions to recovery the widget in the .ui file
@@ -1568,44 +1830,9 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
 
         return True
 
-    def checkSeveralMeshInDict(self, dict):
-        """ Function to check if in each group 
-        there is at least more than one mesh
-        """
-        for key, value in dict.items():
-            if type(value) is not ListType or len(value) == 1:
-                slicer.util.errorDisplay('The group ' + str(key) + ' must contain more than one mesh.')
-                return False
-        return True
 
-    def checkOneMeshPerGroupInDict(self, dict):
-        """ Function to check if in each group 
-        there is at least more than one mesh 
-        """
-        for key, value in dict.items():
-            if type(value) is ListType: # or len(value) != 1:
-                slicer.util.errorDisplay('The group ' + str(key) + ' must contain exactly one mesh.')
-                return False
-        return True
 
-    def creationDictShapeModel(self, dict):
-        """Function to store the shape models for each group in a dictionary
-        The function return True IF
-            - all the paths exist
-            - the extension of the paths is .h5
-            - there are only one shape model per group
-        else False
-        """
-        for i in range(0, self.table.GetNumberOfRows()):
-            if not os.path.exists(self.table.GetValue(i,0).ToString()):
-                slicer.util.errorDisplay('VTK file not found, path not good at lign ' + str(i+2))
-                return False
-            if not os.path.splitext(os.path.basename(self.table.GetValue(i,0).ToString()))[1] == '.vtk':
-                slicer.util.errorDisplay('Wrong extension file at lign ' + str(i+2) + '. A vtk file is needed!')
-                return False
-            dict[self.table.GetValue(i,1).ToInt()] = self.table.GetValue(i,0).ToString()
 
-        return True
 
     def addColorMap(self, table, dictVTKFiles):
         """ Function to add a color map "DisplayClassificationGroup" 
@@ -1784,94 +2011,6 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
                 b = value[3]
                 colorTransferFunction.AddRGBPoint(x,r,g,b)
         return colorTransferFunction
-
-    def deleteArrays(self, key, value):
-        """ Function to copy and delete all the arrays of all the meshes contained in a list
-        """
-        for vtkFile in value:
-            # Read VTK File
-            reader = vtk.vtkDataSetReader()
-            reader.SetFileName(vtkFile)
-            reader.ReadAllVectorsOn()
-            reader.ReadAllScalarsOn()
-            reader.Update()
-            polyData = reader.GetOutput()
-
-            # Copy of the polydata
-            polyDataCopy = vtk.vtkPolyData()
-            polyDataCopy.DeepCopy(polyData)
-            pointData = polyDataCopy.GetPointData()
-
-            # Remove all the arrays
-            numAttributes = pointData.GetNumberOfArrays()
-            for i in range(0, numAttributes):
-                pointData.RemoveArray(0)
-
-            # Creation of the path of the vtk file without arrays to save it in the temporary directory of Slicer
-            filename = os.path.basename(vtkFile)
-            filepath = slicer.app.temporaryPath + '/' + filename
-
-            # Save the vtk file without array in the temporary directory in Slicer
-            self.saveVTKFile(polyDataCopy, filepath)
-        return
-
-    def saveVTKFile(self, polydata, filepath):
-        """ Function to save a VTK file to the filepath given 
-        """
-        writer = vtk.vtkPolyDataWriter()
-        writer.SetFileName(filepath)
-        if vtk.VTK_MAJOR_VERSION <= 5:
-            writer.SetInput(polydata)
-        else:
-            writer.SetInputData(polydata)
-        writer.Update()
-        writer.Write()
-        return
-
-    def printStatus(self, caller, event):
-        print("Got a %s from a %s" % (event, caller.GetClassName()))
-        sys.stdout.flush()
-        if caller.IsA('vtkMRMLCommandLineModuleNode'):
-            print("Status is %s" % caller.GetStatusString())
-            sys.stdout.flush()
-            # print("output:   \n %s" % caller.GetOutputText())
-            # print("error:   \n %s" % caller.GetErrorText())
-        return
-
-    def computeMean(self, numGroup, vtkList):
-        """ Function to compute the mean between all 
-        the mesh-files contained in one group
-        """
-        print("--- Compute the mean of all the group ---")
-        sys.stdout.flush()
-        # Call of computeMean : computation of an average shape for a group of shaoes 
-        # Arguments:
-        #  --inputList is the list of vtkfile we want to compute the average
-        #  --outputSurface is the resulting mean shape
-        
-        parameters = {}
-
-        vtkfilelist = []
-        for vtkFiles in vtkList:
-            vtkfilelist.append(vtkFiles)
-        parameters["inputList"] = vtkfilelist
-
-        outModel = slicer.vtkMRMLModelNode()
-        slicer.mrmlScene.AddNode(outModel)
-        parameters["outputSurface"] = outModel.GetID()
-
-        computeMean = slicer.modules.computemean
-        
-        # print parameters
-
-        cliNode = slicer.cli.run(computeMean, None, parameters, wait_for_completion=True)
-        cliNode.AddObserver('ModifiedEvent', self.printStatus)
-
-        resultdir = slicer.app.temporaryPath
-        slicer.util.saveNode(outModel, str(os.path.join(resultdir,"meanGroup" + str(numGroup) + ".vtk")))
-        slicer.mrmlScene.RemoveNode(outModel) 
-
-        return 
         
     def removeDataVTKFiles(self, value):
         """ Function to remove in the temporary directory all 
@@ -1882,13 +2021,6 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
             filepath = slicer.app.temporaryPath + '/' + os.path.basename(vtkFile)
             if os.path.exists(filepath):
                 os.remove(filepath)
-
-    # Function to storage the mean of each group in a dictionary
-    def storageMean(self, dictGroups, key):
-        filename = "meanGroup" + str(key)
-        meanPath = slicer.app.temporaryPath + '/' + filename + '.vtk'
-        dictGroups[key] = meanPath
-        # print(dictGroups)
 
     def creationCSVFile(self, directory, CSVbasename, dictForCSV, option):
         """ Function to create a CSV file:
@@ -1918,332 +2050,20 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
                 cw.writerow([value, str(key)])
         file.close()
 
-
+    def checkSeveralMeshInDict(self, dict):
+        """ Function to check if in each group 
+        there is at least more than one mesh
+        """
+        for key, value in dict.items():
+            if type(value) is not type(list()) or len(value) == 1:
+                msg='The group ' + str(key) + ' must contain more than one mesh.'
+                raise CSVFileError(msg)
+                return False
+        return True
 
     #################
     # PCA ALGORITHM #       
     #################
-
-    #computing PCA
-    def readPCAData(self, fileList):
-        """
-        Read data from fileList and format it for PCA computation
-        """
-
-        y_design = []
-        numpoints = -1
-        nshape = 0
-        polydata = 0
-        t=1
-        group_name=None
-        ID=0
-
-        for vtkfile in fileList:
-            print(ID,vtkfile)
-            ID+=1
-
-            if vtkfile.endswith((".vtk")):
-                #print("Reading", vtkfile)
-                reader = vtk.vtkPolyDataReader()
-                reader.SetFileName(vtkfile)
-                reader.Update()
-                shapedata = reader.GetOutput()
-                #self.polyDataPCA=shapedata
-                shapedatapoints = shapedata.GetPoints()
-                
-
-                if polydata == 0:
-                    polydata = shapedata
-                if group_name is None:
-                    group_name = os.path.basename(os.path.dirname(vtkfile))
-
-                y_design.append([])
-
-                if numpoints == -1:
-                    numpoints = shapedatapoints.GetNumberOfPoints()
-
-                if numpoints != shapedatapoints.GetNumberOfPoints():
-                    print("WARNING! File ignored, the number of points is not the same for the shape:", vtkfilename)
-                    sys.stdout.flush()
-                    pass
-
-                for i in range(shapedatapoints.GetNumberOfPoints()):
-                    p = shapedatapoints.GetPoint(i)
-                    y_design[nshape].append(p)
-                nshape+=1
-                
-        y_design = np.array(y_design)
-        return y_design.reshape(y_design.shape[0], -1),polydata,group_name
-
-    def processPCA(self,X,min_explained ,group_name):
-        X_ = np.mean(X, axis=0, keepdims=True)
-        X_std = np.std(X,axis=0,keepdims=True)
-
-
-        pca = PCA()
-        pca.fit(X - X_)
-
-        sum_explained = 0.0
-        num_components = 0
-        
-        for evr in pca.explained_variance_ratio_:
-            if evr < min_explained:
-                break
-            num_components += 1
-
-        #print('num_comp = ',num_components)
-
-        pca = PCA(n_components=num_components)
-        X_pca=pca.fit_transform(X - X_)
-
-        X_pca_mean = np.mean(X_pca, axis=0, keepdims=True)
-        X_pca_var = np.std(X_pca, axis=0, keepdims=True)
-
-        pca_model = {}
-        pca_model["pca"] = pca
-        pca_model['explained_variance_ratio']=pca.explained_variance_ratio_
-        pca_model["eigenvalues"]=np.multiply(pca.singular_values_,pca.singular_values_)
-        pca_model["components"]=pca.components_
-        pca_model["num_components"]=num_components
-        pca_model["data_mean"] = X_
-        pca_model["data_std"] = X_std
-        pca_model["data_projection"]=X_pca
-        pca_model["data_projection_mean"]=X_pca_mean[0]
-        pca_model["data_projection_var"]=X_pca_var[0]
-        pca_model["current_pca_loads"] = np.zeros(num_components) 
-        pca_model["group_name"]=group_name
-        pca_model["color"]=(1,1,1)
-
-        return pca_model
-
-
-    def processPCAForAll(self,min_explained):
-        #clean PCAdata dict
-        self.dictPCA = dict()
-        print("min explained", min_explained)
-        sys.stdout.flush()
-
-        all_data=None
-        #for each group, compute PCA
-        for key, value in self.dictVTKFiles.items():
-            #read data of the group
-            data ,polydata,group_name = self.readPCAData(value)
-            #store data
-            if all_data is None:
-                all_data=deepcopy(data)
-            else:
-                all_data=np.concatenate((all_data,data),axis=0)
-            #compute PCA
-            pca_model=self.processPCA(data,min_explained,group_name)
-            #PCA model stored in a dict
-            self.dictPCA[key]=pca_model
-
-        #compute PCA for all the data
-        pca_model=self.processPCA(all_data,min_explained,"All")
-        self.dictPCA["All"]=pca_model
-
-        self.polydata=polydata
-        self.polydataMean=vtk.vtkPolyData()
-        self.polydataMean.DeepCopy(polydata)
-        self.polydataExploration=vtk.vtkPolyData()
-        self.polydataExploration.DeepCopy(polydata)
-    
-
-    #load, save, format data
-    def extractData(self):
-        json_dict={}
-        pickle_dict={}
-        polydata_dict={}
-        
-
-        for ID , model in self.dictPCA.items():
-            #extract mean shape for the ID group 
-            polydata_dict[ID]=self.generateMeanShape(ID)
-            #extract PCA information
-            json_dict[ID]={}
-            pickle_dict[ID]={}
-            for key , value in model.items():
-                if type(value).__module__ == '__builtin__':
-                    json_dict[ID][key]=value
-                elif type(value).__module__ == np.__name__:
-                    json_dict[ID][key]=value.tolist()
-                else:
-                    pickle_dict[ID][key]=value
-        
-        
-        return json_dict,pickle_dict,polydata_dict
-
-
-    def loadExploration(self,json_dict,pickle_dict):
-        self.dictPCA={}
-
-        for ID , model in pickle_dict.items():
-            if ID != "original_files" and ID !="python_objects_path" : 
-                self.dictPCA[ID]={}
-                for key , value in model.items():
-                    self.dictPCA[ID][key]=value
-                for key , value in json_dict[str(ID)].items():
-                    if type(value)==type(list()):
-                        self.dictPCA[ID][key]=np.array(value)
-                    else:
-                        self.dictPCA[ID][key]=value
-
-
-        polydata=self.readVTKfile(json_dict["0"]["mean_file_path"])
-        self.polydata=vtk.vtkPolyData()
-        self.polydata.DeepCopy(polydata)
-
-
-        self.polydataMean=vtk.vtkPolyData()
-        self.polydataMean.DeepCopy(polydata)
-        self.polydataExploration=vtk.vtkPolyData()
-        self.polydataExploration.DeepCopy(polydata)
-
-        self.original_files=json_dict["original_files"]
-        #self.dictPCA["original_files"] = json_dict["original_files"]
-
-
-    #Common
-    def readVTKfile(self,filename):
-        reader = vtk.vtkPolyDataReader()
-        reader.SetFileName(filename)
-        reader.ReadAllVectorsOn()
-        reader.ReadAllScalarsOn()
-        reader.Update()
-        data = reader.GetOutput()
-        return data
-
-
-    #Plots
-    def getPCAProjections(self):
-        X_pca = self.current_pca_model["data_projection"]
-
-        pc1 = X_pca[:,0].flatten()
-        pc1 = vtk.util.numpy_support.numpy_to_vtk(num_array=pc1, array_type=vtk.VTK_FLOAT)  
-
-        pc2 = X_pca[:,1].flatten()
-        pc2 = vtk.util.numpy_support.numpy_to_vtk(num_array=pc2, array_type=vtk.VTK_FLOAT)    
-
-        return pc1, pc2
-
-    def getPlotLevel(self,num_component):
-        
-        level95=np.ones(num_component)*95
-        level1=np.ones(num_component)
-        #xlevel=vtk.util.numpy_support.numpy_to_vtk(num_array=xlevel, array_type=vtk.VTK_FLOAT)
-        level95=vtk.util.numpy_support.numpy_to_vtk(num_array=level95, array_type=vtk.VTK_FLOAT)
-        level1=vtk.util.numpy_support.numpy_to_vtk(num_array=level1, array_type=vtk.VTK_FLOAT)
-
-        return  level95, level1
-
-    def getPCAVarianceExplainedRatio(self,num_component):
-        evr = self.current_pca_model['explained_variance_ratio'][0:num_component].flatten()*100
-        sumevr = np.cumsum(evr)
-        evr = vtk.util.numpy_support.numpy_to_vtk(num_array=evr, array_type=vtk.VTK_FLOAT)
-        sumevr=vtk.util.numpy_support.numpy_to_vtk(num_array=sumevr, array_type=vtk.VTK_FLOAT)
-
-        x = np.arange(1,num_component+1).flatten()
-        x = vtk.util.numpy_support.numpy_to_vtk(num_array=x, array_type=vtk.VTK_FLOAT)
-
-        return x,evr,sumevr
-
-    #polydata
-
-    def setCurrentLoadFromPopulation(self,Id):
-        population_projection=self.current_pca_model["data_projection"]
-        #if Id == 141:
-         #   print(population_projection[Id,:])
-        self.current_pca_model["current_pca_loads"] = deepcopy(population_projection[Id,:])
-
-    def initPolyDataExploration(self):
-        PCA_model=self.current_pca_model['pca']
-        PCA_current_loads = self.current_pca_model["current_pca_loads"]     
-        mean =self.current_pca_model['data_mean']
-
-        self.pca_points_numpy=PCA_model.inverse_transform(PCA_current_loads)+mean
-
-
-
-        self.pca_exploration_points=self.generateVTKPointsFromNumpy(self.pca_points_numpy[0])
-        self.polydataExploration.SetPoints(self.pca_exploration_points)
-        
-        
-
-        self.autoOrientNormals(self.polydataExploration)
-        self.generateDistanceColor()
-
-        self.polydataExploration.Modified()
-
-    def initPolyDataMean(self):
-        mean =self.current_pca_model['data_mean']
-
-        mean_points=self.generateVTKPointsFromNumpy(mean[0])
-
-        self.polydataMean.SetPoints(mean_points)
-
-        self.autoOrientNormals(self.polydataMean)
-
-        self.polydataMean.Modified()
-
-    def resetPCAPolyData(self):
-        num_components=self.current_pca_model["num_components"]
-        self.current_pca_model["current_pca_loads"] = np.zeros(num_components) 
-        self.pca_points_numpy=self.current_pca_model['data_mean']
-
-        self.modifyVTKPointsFromNumpy(self.pca_points_numpy[0])
-        self.autoOrientNormals(self.polydataExploration)
-        self.polydataExploration.Modified()
-
-    def updatePolyDataExploration(self,num_slider,ratio):
-
-
-        
-
-        #update current loads
-        pca_mean=self.current_pca_model["data_projection_mean"]
-        pca_var=self.current_pca_model["data_projection_var"]
-
-        PCA_model=self.current_pca_model['pca']
-        PCA_current_loads = self.current_pca_model["current_pca_loads"] 
-
-        mean =self.current_pca_model['data_mean']
-
-        X=1-(((ratio/1000.0)+1)/2.0)
-
-        PCA_current_loads[num_slider]=pca_mean[num_slider]+stats.norm.isf(X)*pca_var[num_slider]
-        #print(self.PCA_current_loads) 
-        sys.stdout.flush()
-
-        self.pca_points_numpy=PCA_model.inverse_transform(PCA_current_loads)+mean
-
-
-        self.modifyVTKPointsFromNumpy(self.pca_points_numpy[0])
-
-        self.generateDistanceColor()
-
-        self.autoOrientNormals(self.polydataExploration)
-        self.polydataExploration.Modified()
-        
-        #print(pca_points.reshape(1002,3))
-        #sys.stdout.flush()
-        #return  self.current_pca_model["polydata"]
-
-    def generateMeanShape(self,ID):
-
-        mean =self.dictPCA[ID]['data_mean']
-
-
-        mean_mesh=self.generateVTKPointsFromNumpy(mean[0])
-
-        polydata=vtk.vtkPolyData()
-
-        polydata.DeepCopy(self.polydata)
-        polydata.SetPoints(mean_mesh)
-
-        self.autoOrientNormals(polydata)
-
-        return polydata
-
 
     def disableExplorationScalarView(self):
         model1=slicer.mrmlScene.GetFirstNodeByName('PCA Exploration')
@@ -2263,121 +2083,6 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
 
 
         exploration_node.Modified()
-
-    def setColorMode(self,colormode):
-        self.colormode = colormode
-
-        if colormode == 1: #unsigned distance
-            explorationnode=slicer.mrmlScene.GetFirstNodeByName('PCA Exploration')
-            colornode = slicer.mrmlScene.GetFirstNodeByName('PCA Unsigned Distance Color Table')
-            if (explorationnode is not None) and (colornode is not None):
-                explorationnode.GetDisplayNode().SetAndObserveColorNodeID(colornode.GetID())
-                #explorationnode.SetInterpolate(1)
-                explorationnode.Modified()
-
-        if colormode == 2: #signed distance
-            explorationnode=slicer.mrmlScene.GetFirstNodeByName('PCA Exploration')
-            colornode = slicer.mrmlScene.GetFirstNodeByName('PCA Signed Distance Color Table')
-            if (explorationnode is not None) and (colornode is not None):
-                explorationnode.GetDisplayNode().SetAndObserveColorNodeID(colornode.GetID())
-                #explorationnode.SetInterpolate(1)
-                explorationnode.Modified()
-
-        self.generateDistanceColor()
-
-    def generateDistanceColor(self):
-
-        #print(self.colormode)
-
-        if self.colormode==0:
-            self.disableExplorationScalarView()
-            return
-
-        if self.colormode==1:
-            mean =self.current_pca_model['data_mean'][0]
-            exploration_points=self.pca_points_numpy[0]
-
-            max_dist=self.colormodeparam1
-
-            node = slicer.mrmlScene.GetFirstNodeByName("PCA Display")
-            node.SetScalarRange(0,100*max_dist)
-
-            colors=self.unsignedDistance(mean,exploration_points)
-
-        if self.colormode==2:
-            mean =self.current_pca_model['data_mean'][0]
-            exploration_points=self.pca_points_numpy[0]
-
-            max_dist_inside=self.colormodeparam2
-            max_dist_outside=self.colormodeparam1
-
-            node = slicer.mrmlScene.GetFirstNodeByName("PCA Display")
-            node.SetScalarRange(-100*max_dist_inside,100*max_dist_outside)
-
-            colors=self.signedDistance(mean,exploration_points)
-
-        self.polydataExploration.GetPointData().SetScalars(colors)
-        self.polydataExploration.GetPointData().Modified()
-        self.polydataExploration.Modified()
-        self.enableExplorationScalarView()
-
-    def signedDistance(self,mean,exploration_points):
-        colors = vtk.vtkFloatArray()
-        colors.SetName("Distance")
-        colors.SetNumberOfComponents(1)
-
-        max_inside=self.colormodeparam2
-        max_outside=self.colormodeparam1
-
-        red = np.array([max_outside])
-        white =  np.array([(-max_inside+max_outside)/2.0])
-        blue = np.array([-max_inside])
-        color=np.array([50])
-
-        select_enclosed_points=vtk.vtkSelectEnclosedPoints()
-        #select_enclosed_points.CheckSurfaceOn()
-        select_enclosed_points.SetInputData(self.polydataExploration)
-        select_enclosed_points.SetSurfaceData(self.polydataMean)
-        select_enclosed_points.SetTolerance(0.000001)
-        select_enclosed_points.Update()
-        
-
-        for i in range(0,len(mean),3):
-            point=exploration_points[i:i+3]
-            meanpoint=mean[i:i+3]
-            distance = np.linalg.norm(point-meanpoint)
-
-            if select_enclosed_points.IsInside(i/3) == 1:
-                ratio=distance/max_inside
-                color=ratio*blue+(1-ratio)*white
-            else:
-                ratio=distance/max_outside
-                color=ratio*red+(1-ratio)*white
-
-            colors.InsertNextTuple(100*color)#ratio*blue+(1-ratio)*white)
-            
-
-        colors.Modified()
-        return colors
-
-    def unsignedDistance(self,mean,exploration_points):
-        colors = vtk.vtkFloatArray()
-        colors.SetName("Distance")
-        colors.SetNumberOfComponents(1)
-
-        color=np.array([0])
-
-        for i in range(0,len(mean),3):
-            point=exploration_points[i:i+3]
-            meanpoint=mean[i:i+3]
-            distance = np.linalg.norm(point-meanpoint)
-
-            color[0]=100*distance#100*(1-ratio)
-            
-            colors.InsertNextTuple(color)#ratio*blue+(1-ratio)*white)
-
-        colors.Modified()
-        return colors
 
     def generateUnsignedDistanceLUT(self):
         number_of_color=255
@@ -2422,108 +2127,8 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         return colorTableNode
 
 
-    def modifyVTKPointsFromNumpy(self,npArray):
-        num_points = npArray.shape[0]/3
-        for i in range(num_points):
-            self.pca_exploration_points.SetPoint(i,npArray[3*i],npArray[3*i+1],npArray[3*i+2])
-        self.pca_exploration_points.Modified()
-
-    def generateVTKPointsFromNumpy(self,npArray):
-        num_points = npArray.shape[0]/3
-        vtk_points = vtk.vtkPoints()
-        for i in range(num_points):
-            vtk_points.InsertNextPoint(npArray[3*i],npArray[3*i+1],npArray[3*i+2])
-        return vtk_points
-
-    def autoOrientNormals(self, model):
-        #surface = None
-        #surface = model.GetPolyDataConnection()
-        normals = vtk.vtkPolyDataNormals()
-        normals.SetAutoOrientNormals(True)
-        normals.SetFlipNormals(False)
-        normals.SetSplitting(False)
-        normals.ConsistencyOn()
-        normals.SetInputData(model)
-        normals.Update()
-        normalspoint=normals.GetOutput().GetPointData().GetArray("Normals")
-        model.GetPointData().SetNormals(normalspoint)
-
-        '''normalspoint=normals.GetOutput().GetPointData().GetArray("Normals")
-        normalspoint.SetName("Normals")
-        model.GetPointData().RemoveArray("Normals")
-        model.GetPointData().AddArray(normalspoint)
-
-        normalscell=normals.GetOutput().GetCellData().GetArray("Normals")
-        normalscell.SetName("Normals")
-        model.GetCellData().RemoveArray("Normals")
-        model.GetCellData().AddArray(normalscell)'''
-        return normals.GetOutput()
-
-    #group color
-    def getColor(self):
-        (r,g,b)=self.current_pca_model['color']
-        return r,g,b
-
-    def changeCurrentGroupColor(self,color):
-        color=(color.red()/255.0,color.green()/255.0,color.blue()/255.0)
-        self.current_pca_model['color']=color
-
-
-    def setColorModeParam(self,param1,param2):
-        self.colormodeparam1=param1
-        self.colormodeparam2=param2
-
-    def setCurrentPCAModel(self, keygroup):
-
-        self.current_pca_model=self.dictPCA[keygroup]
-
-    def getCurrentRatio(self,num_slider):
-        pca_mean=self.current_pca_model["data_projection_mean"][num_slider]
-        pca_var=self.current_pca_model["data_projection_var"][num_slider]
-
-        PCA_current_loads = self.current_pca_model["current_pca_loads"] [num_slider]
-
-        '''X=1-(((ratio/1000.0)+1)/2.0)
-        stats.norm.isf(X)
-        PCA_current_loads[num_slider]=pca_mean[num_slider]+stats.norm.isf(X)*pca_var[num_slider]'''
-
-        '''if num_slider==4:
-            print((PCA_current_loads-pca_mean)/(pca_var))'''
-
-        ratio = (PCA_current_loads-pca_mean)/(pca_var)
-        ratio = stats.norm.sf(ratio)
-        ratio = 1000*((2*(1-ratio))-1)
-        return int(ratio)
-
-    def getNumComponent(self):
-
-        return self.current_pca_model["num_components"]
-
-    def getRelativeNumComponent(self,min_explained):
-        explained_variance_ratio=self.current_pca_model['explained_variance_ratio']
-        num_components = 0
-        
-        for evr in explained_variance_ratio:
-            #print(num_components+1,evr)
-            if evr < min_explained:
-                break
-            if evr < 1e-12:
-                print('Component %d ignored because it is not revelant (explained variance ratio < 1e-12)'%(num_components+1) )
-            else:
-                num_components += 1
-        return num_components
-
-    def getExplainedRatio(self):
-
-        return self.current_pca_model["explained_variance_ratio"]
-
-    def getDataStd(self):
-
-        return self.current_pca_model["data_std"]
-
-
-
-
 
 class ShapeVariationAnalyzerTest(ScriptedLoadableModuleTest):
     pass
+
+
