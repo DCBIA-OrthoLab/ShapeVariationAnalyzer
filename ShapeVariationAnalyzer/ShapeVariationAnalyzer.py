@@ -1104,7 +1104,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
 
 
     def onImportEvaluation(self):
-        jsonpath=slf.pathLineEdit_importEval.currentPath
+        jsonpath=self.pathLineEdit_importEval.currentPath
         self.logic.pca_exploration.importEvaluation(jsonpath)
 
         if os.path.isfile(self.pathLineEdit_exploration.currentPath):
