@@ -17,11 +17,8 @@ import subprocess
 
 from copy import deepcopy
 
-from sklearn.decomposition import PCA
 from scipy import stats
-#from scipy import special
 
-import threading
 import time
 
 import shapca
@@ -119,7 +116,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.label_colorModeParam1=self.logic.get('label_colorModeParam1')
         self.label_colorModeParam2=self.logic.get('label_colorModeParam2')
         self.label_numberShape=self.logic.get('label_numberShape')
-        self.label_importEval=self.logic.get('label_importEval')
+        
 
         self.label_normalLabel_1=self.logic.get('label_normalLabel_1')
         self.label_normalLabel_2=self.logic.get('label_normalLabel_2')
@@ -134,7 +131,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
 
         self.pathLineEdit_CSVFilePCA = self.logic.get('pathLineEdit_CSVFilePCA')  
         self.pathLineEdit_exploration = self.logic.get('pathLineEdit_exploration')
-        self.pathLineEdit_importEval = self.logic.get('pathLineEdit_importEval')
+        
 
         self.comboBox_groupPCA = self.logic.get('comboBox_groupPCA')
         self.comboBox_colorMode = self.logic.get('comboBox_colorMode')
@@ -144,7 +141,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.pushButton_saveExploration=self.logic.get('pushButton_saveExploration')
         self.pushButton_toggleMean=self.logic.get('pushButton_toggleMean')
         self.pushButton_evaluateModels=self.logic.get('pushButton_evaluateModels')
-        self.pushButton_importEval=self.logic.get('pushButton_importEval')
+        
 
         self.label_statePCA = self.logic.get('label_statePCA')
 
@@ -229,9 +226,6 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.label_numberShape.hide()
         self.spinBox_numberShape.hide()
 
-        self.label_importEval.hide()
-        self.pathLineEdit_importEval.hide()
-        self.pushButton_importEval.hide()
 
         #     disable/enable and hide/show widget
 
@@ -308,7 +302,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.pushButton_saveExploration.connect('clicked()',self.onSaveExploration)
         self.pushButton_toggleMean.connect('clicked()',self.onToggleMeanShape)
         self.pushButton_evaluateModels.connect('clicked()',self.onEvaluateModels)
-        self.pushButton_importEval.connect('clicked()',self.onImportEvaluation)
+
 
         self.comboBox_groupPCA.connect('activated(QString)',self.explorePCA)
         self.comboBox_colorMode.connect('activated(QString)',self.onColorModeChange)
@@ -403,17 +397,13 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.label_numberShape.hide()
         self.spinBox_numberShape.hide()
 
-        self.label_importEval.hide()
-        self.pathLineEdit_importEval.hide()
-        self.pushButton_importEval.hide()
-
 
         self.pushButton_PCA.setEnabled(False) 
         self.pathLineEdit_CSVFilePCA.disconnect('currentPathChanged(const QString)', self.onCSV_PCA)
         self.pathLineEdit_CSVFilePCA.setCurrentPath(" ")
         self.pathLineEdit_CSVFilePCA.connect('currentPathChanged(const QString)', self.onCSV_PCA)
         self.pathLineEdit_exploration.setCurrentPath(" ")
-        self.pathLineEdit_importEval.setCurrentPath(" ")
+
         if self.evaluationFlag!="DONE":
             self.onKillEvaluation()
         try:
@@ -1103,23 +1093,10 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
                     self.explorePCA() 
 
 
-    def onImportEvaluation(self):
-        jsonpath=self.pathLineEdit_importEval.currentPath
-        self.logic.pca_exploration.importEvaluation(jsonpath)
-
-        if os.path.isfile(self.pathLineEdit_exploration.currentPath):
-            self.logic.pca_exploration.updateJSONFile(self.pathLineEdit_exploration.currentPath)
-
-        if self.logic.pca_exploration.evaluationExist():
-            compactnessPCN,specificityPCN,generalizationPCN=self.generateEvaluationPlots()
-            self.plotViewNode.SetPlotChartNodeID(compactnessPCN.GetID())
-            self.plotViewNode.SetPlotChartNodeID(specificityPCN.GetID())
-            self.plotViewNode.SetPlotChartNodeID(generalizationPCN.GetID())
-            self.updateEvaluationPlots()
 
     def onCheckEvaluationState(self):
-
-        if self.evaluationThread.GetStatusString()=='Running':
+        state=self.evaluationThread.GetStatusString()
+        if state=='Running'or state=='Scheduled':
             seconds = time.time()-self.starting_time
             m, s = divmod(seconds, 60)
             h, m = divmod(m, 60)
@@ -1133,6 +1110,8 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
                 print("Model evaluation "+self.evaluationThread.GetStatusString()+"  "+t)
             self.pushButton_evaluateModels.setText("Abort evaluation ("+t+")")
         else:
+            if self.evaluationFlag=="DONE":
+                return
             print('Evaluation done')
             self.checkThreadTimer.stop()
 
@@ -1144,8 +1123,8 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
                 self.plotViewNode.SetPlotChartNodeID(generalizationPCN.GetID())
                 self.updateEvaluationPlots()
 
-            if self.evaluationFlag=="CSV" and self.pathLineEdit_CSVFilePCA.currentPath==self.eval_param["inputCsv"]:
-                self.logic.pca_exploration.importEvaluation(self.eval_param["outputEvaluationJson"])
+            if self.evaluationFlag=="CSV" and self.pathLineEdit_CSVFilePCA.currentPath==self.originalCSV:
+                self.logic.pca_exploration.reloadJSONFile(self.eval_param["inputJson"])
                 compactnessPCN,specificityPCN,generalizationPCN=self.generateEvaluationPlots()
                 self.plotViewNode.SetPlotChartNodeID(compactnessPCN.GetID())
                 self.plotViewNode.SetPlotChartNodeID(specificityPCN.GetID())
@@ -1184,25 +1163,33 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         if os.path.isfile(jsonpath):
             self.evaluationFlag="JSON"
             self.starting_time=time.time()
+
             self.eval_param = {}
             self.eval_param["inputJson"] = jsonpath
             self.eval_param["evaluation"] = str(len(self.PCA_sliders))
             self.eval_param["shapeNum"] = str(shapeNumber)
 
         else:
+            self.originalCSV=csvpath
             self.evaluationFlag="CSV"
             self.starting_time=time.time()
 
-            dirname=os.path.dirname(csvpath)
-            basename=os.path.basename(csvpath)
-            newname=os.path.splitext(basename)[0]+'_Evaluation.json'
-            evaluationpath=os.path.join(dirname,newname)
+
+            date=time.strftime("%b-%d-%Y-%H:%M:%S", time.gmtime())
+            #temp_dir=os.path.join(slicer.app.slicerHome,'ShapeVariationAnalyzer_Temp')
+            temp_dir=os.path.join('/NIRAL/work/lpzmateo/data/ShapeVariationAnalyzer/','ShapeVariationAnalyzer_Temp')
+            os.mkdir(temp_dir)
+            temp_dir=os.path.join(temp_dir,'temp_model_'+date)
+            os.mkdir(temp_dir)
+            model_path=os.path.join(temp_dir,'temp.json')
+
+            self.logic.pca_exploration.save(model_path)
 
             self.eval_param = {}
-            self.eval_param["inputCsv"] = csvpath
-            self.eval_param["outputEvaluationJson"] = evaluationpath
+            self.eval_param["inputJson"] = model_path
             self.eval_param["evaluation"] = str(len(self.PCA_sliders))
             self.eval_param["shapeNum"] = str(shapeNumber)
+
 
         moduleSPCA = slicer.modules.shapca
         self.evaluationThread=slicer.cli.run(moduleSPCA, None, self.eval_param, wait_for_completion=False)
@@ -1294,9 +1281,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.label_numberShape.show()
         self.spinBox_numberShape.show()
 
-        self.label_importEval.show()
-        self.pathLineEdit_importEval.show()
-        self.pushButton_importEval.show()
+
 
     def setColorModeSpinBox(self):
         data_std=self.logic.pca_exploration.getDataStd()
