@@ -1,6 +1,6 @@
 #-----------------------------------------------------------------------------
 set(MODULE_NAME surfacefeaturesextractor)
-
+cmake_minimum_required(VERSION 3.3)
 #-----------------------------------------------------------------------------
 
 # SlicerExecutionModel
@@ -19,7 +19,7 @@ set(MODULE_SRCS
   )
 
 set(MODULE_TARGET_LIBRARIES
-  ${ITK_LIBRARIES}
+  ${VTK_LIBRARIES}
   )
 
 #-----------------------------------------------------------------------------

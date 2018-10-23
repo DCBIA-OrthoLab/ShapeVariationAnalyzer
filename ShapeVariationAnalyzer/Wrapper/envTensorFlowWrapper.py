@@ -169,7 +169,6 @@ def config_env():
     p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     out, err =  p.communicate()
     print("\nout : " + str(out) + "\nerr : " + str(err))
-
     return cmd_setenv
 
 def main():

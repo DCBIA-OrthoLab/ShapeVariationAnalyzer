@@ -7,12 +7,21 @@ from types import *
 import math
 import shutil
 
-import inputData
+
 import pickle
 import numpy as np
 import zipfile
 import json
 import subprocess
+
+
+from copy import deepcopy
+
+from scipy import stats
+
+import time
+
+import shapca
 
 
 class ShapeVariationAnalyzer(ScriptedLoadableModule):
@@ -25,7 +34,7 @@ class ShapeVariationAnalyzer(ScriptedLoadableModule):
         parent.title = "ShapeVariationAnalyzer"
         parent.categories = ["Quantification"]
         parent.dependencies = []
-        parent.contributors = ["Priscille de Dumast (University of Michigan), Laura Pascal (University of Michigan)"]
+        parent.contributors = ["Lopez Mateo (University of North Carolina), Priscille de Dumast (University of Michigan), Laura Pascal (University of Michigan)"]
         parent.helpText = """
             Shape Variation Analyzer allows the classification of 3D models, 
             according to their morphological variations. 
@@ -49,6 +58,8 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
 
         # Global Variables
         self.logic = ShapeVariationAnalyzerLogic(self)
+
+        #print(dir(self.logic))
         
         self.dictVTKFiles = dict()
         self.dictGroups = dict()
@@ -60,18 +71,11 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.dictResults = dict()
         self.dictFeatData = dict()
 
-        self.allFeatures = list()
-        self.allFeatures.append('Curvedness')
-        self.allFeatures.append('Distances to average shapes')
-        self.allFeatures.append('Distance to control group')
-        self.allFeatures.append('Gaussian Curvature')
-        self.allFeatures.append('Maximum Curvature')
-        self.allFeatures.append('Minimum Curvature')
-        self.allFeatures.append('Mean Curvature')
-        self.allFeatures.append('Normals')
-        self.allFeatures.append('Position')
-        self.allFeatures.append('Shape Index')
-        self.featuresList = list()
+        #self.dictPCA = dict()
+        self.PCA_sliders=list()
+        self.PCA_sliders_label=list()
+        self.PCA_sliders_value_label=list()
+        self.PCANode = None
 
         # Interface
         self.moduleName = 'ShapeVariationAnalyzer'
@@ -100,87 +104,143 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.pushButton_previewVTKFiles = self.logic.get('pushButton_previewVTKFiles')
 
         self.pushButton_exportUpdatedClassification = self.logic.get('pushButton_exportUpdatedClassification')
-                 # Tab: Selection Classification Groups
-        self.comboBox_healthyGroup = self.logic.get('comboBox_healthyGroup')
+
+
+        #tab: PCA Analysis
+        self.label_valueExploration=self.logic.get('label_valueExploration')
+        self.label_varianceExploration=self.logic.get('label_varianceExploration')
+        self.label_groupExploration=self.logic.get('label_groupExploration')
+        self.label_minVariance=self.logic.get('label_minVariance')
+        self.label_maxSlider=self.logic.get('label_maxSlider')
+        self.label_colorMode=self.logic.get('label_colorMode')
+        self.label_colorModeParam1=self.logic.get('label_colorModeParam1')
+        self.label_colorModeParam2=self.logic.get('label_colorModeParam2')
+        self.label_numberShape=self.logic.get('label_numberShape')
         
-        #          Tab: Classification Network
-        self.collapsibleButton_classificationNetwork = self.logic.get('collapsibleButton_classificationNetwork')
-        self.MRMLNodeComboBox_VTKInputData = self.logic.get('MRMLNodeComboBox_VTKInputData')
-        self.pathLineEdit_CSVInputData = self.logic.get('PathLineEdit_CSVInputData')
-        self.pushButton_classifyIndex = self.logic.get('pushButton_classifyIndex')
-        self.pushButton_preprocessNewData = self.logic.get('pushButton_preprocessNewData')
-        self.pushButton_exportToClassify = self.logic.get('pushButton_exportToClassify')
 
-        self.pushButton_trainNetwork = self.logic.get('pushButton_trainNetwork')
-        self.pushButton_exportUntrainedNetwork = self.logic.get('pushButton_ExportUntrainedNetwork')
-        self.pushButton_exportNetwork = self.logic.get('pushButton_ExportNetwork')
-        self.pathLineEdit_CSVFileDataset = self.logic.get('pathLineEdit_CSVFileDataset')
-        self.pathLineEdit_CSVFileMeansShape = self.logic.get('pathLineEdit_CSVFileMeansShape')
-        self.pushButton_preprocessData = self.logic.get('pushButton_preprocessData')
-        self.label_stateNetwork = self.logic.get('label_stateNetwork')
+        self.label_normalLabel_1=self.logic.get('label_normalLabel_1')
+        self.label_normalLabel_2=self.logic.get('label_normalLabel_2')
+        self.label_normalLabel_3=self.logic.get('label_normalLabel_3')
+        self.label_normalLabel_4=self.logic.get('label_normalLabel_4')
+        self.label_normalLabel_5=self.logic.get('label_normalLabel_5')
+        self.label_normalLabel_6=self.logic.get('label_normalLabel_6')
+        self.label_normalLabel_7=self.logic.get('label_normalLabel_7')
 
-        self.pathLineEdit_networkPath = self.logic.get('ctkPathLineEdit_networkPath')
 
-        self.collapsibleGroupBox_advancedParameters = self.logic.get('collapsibleGroupBox_advancedParameters')
-        self.checkBox_features = self.logic.get('checkBox_features')
-        self.checkableComboBox_choiceOfFeatures = self.logic.get('checkableComboBox_choiceOfFeatures')
-        self.checkBox_numsteps = self.logic.get('checkBox_numsteps')
-        self.spinBox_numsteps = self.logic.get('spinBox_numsteps')
-        self.comboBox_controlGroup_features = self.logic.get('comboBox_controlGroup_features')
-        self.checkBox_numberOfLayers = self.logic.get('checkBox_numberOfLayers')
-        self.spinBox_numberOfLayers = self.logic.get('spinBox_numberOfLayers')
+        self.collapsibleButton_PCA = self.logic.get('collapsibleButton_PCA')
 
-        #          Tab: Result / Analysis
-        self.collapsibleButton_Result = self.logic.get('CollapsibleButton_Result')
-        self.tableWidget_result = self.logic.get('tableWidget_result')
-        self.pushButton_exportResult = self.logic.get('pushButton_exportResult')
+        self.pathLineEdit_CSVFilePCA = self.logic.get('pathLineEdit_CSVFilePCA')  
+        self.pathLineEdit_exploration = self.logic.get('pathLineEdit_exploration')
         
-        # Tab: Compute Average Groups
-        self.CollapsibleButton_computeAverageGroups = self.logic.get('CollapsibleButton_computeAverageGroups')
-        self.pathLineEdit_selectionClassificationGroups = self.logic.get('PathLineEdit_selectionClassificationGroups')
-        self.pushButton_previewGroups = self.logic.get('pushButton_previewGroups')
-        self.MRMLTreeView_classificationGroups = self.logic.get('MRMLTreeView_classificationGroups')
-        self.directoryButton_exportMeanGroups = self.logic.get('directoryButton_exportMeanGroups')
-        self.pushButton_exportMeanGroups = self.logic.get('pushButton_exportMeanGroups')
-        self.pushButton_computeMeanGroup = self.logic.get('pushButton_computeMeanGroup')
-        self.pathLineEdit_meanGroup = self.logic.get('pathLineEdit_meanGroup')
+
+        self.comboBox_groupPCA = self.logic.get('comboBox_groupPCA')
+        self.comboBox_colorMode = self.logic.get('comboBox_colorMode')
+
+        self.pushButton_PCA = self.logic.get('pushButton_PCA') 
+        self.pushButton_resetSliders = self.logic.get('pushButton_resetSliders')  
+        self.pushButton_saveExploration=self.logic.get('pushButton_saveExploration')
+        self.pushButton_toggleMean=self.logic.get('pushButton_toggleMean')
+        self.pushButton_evaluateModels=self.logic.get('pushButton_evaluateModels')
+        
+
+        self.label_statePCA = self.logic.get('label_statePCA')
+
+        self.gridLayout_PCAsliders=self.logic.get('gridLayout_PCAsliders')
+
+        self.spinBox_minVariance=self.logic.get('spinBox_minVariance')
+        self.spinBox_maxSlider=self.logic.get('spinBox_maxSlider')
+        self.spinBox_colorModeParam1=self.logic.get('spinBox_colorModeParam_1')
+        self.spinBox_colorModeParam2=self.logic.get('spinBox_colorModeParam_2')
+        self.spinBox_numberShape=self.logic.get('spinBox_numberShape')
+
+        self.ctkColorPickerButton_groupColor=self.logic.get('ctkColorPickerButton_groupColor')
+
+
+        #self.doubleSpinBox_insideLimit=self.logic.get('doubleSpinBox_insideLimit')
+        #self.doubleSpinBox_insideLimit=self.logic.get('doubleSpinBox_outsidesideLimit')
+
 
         # Widget Configuration
+        ##PCA exploration Widgets Configuration
+        #self.pushButton_PCA.setDisabled(True) 
+        #self.comboBox_groupPCA.setDisabled(True)
+        self.comboBox_colorMode.addItem('Group color')
+        self.comboBox_colorMode.addItem('Unsigned distance to mean shape')
+        self.comboBox_colorMode.addItem('Signed distance to mean shape')
+
+        self.spinBox_minVariance.setValue(2)
+        self.spinBox_maxSlider.setMinimum(1)
+        self.spinBox_maxSlider.setMaximum(8)
+        self.spinBox_maxSlider.setValue(8)
+
+        self.spinBox_colorModeParam1.setMinimum(1)
+
+        self.spinBox_colorModeParam2.setMinimum(1)
+
+        self.spinBox_colorModeParam1.setMaximum(10000)
+        self.spinBox_colorModeParam2.setMaximum(10000)
+
+        self.spinBox_colorModeParam1.setValue(1)
+        self.spinBox_colorModeParam2.setValue(1)
+
+        self.spinBox_numberShape.setMinimum(100)
+        self.spinBox_numberShape.setMaximum(1000000)
+        self.spinBox_numberShape.setValue(10000)
+
+        
+
+        self.label_statePCA.hide()
+        self.ctkColorPickerButton_groupColor.color=qt.QColor(255,255,255)
+        self.ctkColorPickerButton_groupColor.setDisplayColorName(False)
+
+        self.label_normalLabel_1.hide()
+        self.label_normalLabel_2.hide()
+        self.label_normalLabel_3.hide()
+        self.label_normalLabel_4.hide()
+        self.label_normalLabel_5.hide()
+        self.label_normalLabel_6.hide()
+        self.label_normalLabel_7.hide()
+
+        self.comboBox_groupPCA.hide()
+        self.comboBox_colorMode.hide()
+        self.ctkColorPickerButton_groupColor.hide()
+        self.pushButton_resetSliders.hide()
+        self.label_valueExploration.hide()
+        self.label_groupExploration.hide()
+        self.label_varianceExploration.hide()
+        self.pushButton_saveExploration.hide()
+        self.pushButton_toggleMean.hide()
+        self.pushButton_evaluateModels.hide()
+        self.spinBox_minVariance.hide()
+
+        self.spinBox_maxSlider.hide()
+        self.label_minVariance.hide()
+        self.label_maxSlider.hide()
+
+        self.spinBox_colorModeParam1.hide()
+        self.spinBox_colorModeParam2.hide()
+        self.label_colorMode.hide()
+        self.label_colorModeParam1.hide()
+        self.label_colorModeParam2.hide()
+
+        self.label_numberShape.hide()
+        self.spinBox_numberShape.hide()
+
 
         #     disable/enable and hide/show widget
-        self.comboBox_healthyGroup.setDisabled(True)
+
+
+        #self.comboBox_healthyGroup.setDisabled(True)
         self.pushButton_exportUpdatedClassification.setDisabled(True)
         self.checkableComboBox_ChoiceOfGroup.setDisabled(True)
         self.tableWidget_VTKFiles.setDisabled(True)
         self.pushButton_previewVTKFiles.setDisabled(True)
 
-        self.pushButton_previewGroups.setDisabled(True)
-        self.pushButton_computeMeanGroup.setDisabled(True)
-        self.directoryButton_exportMeanGroups.setDisabled(True)
-        self.pushButton_exportMeanGroups.setDisabled(True)
+        self.label_statePCA.hide()
 
-        self.pushButton_trainNetwork.setDisabled(True)
-        self.pushButton_exportNetwork.setDisabled(True)
-        self.pushButton_exportUntrainedNetwork.setDisabled(True)
-        self.pushButton_preprocessData.setDisabled(True)
-
-        self.pushButton_exportToClassify.setDisabled(True)
-        self.pushButton_classifyIndex.setDisabled(True)
-
-        self.label_stateNetwork.hide()
-
-        self.collapsibleButton_classificationNetwork.setChecked(True)
         self.collapsibleButton_creationCSVFile.setChecked(False)
         self.collapsibleButton_previewClassificationGroups.setChecked(False)
-        self.CollapsibleButton_computeAverageGroups.setChecked(False)
-        self.collapsibleButton_Result.setChecked(False)
-        self.collapsibleGroupBox_advancedParameters.setChecked(False)
-        for ft in self.allFeatures:
-            self.checkableComboBox_choiceOfFeatures.addItem(ft)
 
-
-        #     qMRMLNodeComboBox configuration
-        self.MRMLNodeComboBox_VTKInputData.setMRMLScene(slicer.mrmlScene)
 
         #     initialisation of the stackedWidget to display the button "add group"
         self.stackedWidget_manageGroup.setCurrentIndex(0)
@@ -190,29 +250,6 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.spinBox_group.setMaximum(0)
         self.spinBox_group.setValue(0)
 
-        #     spinbox configuration in the Advanced parameters
-        self.spinBox_numsteps.setMinimum(11)
-        self.spinBox_numsteps.setMaximum(10001)
-        self.spinBox_numsteps.setValue(1001)
-
-        self.spinBox_numberOfLayers.setMinimum(1)
-        self.spinBox_numberOfLayers.setMaximum(2)
-        self.spinBox_numberOfLayers.setValue(2)
-
-        #     tree view configuration
-        headerTreeView = self.MRMLTreeView_classificationGroups.header()
-        headerTreeView.setVisible(False)
-        self.MRMLTreeView_classificationGroups.setMRMLScene(slicer.app.mrmlScene())
-        self.MRMLTreeView_classificationGroups.sortFilterProxyModel().nodeTypes = ['vtkMRMLModelNode']
-        self.MRMLTreeView_classificationGroups.setDisabled(True)
-        sceneModel = self.MRMLTreeView_classificationGroups.sceneModel()
-        # sceneModel.setHorizontalHeaderLabels(["Group Classification"])
-        sceneModel.colorColumn = 1
-        sceneModel.opacityColumn = 2
-        headerTreeView.setStretchLastSection(False)
-        headerTreeView.setResizeMode(sceneModel.nameColumn,qt.QHeaderView.Stretch)
-        headerTreeView.setResizeMode(sceneModel.colorColumn,qt.QHeaderView.ResizeToContents)
-        headerTreeView.setResizeMode(sceneModel.opacityColumn,qt.QHeaderView.ResizeToContents)
 
         #     configuration of the table for preview VTK file
         self.tableWidget_VTKFiles.setColumnCount(4)
@@ -220,21 +257,11 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.tableWidget_VTKFiles.setColumnWidth(0, 200)
         horizontalHeader = self.tableWidget_VTKFiles.horizontalHeader()
         horizontalHeader.setStretchLastSection(False)
-        horizontalHeader.setResizeMode(0,qt.QHeaderView.Stretch)
+        '''horizontalHeader.setResizeMode(0,qt.QHeaderView.Stretch)
         horizontalHeader.setResizeMode(1,qt.QHeaderView.ResizeToContents)
         horizontalHeader.setResizeMode(2,qt.QHeaderView.ResizeToContents)
-        horizontalHeader.setResizeMode(3,qt.QHeaderView.ResizeToContents)
+        horizontalHeader.setResizeMode(3,qt.QHeaderView.ResizeToContents)'''
         self.tableWidget_VTKFiles.verticalHeader().setVisible(True)
-
-        #     configuration of the table to display the result
-        self.tableWidget_result.setColumnCount(2)
-        self.tableWidget_result.setHorizontalHeaderLabels([' VTK files ', ' Assigned Group '])
-        self.tableWidget_result.setColumnWidth(0, 300)
-        horizontalHeader = self.tableWidget_result.horizontalHeader()
-        horizontalHeader.setStretchLastSection(False)
-        horizontalHeader.setResizeMode(0,qt.QHeaderView.Stretch)
-        horizontalHeader.setResizeMode(1,qt.QHeaderView.ResizeToContents)
-        self.tableWidget_result.verticalHeader().setVisible(False)
 
         # --------------------------------------------------------- #
         #                       Connection                          #
@@ -256,44 +283,40 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.pushButton_exportUpdatedClassification.connect('clicked()', self.onExportUpdatedClassificationGroups)
        
         #          Tab: Select Input Data
-        self.collapsibleButton_classificationNetwork.connect('clicked()',
-                                                       lambda: self.onSelectedCollapsibleButtonOpen(self.collapsibleButton_classificationNetwork))
-        self.MRMLNodeComboBox_VTKInputData.connect('currentNodeChanged(vtkMRMLNode*)', self.onVTKInputData)
-        self.pathLineEdit_CSVInputData.connect('currentPathChanged(const QString)', self.onCSVInputData)
-        self.pushButton_classifyIndex.connect('clicked()', self.onClassifyIndex)
-        self.pushButton_preprocessNewData.connect('clicked()', self.onPreprocessNewData)
-        self.pushButton_exportToClassify.connect('clicked()', self.onExportToClassify)
+        self.collapsibleButton_PCA.connect('clicked()',
+                                            lambda: self.onSelectedCollapsibleButtonOpen(self.collapsibleButton_PCA))
 
-        self.checkableComboBox_choiceOfFeatures.connect('checkedIndexesChanged()', self.onCheckableComboBoxFeaturesChanged)
-
-        #          Tab: Result / Analysis
-        self.collapsibleButton_Result.connect('clicked()',
-                                              lambda: self.onSelectedCollapsibleButtonOpen(self.collapsibleButton_Result))
-        self.pushButton_exportResult.connect('clicked()', self.onExportResult)
 
         slicer.mrmlScene.AddObserver(slicer.mrmlScene.EndCloseEvent, self.onCloseScene)
-
-                 # Tab: Compute Average Groups
-        self.CollapsibleButton_computeAverageGroups.connect('clicked()',
-                                              lambda: self.onSelectedCollapsibleButtonOpen(self.CollapsibleButton_computeAverageGroups))
-
-                 
-        self.pathLineEdit_selectionClassificationGroups.connect('currentPathChanged(const QString)', self.onComputeAverageClassificationGroups)
-        self.pushButton_previewGroups.connect('clicked()', self.onPreviewGroupMeans)
-        self.pushButton_computeMeanGroup.connect('clicked()', self.onComputeMeanGroup)
-        self.pushButton_exportMeanGroups.connect('clicked()', self.onExportMeanGroups)
-        self.pathLineEdit_meanGroup.connect('currentPathChanged(const QString)', self.onMeanGroupCSV)
-
-                # Tab: Classification Network
-        self.pushButton_trainNetwork.connect('clicked()', self.onTrainNetwork)
-        self.pushButton_exportNetwork.connect('clicked()', self.onExportNetwork)
-        self.pushButton_exportUntrainedNetwork.connect('clicked()', self.onExportUntrainedNetwork)
-        self.pathLineEdit_CSVFileDataset.connect('currentPathChanged(const QString)', self.onCSVFileDataset)
-        self.pathLineEdit_CSVFileMeansShape.connect('currentPathChanged(const QString)', self.onCSVFileMeansShape)
-        self.pushButton_preprocessData.connect('clicked()', self.onPreprocessData)
         self.stateCSVMeansShape = False
         self.stateCSVDataset = False
-        self.pathLineEdit_networkPath.connect('currentPathChanged(const QString)', self.onNetworkPath)
+
+
+        #       Tab : PCA
+
+        self.pathLineEdit_CSVFilePCA.connect('currentPathChanged(const QString)', self.onCSV_PCA)
+        self.pathLineEdit_exploration.connect('currentPathChanged(const QString)', self.onLoadExploration)
+
+        self.pushButton_PCA.connect('clicked()', self.onExportForExploration)
+        self.pushButton_resetSliders.connect('clicked()', self.onResetSliders)
+        self.pushButton_saveExploration.connect('clicked()',self.onSaveExploration)
+        self.pushButton_toggleMean.connect('clicked()',self.onToggleMeanShape)
+        self.pushButton_evaluateModels.connect('clicked()',self.onEvaluateModels)
+
+
+        self.comboBox_groupPCA.connect('activated(QString)',self.explorePCA)
+        self.comboBox_colorMode.connect('activated(QString)',self.onColorModeChange)
+
+
+        self.spinBox_maxSlider.connect('valueChanged(int)',self.onUpdateSliderList)
+        self.spinBox_minVariance.connect('valueChanged(int)',self.onUpdateSliderList)
+
+        self.spinBox_colorModeParam1.connect('valueChanged(int)',self.onUpdateColorModeParam)
+        self.spinBox_colorModeParam2.connect('valueChanged(int)',self.onUpdateColorModeParam)
+
+        self.ctkColorPickerButton_groupColor.connect('colorChanged(QColor)',self.onGroupColorChanged)
+
+        self.evaluationFlag="DONE"
 
     # function called each time that the user "enter" in Diagnostic Index interface
     def enter(self):
@@ -308,13 +331,9 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
     # function called each time that the scene is closed (if Diagnostic Index has been initialized)
     def onCloseScene(self, obj, event):
 
-        numItem = self.comboBox_healthyGroup.count
-        for i in range(0, numItem):
-            self.comboBox_healthyGroup.removeItem(0)
-            
-        self.comboBox_healthyGroup.clear()
 
         print("onCloseScene")
+        sys.stdout.flush()
         self.dictVTKFiles = dict()
         self.dictGroups = dict()
         self.dictCSVFile = dict()
@@ -325,7 +344,6 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.dictResults = dict()
         self.dictFeatData = dict()
 
-        self.featuresList = list()
         
         # Tab: New Classification Groups
         self.pathLineEdit_previewGroups.setCurrentPath(" ")
@@ -343,86 +361,74 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.tableWidget_VTKFiles.verticalHeader().setVisible(False)
         self.tableWidget_VTKFiles.setDisabled(True)
         self.pushButton_previewVTKFiles.setDisabled(True)
-        # le bt compute
         self.pushButton_exportUpdatedClassification.setDisabled(True)
 
-        # Tab: Selection of Classification Groups
-        self.pathLineEdit_selectionClassificationGroups.setCurrentPath(" ")
-        if self.comboBox_healthyGroup.enabled:
-            self.comboBox_healthyGroup.clear()
-        self.comboBox_healthyGroup.setDisabled(True)
+        #PCA
 
-        # Tab: Preview of Classification Group
-        self.MRMLTreeView_classificationGroups.setDisabled(True)
-        self.pushButton_previewGroups.setDisabled(True)
+        self.label_normalLabel_1.hide()
+        self.label_normalLabel_2.hide()
+        self.label_normalLabel_3.hide()
+        self.label_normalLabel_4.hide()
+        self.label_normalLabel_5.hide()
+        self.label_normalLabel_6.hide()
+        self.label_normalLabel_7.hide()
 
-        # Tab: Select Input Data
-        self.pathLineEdit_CSVInputData.setCurrentPath(" ")
-        self.pathLineEdit_CSVFileDataset.setCurrentPath(" ")
-        self.pathLineEdit_CSVFileMeansShape.setCurrentPath(" ")
-        self.pathLineEdit_networkPath.setCurrentPath(" ")
-        self.pathLineEdit_meanGroup.setCurrentPath(" ")
+        self.deletePCASliders()
+        self.comboBox_groupPCA.hide()
+        self.comboBox_colorMode.hide()
+        self.ctkColorPickerButton_groupColor.hide()
+        self.pushButton_resetSliders.hide()
+        self.label_valueExploration.hide()
+        self.label_groupExploration.hide()
+        self.label_varianceExploration.hide()
+        self.pushButton_saveExploration.hide()
+        self.pushButton_toggleMean.hide()
+        self.pushButton_evaluateModels.hide()
+        self.spinBox_minVariance.hide()
+        self.spinBox_maxSlider.hide()
+        self.label_minVariance.hide()
+        self.label_maxSlider.hide()
+        self.spinBox_colorModeParam1.hide()
+        self.spinBox_colorModeParam2.hide()
+        self.label_colorMode.hide()
+        self.label_colorModeParam1.hide()
+        self.label_colorModeParam2.hide()
 
-        #          Tab: Result / Analysis
-        self.collapsibleButton_Result = self.logic.get('CollapsibleButton_Result')
-        self.tableWidget_result = self.logic.get('tableWidget_result')
-        self.pushButton_exportResult = self.logic.get('pushButton_exportResult')
-        
-                 # Tab: Compute Average Groups
-        self.CollapsibleButton_computeAverageGroups = self.logic.get('CollapsibleButton_computeAverageGroups')
-        self.pathLineEdit_selectionClassificationGroups = self.logic.get('PathLineEdit_selectionClassificationGroups')
-        self.pushButton_previewGroups = self.logic.get('pushButton_previewGroups')
-        self.MRMLTreeView_classificationGroups = self.logic.get('MRMLTreeView_classificationGroups')
-        self.directoryButton_exportMeanGroups = self.logic.get('directoryButton_exportMeanGroups')
-        self.pushButton_exportMeanGroups = self.logic.get('pushButton_exportMeanGroups')
-        self.pushButton_computeMeanGroup = self.logic.get('pushButton_computeMeanGroup')
-        self.pathLineEdit_meanGroup = self.logic.get('pathLineEdit_meanGroup')
+        self.label_numberShape.hide()
+        self.spinBox_numberShape.hide()
 
-        # Tab: Result / Analysis
-        self.tableWidget_result.clear()
-        self.tableWidget_result.setColumnCount(2)
-        self.tableWidget_result.setHorizontalHeaderLabels([' VTK files ', ' Assigned Group '])
-        self.tableWidget_result.setColumnWidth(0, 300)
-        horizontalHeader = self.tableWidget_result.horizontalHeader()
-        horizontalHeader.setStretchLastSection(False)
-        horizontalHeader.setResizeMode(0,qt.QHeaderView.Stretch)
-        horizontalHeader.setResizeMode(1,qt.QHeaderView.ResizeToContents)
-        self.tableWidget_result.verticalHeader().setVisible(False)
+
+        self.pushButton_PCA.setEnabled(False) 
+        self.pathLineEdit_CSVFilePCA.disconnect('currentPathChanged(const QString)', self.onCSV_PCA)
+        self.pathLineEdit_CSVFilePCA.setCurrentPath(" ")
+        self.pathLineEdit_CSVFilePCA.connect('currentPathChanged(const QString)', self.onCSV_PCA)
+        self.pathLineEdit_exploration.setCurrentPath(" ")
+
+        if self.evaluationFlag!="DONE":
+            self.onKillEvaluation()
+        try:
+            self.pushButton_evaluateModels.clicked.disconnect()
+        except:
+            pass
+        self.pushButton_evaluateModels.setText("Evaluate models (It may take a long time)")
+        self.pushButton_evaluateModels.connect('clicked()',self.onEvaluateModels)
+
+        self.spinBox_minVariance.setValue(2)
+
 
         # Enable/disable
-        self.comboBox_healthyGroup.setDisabled(True)
         self.pushButton_exportUpdatedClassification.setDisabled(True)
         self.checkableComboBox_ChoiceOfGroup.setDisabled(True)
         self.tableWidget_VTKFiles.setDisabled(True)
         self.pushButton_previewVTKFiles.setDisabled(True)
 
-        self.pushButton_previewGroups.setDisabled(True)
-        self.pushButton_computeMeanGroup.setDisabled(True)
-        self.directoryButton_exportMeanGroups.setDisabled(True)
-        self.pushButton_exportMeanGroups.setDisabled(True)
-
-        self.pushButton_trainNetwork.setDisabled(True)
-        self.pushButton_exportNetwork.setDisabled(True)
-        self.pushButton_exportUntrainedNetwork.setDisabled(True)
-        self.pushButton_preprocessData.setDisabled(True)
-        self.pushButton_exportToClassify.setDisabled(True)
-        self.pushButton_classifyIndex.setDisabled(True)
-
-        self.label_stateNetwork.hide()
+        self.label_statePCA.hide()
         self.stateCSVMeansShape = False
         self.stateCSVDataset = False
 
-        self.collapsibleButton_classificationNetwork.setChecked(True)
+        self.collapsibleButton_PCA.setChecked(True)
         self.collapsibleButton_creationCSVFile.setChecked(False)
         self.collapsibleButton_previewClassificationGroups.setChecked(False)
-        self.CollapsibleButton_computeAverageGroups.setChecked(False)
-        self.collapsibleButton_Result.setChecked(False)
-        self.collapsibleGroupBox_advancedParameters.setChecked(False)
-        self.comboBox_healthyGroup.clear()
-        self.comboBox_controlGroup_features.clear()
-
-        #     qMRMLNodeComboBox configuration
-        self.MRMLNodeComboBox_VTKInputData.setMRMLScene(slicer.mrmlScene)
 
         #     initialisation of the stackedWidget to display the button "add group"
         self.stackedWidget_manageGroup.setCurrentIndex(0)
@@ -432,9 +438,6 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.spinBox_group.setMaximum(0)
         self.spinBox_group.setValue(0)
 
-        self.MRMLTreeView_classificationGroups.setMRMLScene(slicer.app.mrmlScene())
-
-
     def onSelectedCollapsibleButtonOpen(self, selectedCollapsibleButton):
         """  Only one tab can be display at the same time:
         When one tab is opened all the other tabs are closed 
@@ -442,9 +445,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         if selectedCollapsibleButton.isChecked():
             collapsibleButtonList = [self.collapsibleButton_creationCSVFile,
                                      self.collapsibleButton_previewClassificationGroups,
-                                     self.CollapsibleButton_computeAverageGroups,
-                                     self.collapsibleButton_classificationNetwork,
-                                     self.collapsibleButton_Result]
+                                     self.collapsibleButton_PCA]
             for collapsibleButton in collapsibleButtonList:
                 collapsibleButton.setChecked(False)
             selectedCollapsibleButton.setChecked(True)
@@ -570,11 +571,12 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
 
         # Message in the python console
         print("Export CSV File: " + filepath)
+        sys.stdout.flush()
 
         # Load automatically the CSV file in the pathline in the next tab "Creation of New Classification Groups"
         self.pathLineEdit_previewGroups.setCurrentPath(filepath)
-        self.pathLineEdit_selectionClassificationGroups.setCurrentPath(filepath)
-        self.pathLineEdit_CSVFileDataset.setCurrentPath(filepath)
+        self.pathLineEdit_CSVFilePCA.setCurrentPath(filepath)
+        #self.pathLineEdit_CSVFileDataset.setCurrentPath(filepath)
 
     # ---------------------------------------------------- #
     #     Tab: Creation of New Classification Groups       #
@@ -626,7 +628,6 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.pushButton_previewVTKFiles.setEnabled(True)
         # self.pushButton_compute.setEnabled(True)
 
-    
     def onCheckableComboBoxValueChanged(self):
         """ Function to manage the checkable combobox to allow 
         the user to choose the group that he wants to preview in SPV
@@ -659,7 +660,6 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         colorTransferFunction = self.logic.creationColorTransfer(self.groupSelected)
         self.updateColorInTableForPreviewInSPV(colorTransferFunction)
 
-    
     def onGroupValueChanged(self):
         """ Function to manage the combobox which 
         allow the user to change the group of a vtk file 
@@ -674,7 +674,6 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.pushButton_exportUpdatedClassification.setEnabled(True)
         # Default path to override the previous one
         # self.directoryButton_exportUpdatedClassification.directory = os.path.dirname(self.pathLineEdit_previewGroups.currentPath)
-
 
     def onCheckBoxTableValueChanged(self):
         """ Function to manage the checkbox in 
@@ -711,7 +710,6 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         colorTransferFunction = self.logic.creationColorTransfer(self.groupSelected)
         self.updateColorInTableForPreviewInSPV(colorTransferFunction)
 
-    
     def updateColorInTableForPreviewInSPV(self, colorTransferFunction):
         """ Function to update the colors that the selected 
         vtk files will have in Shape Population Viewer
@@ -756,7 +754,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
             # Launch the CLI ShapePopulationViewer
             parameters = {}
             parameters["CSVFile"] = filePathCSV
-            launcherSPV = slicer.modules.launcher
+            launcherSPV = slicer.modules.shapepopulationviewer
             slicer.cli.run(launcherSPV, None, parameters, wait_for_completion=True)
 
             # Remove the vtk files previously created in the temporary directory of Slicer
@@ -794,694 +792,935 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         if self.pathLineEdit_selectionClassificationGroups.currentPath == filepath:
             self.pathLineEdit_selectionClassificationGroups.setCurrentPath(" ")
         self.pathLineEdit_selectionClassificationGroups.setCurrentPath(filepath)
-        self.pathLineEdit_CSVFileDataset.setCurrentPath(filepath)
+        #self.pathLineEdit_CSVFileDataset.setCurrentPath(filepath)
+
+
 
     # ---------------------------------------------------- #
-    #        Tab: Selection of Classification Groups       #
-    #        
-    #        Compute Average groups!!
-    #        
+    #               Tab: PCA Analysis                      #
     # ---------------------------------------------------- #
 
-    
-    def onComputeAverageClassificationGroups(self):
-        """ Function to select the Classification Groups
-        """
-        # Re-initialization of the dictionary containing the Classification Groups
-        self.dictShapeModels = dict()
-
-        # Check if the path exists:
-        if not os.path.exists(self.pathLineEdit_selectionClassificationGroups.currentPath):
-            return
-
-        # print("------ Selection of a Classification Groups ------")
-        # Check if it's a CSV file
-        condition1 = self.logic.checkExtension(self.pathLineEdit_selectionClassificationGroups.currentPath, ".csv")
-        if not condition1:
-            self.pathLineEdit_selectionClassificationGroups.setCurrentPath(" ")
-            return
-
-
-        # Read CSV File:
-        self.logic.table = self.logic.readCSVFile(self.pathLineEdit_selectionClassificationGroups.currentPath)
-        condition3 = self.logic.creationDictVTKFiles(self.dictShapeModels)
-        condition2 = self.logic.checkSeveralMeshInDict(self.dictShapeModels)
-
-        #    If the file is not conformed:
-        #    Re-initialization of the dictionary containing the Classification Groups
-        if not (condition2 and condition3):
-            self.dictShapeModels = dict()
-            self.pathLineEdit_selectionClassificationGroups.setCurrentPath(" ")
-            return
-
-        condition4 = self.logic.checkNumberOfPoints(self.dictShapeModels)
-        if not condition4: 
-            self.pathLineEdit_CSVFileDataset.setCurrentPath(" ")
-            return
-        self.pushButton_computeMeanGroup.setEnabled(True)
-
-    def onComputeMeanGroup(self):
-        """ Function to compute the average shape
-        for each present group
-        """
-        # print("compute mean group")
-        for group, listvtk in self.dictShapeModels.items():
-            # Compute the mean of each group thanks to the CLI "computeMean"
-            self.logic.computeMean(group, listvtk)
-
-            # Storage of the means for each group
-            self.logic.storageMean(self.dictGroups, group)
-
-        self.pushButton_exportMeanGroups.setEnabled(True)
-        self.directoryButton_exportMeanGroups.setEnabled(True)
-        self.pushButton_previewGroups.setEnabled(True)
-        
-        self.pushButton_previewGroups.setEnabled(True)
-        self.MRMLTreeView_classificationGroups.setEnabled(True)
-
-        return 
-
-
-    def onMeanGroupCSV(self):
-        
+    def onCSV_PCA(self):
         # print("------ onMeanGroupCSV ------")
-        self.dictGroups = dict()
 
-        # Check if it's a CSV file
-        condition1 = self.logic.checkExtension(self.pathLineEdit_meanGroup.currentPath, ".csv")
-        if not condition1:
-            self.pathLineEdit_meanGroup.setCurrentPath(" ")
+        try:
+            self.logic.pca_exploration.loadCSVFile(self.pathLineEdit_CSVFilePCA.currentPath)
+            self.pathLineEdit_exploration.setCurrentPath(" ")
+        except shapca.CSVFileError as e:
+            print('CSVFileError:'+e.value)
+            slicer.util.errorDisplay('Invalid CSV file')
             return
 
-        # Download the CSV file
-        self.logic.table = self.logic.readCSVFile(self.pathLineEdit_meanGroup.currentPath)
-        condition2 = self.logic.creationDictVTKFiles(self.dictGroups)
-        condition3 = self.logic.checkOneMeshPerGroupInDict(self.dictGroups)
+        self.pushButton_PCA.setEnabled(True) 
 
-        # If the file is not conformed:
-        #    Re-initialization of the dictionary containing all the data
-        #    which will be used to create a new Classification Groups
-        if not (condition2 and condition3):
-            self.dictGroups = dict()
+    def onExportForExploration(self):
+
+
+        self.logic.pca_exploration.process()
+
+        self.comboBox_groupPCA.setEnabled(True)
+        self.comboBox_groupPCA.clear()
+
+        dictPCA=self.logic.pca_exploration.getDictPCA()
+        for key, value in dictPCA.items():
+            group_name = value["group_name"]
+            if key != "All":
+                self.comboBox_groupPCA.addItem(str(key)+': '+group_name)
+            else: 
+                self.comboBox_groupPCA.addItem(key)
+
+        self.setColorModeSpinBox()
+
+        self.showmean=False
+        self.generate3DVisualisationNodes()
+        self.generate2DVisualisationNodes()
+
+        index = self.comboBox_colorMode.findText('Group color', qt.Qt.MatchFixedString)
+        if index >= 0:
+             self.comboBox_colorMode.setCurrentIndex(index)
+
+        self.pathLineEdit_exploration.disconnect('currentPathChanged(const QString)', self.onLoadExploration)
+        self.pathLineEdit_exploration.setCurrentPath(' ')
+        self.pathLineEdit_exploration.connect('currentPathChanged(const QString)', self.onLoadExploration)
+
+
+        if self.evaluationFlag=="DONE":
+            try:
+                self.pushButton_evaluateModels.clicked.disconnect()
+            except:
+                pass
+            self.pushButton_evaluateModels.setText("Evaluate models (It may take a long time)")
+            self.pushButton_evaluateModels.connect('clicked()',self.onEvaluateModels)
+        
+        self.explorePCA()
+
+    def onResetSliders(self):
+        self.logic.pca_exploration.resetPCAPolyData()
+        #self.polyDataPCA.Modified()
+        for slider in self.PCA_sliders:
+            slider.setSliderPosition(0)
+
+    def onChangePCAPolyData(self, num_slider):
+        ratio = self.PCA_sliders[num_slider].value
+
+        X=1-(((ratio/1000.0)+1)/2.0)
+        self.PCA_sliders_value_label[num_slider].setText(str(round(stats.norm.isf(X),3)))
+
+        self.logic.pca_exploration.updatePolyDataExploration(num_slider,ratio/1000.0)
+        #self.polyDataPCA.Modified()
+
+    def onLoadExploration(self):
+
+        JSONfile=self.pathLineEdit_exploration.currentPath
+
+        # Check if the path exists:
+        if not os.path.exists(JSONfile):
+            return
+        try:
+            self.logic.pca_exploration.load(JSONfile)
+            self.pathLineEdit_CSVFilePCA.disconnect('currentPathChanged(const QString)', self.onCSV_PCA)
+            self.pathLineEdit_CSVFilePCA.setCurrentPath(" ")
+            self.pathLineEdit_CSVFilePCA.connect('currentPathChanged(const QString)', self.onCSV_PCA)
+        except shapca.JSONFileError as e:
+            print('JSONFileError:'+e.value)
+            slicer.util.errorDisplay('Invalid JSON file')
             return
 
-        self.pushButton_previewGroups.setEnabled(True)
-        self.comboBox_healthyGroup.setEnabled(True)
-        self.comboBox_healthyGroup.clear()
-
-        for key, value in self.dictGroups.items():
-            # Fill the Checkable Combobox
-            self.comboBox_healthyGroup.addItem("Group " + str(key))
 
 
-    def onPreviewGroupMeans(self):
-        """ Function to preview the Classification Groups in Slicer
-            - The opacity of all the vtk files is set to 0.8
-            - The healthy group is white and the others are red
-        """
-        # print("------ Preview of the Group's Mean in Slicer ------")
+        self.comboBox_groupPCA.setEnabled(True)
+        self.comboBox_groupPCA.clear()
+        dictPCA=self.logic.pca_exploration.getDictPCA()
+        for key, value in dictPCA.items():
 
-        list = slicer.mrmlScene.GetNodesByClass("vtkMRMLModelNode")
-        end = list.GetNumberOfItems()
-        for i in range(0,end):
-            model = list.GetItemAsObject(i)
-            if model.GetName()[:len("meanGroup")] == "meanGroup":
-                hardenModel = slicer.mrmlScene.GetNodesByName(model.GetName()).GetItemAsObject(0)
-                slicer.mrmlScene.RemoveNode(hardenModel)
+            group_name = value["group_name"]
+            if key != "All":
+                self.comboBox_groupPCA.addItem(str(key)+': '+group_name)
+            else: 
+                self.comboBox_groupPCA.addItem(key)  
 
-        self.MRMLTreeView_classificationGroups.setMRMLScene(slicer.app.mrmlScene())
-        self.MRMLTreeView_classificationGroups.setEnabled(True)
+        
+        self.setColorModeSpinBox()    
+        self.showmean=False
 
-        for key in self.dictGroups.keys():
-            filename = self.dictGroups.get(key, None)
-            loader = slicer.util.loadModel
-            loader(filename)
+        self.generate3DVisualisationNodes()
+        self.generate2DVisualisationNodes()
 
-    # Change the color and the opacity for each vtk file
-        list = slicer.mrmlScene.GetNodesByClass("vtkMRMLModelNode")
-        end = list.GetNumberOfItems()
-        for i in range(3,end):
-            model = list.GetItemAsObject(i)
-            disp = model.GetDisplayNode()
-            # print ("model in color : " + str(model.GetName()))
-            for group in self.dictGroups.keys():
-                filename = self.dictGroups.get(group, None)
-                if os.path.splitext(os.path.basename(filename))[0] == model.GetName():
-                    if self.comboBox_healthyGroup.currentText == "Group " + str(group):
-                        disp.SetColor(1, 1, 1)
-                        disp.VisibilityOn()
-                    else:
-                        disp.SetColor(1, 0, 0)
-                        disp.VisibilityOff()
-                    disp.SetOpacity(0.8)
-                    break
-                disp.VisibilityOff()
+        index = self.comboBox_colorMode.findText('Group color', qt.Qt.MatchFixedString)
+        if index >= 0:
+             self.comboBox_colorMode.setCurrentIndex(index)
+        #slicer.mrmlScene.RemoveAllDefaultNodes()
+        if self.evaluationFlag=="DONE":
+            try:
+                self.pushButton_evaluateModels.clicked.disconnect()
+            except:
+                pass
+            self.pushButton_evaluateModels.setText("Evaluate models (It may take a long time)")
+            self.pushButton_evaluateModels.connect('clicked()',self.onEvaluateModels)
+        self.explorePCA()
 
-        # Center the 3D view of the scene
+    def onGroupColorChanged(self,newcolor):
+        newcolor=(newcolor.red()/255.0,newcolor.green()/255.0,newcolor.blue()/255.0)
+        self.logic.pca_exploration.changeCurrentGroupColor(newcolor)
+        r,g,b=self.logic.pca_exploration.getColor()
+        displayNode = slicer.mrmlScene.GetFirstNodeByName("PCA Display")
+        displayNode.SetColor(r,g,b)
+        displayNode.Modified()
+        slicer.mrmlScene.GetFirstNodeByName("PCA Exploration").Modified()
+        #self.polyDataPCA.Modified()
+
+    def onSaveExploration(self):
+        dlg = ctk.ctkFileDialog()
+        JSONpath = dlg.getSaveFileName(None, "Export CSV file for Classification groups", os.path.join(qt.QDir.homePath(), "Desktop"), "JSON File (*.json)")
+
+        if JSONpath == '' or JSONpath==' ':
+            return
+        self.logic.pca_exploration.save(JSONpath)
+
+        self.pathLineEdit_exploration.disconnect('currentPathChanged(const QString)', self.onLoadExploration)
+        self.pathLineEdit_exploration.setCurrentPath(JSONpath)
+        self.pathLineEdit_exploration.connect('currentPathChanged(const QString)', self.onLoadExploration)
+    
+        slicer.util.delayDisplay("Exploration saved")
+
+    def onToggleMeanShape(self):
+
+        if self.showmean==False:
+            self.showmean=True
+            self.setMeanShapeVisibility()
+        else :
+            self.showmean=False
+            self.setMeanShapeVisibility()
+
+    def onUpdateSliderList(self):
+        self.spinBox_maxSlider.value
+        self.PCA_sliders
+        self.PCA_sliders_label
+        self.PCA_sliders_value_label
+
+        ##extract the new number of sliders
+        min_explained=self.spinBox_minVariance.value/100.0
+        num_components=self.logic.pca_exploration.getRelativeNumComponent(min_explained)
+        if num_components>self.spinBox_maxSlider.value:
+            num_components=self.spinBox_maxSlider.value
+
+
+
+        if num_components < len(self.PCA_sliders):
+            #print(self.PCA_sliders)
+            component_to_delete=len(self.PCA_sliders)-num_components
+            for i in range(component_to_delete):
+                self.PCA_sliders[i+num_components].deleteLater()
+                self.PCA_sliders_label[i+num_components].deleteLater()
+                self.PCA_sliders_value_label[i+num_components].deleteLater()
+            del self.PCA_sliders[num_components : len(self.PCA_sliders)]
+            del self.PCA_sliders_label[num_components : len(self.PCA_sliders_label)]
+            del self.PCA_sliders_value_label[num_components : len(self.PCA_sliders_value_label)]
+            self.updateVariancePlot(num_components)
+            #print(self.PCA_sliders)
+        if num_components > len(self.PCA_sliders):
+            old_num_components=len(self.PCA_sliders)
+            component_to_add=num_components-len(self.PCA_sliders)
+            for i in range(component_to_add):
+                self.createAndAddSlider(old_num_components+i)
+            self.updateVariancePlot(num_components)
+  
+    def onColorModeChange(self):
+
+        if self.comboBox_colorMode.currentText == 'Group color':
+
+
+            self.logic.pca_exploration.setColorMode(0)
+            self.spinBox_colorModeParam1.hide()
+            self.spinBox_colorModeParam2.hide()
+            self.label_colorModeParam1.hide()
+            self.label_colorModeParam2.hide()
+
+            self.logic.disableExplorationScalarView()
+
+        elif self.comboBox_colorMode.currentText == 'Unsigned distance to mean shape':
+            self.logic.pca_exploration.setColorModeParam(self.spinBox_colorModeParam1.value,self.spinBox_colorModeParam2.value)
+
+            self.label_colorModeParam1.setText('Maximum Distance')
+            
+            self.spinBox_colorModeParam1.show()
+            self.spinBox_colorModeParam2.hide()
+            self.label_colorModeParam1.show()
+            self.label_colorModeParam2.hide()
+
+            self.logic.pca_exploration.setColorMode(1)
+
+            explorationnode=slicer.mrmlScene.GetFirstNodeByName('PCA Exploration')
+            colornode = slicer.mrmlScene.GetFirstNodeByName('PCA Unsigned Distance Color Table')
+            if (explorationnode is not None) and (colornode is not None):
+
+                max_dist,_=self.logic.pca_exploration.getColorParam()
+
+                node = slicer.mrmlScene.GetFirstNodeByName("PCA Display")
+                node.SetScalarRange(0,max_dist)
+
+
+                explorationnode.GetDisplayNode().SetAndObserveColorNodeID(colornode.GetID())
+                #explorationnode.SetInterpolate(1)
+                explorationnode.Modified()
+
+
+
+            self.logic.enableExplorationScalarView()
+
+        elif self.comboBox_colorMode.currentText == 'Signed distance to mean shape':
+            self.logic.pca_exploration.setColorModeParam(self.spinBox_colorModeParam1.value,self.spinBox_colorModeParam2.value)
+
+            self.label_colorModeParam1.setText('Maximum Distance Outside')
+            self.label_colorModeParam2.setText('Maximum Distance Inside')
+            
+            self.spinBox_colorModeParam1.show()
+            self.spinBox_colorModeParam2.show()
+            self.label_colorModeParam1.show()
+            self.label_colorModeParam2.show()
+
+            self.logic.pca_exploration.setColorMode(2)
+
+            explorationnode=slicer.mrmlScene.GetFirstNodeByName('PCA Exploration')
+            colornode = slicer.mrmlScene.GetFirstNodeByName('PCA Signed Distance Color Table')
+            if (explorationnode is not None) and (colornode is not None):
+
+                max_dist_outside,max_dist_inside=self.logic.pca_exploration.getColorParam()
+
+                node = slicer.mrmlScene.GetFirstNodeByName("PCA Display")
+                node.SetScalarRange(-max_dist_inside,max_dist_outside)
+
+                explorationnode.GetDisplayNode().SetAndObserveColorNodeID(colornode.GetID())
+                #explorationnode.SetInterpolate(1)
+                explorationnode.Modified()
+
+            self.logic.enableExplorationScalarView()
+
+        else:
+            print('Unexpected color mode option')
+        return
+
+    def onUpdateColorModeParam(self):
+
+        self.logic.pca_exploration.setColorModeParam(self.spinBox_colorModeParam1.value,self.spinBox_colorModeParam2.value) 
+        self.onColorModeChange()
+        #self.logic.pca_exploration.generateDistanceColor()
+
+    def onDataSelected(self, mrlmlPlotSeriesIds, selectionCol):
+        for i in range(mrlmlPlotSeriesIds.GetNumberOfValues()):
+            Id=mrlmlPlotSeriesIds.GetValue(i)
+            plotserienode = slicer.mrmlScene.GetNodeByID(Id)
+            if plotserienode.GetName() == "PCA projection":
+                #print('Selection detected:')
+                valueIds=selectionCol.GetItemAsObject(i)
+
+                if valueIds.GetNumberOfValues()==1:
+                    Id=valueIds.GetValue(0)
+
+                #table=plotserienode.GetTableNode().GetTable()
+
+                #pc1=table.GetValue(Id,0).ToDouble()
+                #pc2=table.GetValue(Id,1).ToDouble()
+
+                    self.logic.pca_exploration.setCurrentShapeFromId(Id)
+                    self.explorePCA() 
+
+                else:
+                    Idlist=list()
+                    for i in range(valueIds.GetNumberOfValues()):
+                        Idlist.append(int(valueIds.GetValue(i)))
+                    self.logic.pca_exploration.setCurrentShapeFromIdList(Idlist)
+                    self.explorePCA() 
+
+
+
+    def onCheckEvaluationState(self):
+        state=self.evaluationThread.GetStatusString()
+        if state=='Running'or state=='Scheduled':
+            seconds = time.time()-self.starting_time
+            m, s = divmod(seconds, 60)
+            h, m = divmod(m, 60)
+            if h==0 and m==0:
+                t = "00:%02d" % (s)
+            elif h==0 :
+                t = "%02d:%02d" % (m, s)
+            else:
+                t = "%d:%02d:%02d" % (h, m, s)
+            if int(s) ==0:
+                print("Model evaluation "+self.evaluationThread.GetStatusString()+"  "+t)
+            self.pushButton_evaluateModels.setText("Abort evaluation ("+t+")")
+        else:
+            if self.evaluationFlag=="DONE":
+                return
+            print('Evaluation done')
+            self.checkThreadTimer.stop()
+
+            if self.evaluationFlag=="JSON" and self.pathLineEdit_exploration.currentPath==self.eval_param["inputJson"]:
+                self.logic.pca_exploration.reloadJSONFile(self.eval_param["inputJson"])
+                compactnessPCN,specificityPCN,generalizationPCN=self.generateEvaluationPlots()
+                self.plotViewNode.SetPlotChartNodeID(compactnessPCN.GetID())
+                self.plotViewNode.SetPlotChartNodeID(specificityPCN.GetID())
+                self.plotViewNode.SetPlotChartNodeID(generalizationPCN.GetID())
+                self.updateEvaluationPlots()
+
+            if self.evaluationFlag=="CSV" and self.pathLineEdit_CSVFilePCA.currentPath==self.originalCSV:
+                self.logic.pca_exploration.reloadJSONFile(self.eval_param["inputJson"])
+                compactnessPCN,specificityPCN,generalizationPCN=self.generateEvaluationPlots()
+                self.plotViewNode.SetPlotChartNodeID(compactnessPCN.GetID())
+                self.plotViewNode.SetPlotChartNodeID(specificityPCN.GetID())
+                self.plotViewNode.SetPlotChartNodeID(generalizationPCN.GetID())
+                self.updateEvaluationPlots()
+
+            self.evaluationFlag="DONE"
+
+            self.pushButton_evaluateModels.disconnect('clicked()',self.onKillEvaluation)
+            self.pushButton_evaluateModels.connect('clicked()',self.onEvaluateModels)
+            self.pushButton_evaluateModels.setText("Evaluate models (It may take a long time)")
+
+            slicer.util.infoDisplay("Evaluation done.")
+
+    def onKillEvaluation(self):
+        
+        self.pushButton_evaluateModels.clicked.disconnect()
+        self.pushButton_evaluateModels.connect('clicked()',self.onEvaluateModels)
+        self.pushButton_evaluateModels.setText("Evaluate models (It may take a long time)")
+
+        self.checkThreadTimer.stop()
+
+        self.evaluationThread.Cancel()
+        minutes = int((time.time()-self.starting_time)/60)
+        print("Model evaluation "+self.evaluationThread.GetStatusString())
+        print('Evaluation Stopped after '+str(minutes)+' min')
+
+        self.evaluationFlag="DONE"
+
+    def onEvaluateModels(self):
+        jsonpath = self.pathLineEdit_exploration.currentPath
+        csvpath = self.pathLineEdit_CSVFilePCA.currentPath
+        shapeNumber=self.spinBox_numberShape.value
+
+
+        if os.path.isfile(jsonpath):
+            self.evaluationFlag="JSON"
+            self.starting_time=time.time()
+
+            self.eval_param = {}
+            self.eval_param["inputJson"] = jsonpath
+            self.eval_param["evaluation"] = str(len(self.PCA_sliders))
+            self.eval_param["shapeNum"] = str(shapeNumber)
+
+        else:
+            self.originalCSV=csvpath
+            self.evaluationFlag="CSV"
+            self.starting_time=time.time()
+
+
+            date=time.strftime("%b-%d-%Y-%H:%M:%S", time.gmtime())
+            #temp_dir=os.path.join(slicer.app.slicerHome,'ShapeVariationAnalyzer_Temp')
+            temp_dir=os.path.join('/NIRAL/work/lpzmateo/data/ShapeVariationAnalyzer/','ShapeVariationAnalyzer_Temp')
+            os.mkdir(temp_dir)
+            temp_dir=os.path.join(temp_dir,'temp_model_'+date)
+            os.mkdir(temp_dir)
+            model_path=os.path.join(temp_dir,'temp.json')
+
+            self.logic.pca_exploration.save(model_path)
+
+            self.eval_param = {}
+            self.eval_param["inputJson"] = model_path
+            self.eval_param["evaluation"] = str(len(self.PCA_sliders))
+            self.eval_param["shapeNum"] = str(shapeNumber)
+
+
+        moduleSPCA = slicer.modules.shapca
+        self.evaluationThread=slicer.cli.run(moduleSPCA, None, self.eval_param, wait_for_completion=False)
+
+
+        self.pushButton_evaluateModels.clicked.disconnect()
+        self.pushButton_evaluateModels.connect('clicked()',self.onKillEvaluation)
+        self.pushButton_evaluateModels.setText("Abort evaluation (00:00)")
+
+        self.checkThreadTimer=qt.QTimer()
+        self.checkThreadTimer.connect('timeout()', self.onCheckEvaluationState)
+        self.checkThreadTimer.start(1000)
+        return
+
+
+
+
+    def explorePCA(self):
+        #Detection of the selected group Id 
+        if self.comboBox_groupPCA.currentText == "All":
+            keygroup = "All"
+        else:
+            keygroup = int(self.comboBox_groupPCA.currentText[0])
+
+
+        #Setting PCA model to use
+        self.logic.pca_exploration.setCurrentPCAModel(keygroup)
+
+        #get color of the group and set the color picker with this color
+        r,g,b=self.logic.pca_exploration.getColor()
+        self.ctkColorPickerButton_groupColor.color=qt.QColor(int(r*255),int(g*255),int(b*255))
+
+        #setting the maximum number of sliders
+        num_components=self.logic.pca_exploration.getNumComponent()
+
+        if self.spinBox_maxSlider.value> num_components:
+            self.spinBox_maxSlider.setMaximum(num_components)
+            self.spinBox_maxSlider.setValue(num_components)
+        else:
+            self.spinBox_maxSlider.setMaximum(num_components)
+
+        #delete all the previous sliders
+        self.deletePCASliders()
+
+        #computing the number of sliders to show
+        min_explained=self.spinBox_minVariance.value/100.0
+        sliders_number=self.logic.pca_exploration.getRelativeNumComponent(min_explained)
+        if sliders_number>self.spinBox_maxSlider.value:
+            sliders_number=self.spinBox_maxSlider.value
+
+        #create sliders
+        for i in range(sliders_number):
+            self.createAndAddSlider(i)
+
+        #Update the plot view
+        self.updateVariancePlot(sliders_number)
+        self.updateProjectionPlot()
+
+        if self.logic.pca_exploration.evaluationExist():
+            self.updateEvaluationPlots()
+
+
+        #showing QtWidgets
+        self.label_normalLabel_1.show()
+        self.label_normalLabel_2.show()
+        self.label_normalLabel_3.show()
+        self.label_normalLabel_4.show()
+        self.label_normalLabel_5.show()
+        self.label_normalLabel_6.show()
+        self.label_normalLabel_7.show()
+
+        self.comboBox_groupPCA.show()
+        self.comboBox_colorMode.show()
+        self.ctkColorPickerButton_groupColor.show()
+        self.pushButton_resetSliders.show()
+        self.label_valueExploration.show()
+        self.label_groupExploration.show()
+        self.label_varianceExploration.show()
+        self.pushButton_saveExploration.show()
+        self.pushButton_toggleMean.show()
+        self.pushButton_evaluateModels.show()
+        self.spinBox_minVariance.show()
+        self.spinBox_maxSlider.show()
+        self.label_minVariance.show()
+        self.label_maxSlider.show()
+
+        self.label_colorMode.show()
+
+        self.label_numberShape.show()
+        self.spinBox_numberShape.show()
+
+
+
+    def setColorModeSpinBox(self):
+        data_std=self.logic.pca_exploration.getDataStd()
+        std=np.max(data_std)
+
+        self.spinBox_colorModeParam1.disconnect('valueChanged(int)',self.onUpdateColorModeParam)
+        self.spinBox_colorModeParam2.disconnect('valueChanged(int)',self.onUpdateColorModeParam)
+
+        self.spinBox_colorModeParam1.setValue(4*std)
+        self.spinBox_colorModeParam2.setValue(4*std)
+
+        self.spinBox_colorModeParam1.connect('valueChanged(int)',self.onUpdateColorModeParam)
+        self.spinBox_colorModeParam2.connect('valueChanged(int)',self.onUpdateColorModeParam)
+
+
+    def deletePCASliders(self):
+        ##delete all object in the grid
+        for i in range(len(self.PCA_sliders)):
+            self.PCA_sliders[i].deleteLater()
+            self.PCA_sliders_label[i].deleteLater()
+            self.PCA_sliders_value_label[i].deleteLater()
+        self.PCA_sliders=list()
+        self.PCA_sliders_label=list()
+        self.PCA_sliders_value_label=list()
+
+    def createAndAddSlider(self,num_slider):
+        exp_ratio=self.logic.pca_exploration.getExplainedRatio()
+        #create the slider
+        slider =qt.QSlider(qt.Qt.Horizontal)
+        slider.setMaximum(999)
+        slider.setMinimum(-999)
+        slider.setTickInterval(1)
+        position=self.logic.pca_exploration.getCurrentRatio(num_slider)
+        #print(position)
+        slider.setSliderPosition(position)
+        #slider.setLayout(self.gridLayout_PCAsliders)
+       
+        #create the variance ratio label
+        label = qt.QLabel()
+        label.setText(str(num_slider+1)+':   '+str(round(exp_ratio[num_slider],5)*100)+'%')
+        label.setAlignment(qt.Qt.AlignCenter)
+
+        #create the value label
+        X=1-(((position/1000.0)+1)/2.0)
+        '''if num_slider==4:
+            print(X)'''
+        valueLabel = qt.QLabel()
+        valueLabel.setText(str(round(stats.norm.isf(X),3)))
+
+        #slider and label added to lists
+        self.PCA_sliders.append(slider)
+        self.PCA_sliders_label.append(label)
+        self.PCA_sliders_value_label.append(valueLabel)
+
+        #Slider and label added to the gridLayout
+        self.gridLayout_PCAsliders.addWidget(self.PCA_sliders_label[num_slider],num_slider+2,0)
+        self.gridLayout_PCAsliders.addWidget(self.PCA_sliders[num_slider],num_slider+2,1)
+        self.gridLayout_PCAsliders.addWidget(self.PCA_sliders_value_label[num_slider],num_slider+2,2)
+        
+        #Connect
+        self.PCA_sliders[num_slider].valueChanged.connect(lambda state, x=num_slider: self.onChangePCAPolyData(x))
+
+    #Plots
+    def generate2DVisualisationNodes(self):
+        #clean previously created nodes
+        self.delete2DVisualisationNodes()
+
+        #generate PlotChartNodes to visualize the variance plot and the Projection plot
+        variancePCN = self.generateVariancePlot()
+
+        projectionPCN = self.generateProjectionPlot()
+
+        if self.logic.pca_exploration.evaluationExist():
+            compactnessPCN,specificityPCN,generalizationPCN = self.generateEvaluationPlots()
+
+        # Switch to a layout that contains a plot view to create a plot widget
         layoutManager = slicer.app.layoutManager()
-        threeDWidget = layoutManager.threeDWidget(0)
-        threeDView = threeDWidget.threeDView()
-        threeDView.resetFocalPoint()
+        layoutWithPlot = slicer.modules.plots.logic().GetLayoutWithPlot(layoutManager.layout)
+        layoutManager.setLayout(layoutWithPlot)
+
+        # Select chart in plot view
+        plotWidget = layoutManager.plotWidget(0)
+        self.plotViewNode = plotWidget.mrmlPlotViewNode()
 
 
-    def onExportMeanGroups(self):
-        """ Function to export the computed average shapes 
-        (VTK files) + a CSV file listing them 
-        """
-        # print("--- Export all the mean shapes + csv file ---")
+        if self.logic.pca_exploration.evaluationExist():
+            self.plotViewNode.SetPlotChartNodeID(compactnessPCN.GetID())
+            self.plotViewNode.SetPlotChartNodeID(specificityPCN.GetID())
+            self.plotViewNode.SetPlotChartNodeID(generalizationPCN.GetID())
 
-        # Message for the user if files already exist
-        directory = self.directoryButton_exportMeanGroups.directory.encode('utf-8')
-        messageBox = ctk.ctkMessageBox()
-        messageBox.setWindowTitle(' /!\ WARNING /!\ ')
-        messageBox.setIcon(messageBox.Warning)
-        filePathExisting = list()
+        self.plotViewNode.SetPlotChartNodeID(projectionPCN.GetID())
+        self.plotViewNode.SetPlotChartNodeID(variancePCN.GetID())
 
-        #   Check if the CSV file exists
-        CSVfilePath = directory + "/MeanGroups.csv"
-        if os.path.exists(CSVfilePath):
-            filePathExisting.append(CSVfilePath)
+        plotView = plotWidget.plotView()
+        plotView.dataSelected.disconnect()
+        plotView.connect("dataSelected(vtkStringArray*, vtkCollection*)", self.onDataSelected)
 
-        #   Check if the shape model exist
-        for key, value in self.dictGroups.items():
-            modelFilename = os.path.basename(value)
-            modelFilePath = directory + '/' + modelFilename
-            if os.path.exists(modelFilePath):
-                filePathExisting.append(modelFilePath)
+    def delete2DVisualisationNodes(self):
+        node = slicer.mrmlScene.GetFirstNodeByName("PCA projection plot chart")
+        if node is not None:
+            slicer.mrmlScene.RemoveNode(node)
 
-        #   Write the message for the user
-        if len(filePathExisting) > 0:
-            if len(filePathExisting) == 1:
-                text = 'File ' + filePathExisting[0] + ' already exists!'
-                informativeText = 'Do you want to replace it ?'
-            elif len(filePathExisting) > 1:
-                text = 'These files are already exist: \n'
-                for path in filePathExisting:
-                    text = text + path + '\n'
-                    informativeText = 'Do you want to replace them ?'
-            messageBox.setText(text)
-            messageBox.setInformativeText(informativeText)
-            messageBox.setStandardButtons( messageBox.No | messageBox.Yes)
-            choice = messageBox.exec_()
-            if choice == messageBox.No:
-                return
+        node = slicer.mrmlScene.GetFirstNodeByName("PCA variance plot chart")
+        if node is not None:
+            slicer.mrmlScene.RemoveNode(node)
 
-        # Save the CSV File and the mean shape of each group
-        dictForCSV = dict()
-        for key, value in self.dictGroups.items():
-            # Save the shape model (h5 file) of each group
-            vtkbasename = os.path.basename(value)
-            oldvtkpath = slicer.app.temporaryPath + "/" + vtkbasename
-            newvtkpath = directory + "/" + vtkbasename
-            shutil.copyfile(oldvtkpath, newvtkpath)
-            dictForCSV[key] = newvtkpath
+        node = slicer.mrmlScene.GetFirstNodeByName("PCA projection")
+        if node is not None:
+            slicer.mrmlScene.RemoveNode(node)
 
-        # Save the CSV file containing all the data useful in order to compute OAIndex of a patient
-        self.logic.creationCSVFile(directory, "MeanGroups.csv", dictForCSV, "MeanGroup")
+        node = slicer.mrmlScene.GetFirstNodeByName("Variance (%)")
+        if node is not None:
+            slicer.mrmlScene.RemoveNode(node)
 
-        # Remove the shape model (GX.h5) of each group
-        self.logic.removeDataAfterNCG(self.dictGroups)
+        node = slicer.mrmlScene.GetFirstNodeByName("Sum variance (%)")
+        if node is not None:
+            slicer.mrmlScene.RemoveNode(node)
 
-        # Re-Initialization of the dictionary containing the path of the shape model of each group
-        self.dictGroups = dictForCSV
+        node = slicer.mrmlScene.GetFirstNodeByName("Level 1%")
+        if node is not None:
+            slicer.mrmlScene.RemoveNode(node)
 
-        # Message for the user
-        slicer.util.delayDisplay("Files Saved")
-        print("Saved in :: " + directory + "/MeanGroups.csv")
+        node = slicer.mrmlScene.GetFirstNodeByName("Level 95%")
+        if node is not None:
+            slicer.mrmlScene.RemoveNode(node)
 
-        # Load automatically the CSV file in the pathline in the next tab "Selection of Classification Groups"
-        if self.pathLineEdit_meanGroup.currentPath == CSVfilePath:
-            self.pathLineEdit_meanGroup.setCurrentPath(" ")
-        self.pathLineEdit_meanGroup.setCurrentPath(CSVfilePath)
-        self.pathLineEdit_CSVFileMeansShape.setCurrentPath(CSVfilePath)
+        node = slicer.mrmlScene.GetFirstNodeByName("PCA projection table")
+        if node is not None:
+            slicer.mrmlScene.RemoveNode(node)
 
-        return 
+        node = slicer.mrmlScene.GetFirstNodeByName("PCA variance table")
+        if node is not None:
+            slicer.mrmlScene.RemoveNode(node)
 
-
-    # ---------------------------------------------------- #
-    #               Tab: Select Input Data
-    #               
-    #               Classification Network                 #
-    # ---------------------------------------------------- #
-
-    def enableNetwork(self):
-        """ Function to enable to train the Network if both 
-        the Mean shape CSV file and classification group CSV file
-        have been accepted
-        """
-        if self.stateCSVDataset and self.stateCSVMeansShape:
-            self.pushButton_preprocessData.setEnabled(True)
-        else:
-            self.pushButton_trainNetwork.setDisabled(True)
-            self.pushButton_preprocessData.setDisabled(True)
-        return
-
-    def onCSVFileDataset(self):
-        """ Function to load the shapes listed in 
-        the classification group CSV file
-        """
-        # Re-initialization of the dictionary containing the Training dataset
-        self.dictShapeModels = dict()
-
-        # Check if the path exists:
-        if not os.path.exists(self.pathLineEdit_CSVFileDataset.currentPath):
-            self.stateCSVDataset = False
-            self.enableNetwork()
-            return
-
-        # print("------ Selection of a Dataset ------")
-        # Check if it's a CSV file
-        condition1 = self.logic.checkExtension(self.pathLineEdit_CSVFileDataset.currentPath, ".csv")
-        if not condition1:
-            self.pathLineEdit_CSVFileDataset.setCurrentPath(" ")
-            self.stateCSVDataset = False
-            self.enableNetwork()
-            return
-
-        # Read CSV File:
-        self.logic.table = self.logic.readCSVFile(self.pathLineEdit_CSVFileDataset.currentPath)
-        condition3 = self.logic.creationDictVTKFiles(self.dictShapeModels)
-        condition2 = self.logic.checkSeveralMeshInDict(self.dictShapeModels)
-
-        #    If the file is not conformed:
-        #    Re-initialization of the dictionary containing the Classification Groups
-        if not (condition2 and condition3):
-            self.dictShapeModels = dict()
-            self.pathLineEdit_CSVFileDataset.setCurrentPath(" ")
-            self.stateCSVDataset = False
-            self.enableNetwork()
-            return
-
-        # Condition : All the shapes should have the same number of points
-        condition4 = self.logic.checkNumberOfPoints(self.dictShapeModels)
-        if not condition4: 
-            self.pathLineEdit_CSVFileDataset.setCurrentPath(" ")
-            return
-
-        self.stateCSVDataset = True
-        self.enableNetwork()
-
-        return
-
-
-    def onCSVFileMeansShape(self):
-        """ Function to load the shapes listed in 
-        the mean shapes CSV file
-        """
-        # Re-initialization of the dictionary containing the Training dataset
-        self.dictGroups = dict()
-
-        # Check if the path exists:
-        if not os.path.exists(self.pathLineEdit_CSVFileMeansShape.currentPath):
-            self.stateCSVMeansShape = False
-            self.enableNetwork()
-            return
-
-        # print("------ Selection of a Dataset ------")
-        # Check if it's a CSV file
-        condition1 = self.logic.checkExtension(self.pathLineEdit_CSVFileMeansShape.currentPath, ".csv")
-        if not condition1:
-            self.pathLineEdit_CSVFileMeansShape.setCurrentPath(" ")
-            self.stateCSVMeansShape = False
-            self.enableNetwork()
-            return
-
-        # Read CSV File:
-        self.logic.table = self.logic.readCSVFile(self.pathLineEdit_CSVFileMeansShape.currentPath)
-        condition3 = self.logic.creationDictVTKFiles(self.dictGroups)
-        condition2 = self.logic.checkOneMeshPerGroupInDict(self.dictGroups)
-
-        #    If the file is not conformed:
-        #    Re-initialization of the dictionary containing the Classification Groups
-        if not (condition2 and condition3):
-            self.dictGroups = dict()
-            self.pathLineEdit_CSVFileMeansShape.setCurrentPath(" ")
-            self.stateCSVMeansShape = False
-            self.enableNetwork()
-            return
-
-        # First condition : All the shapes should have the same number of points
-        condition4 = self.logic.checkNumberOfPoints(self.dictGroups)
-        if not condition4: 
-            self.pathLineEdit_CSVFileMeansShape.setCurrentPath(" ")
-            return
-
-        self.stateCSVMeansShape = True
-        self.comboBox_controlGroup_features.clear()
-        for key, value in self.dictGroups.items():
-            self.comboBox_controlGroup_features.addItem(str(key))
-
-        self.enableNetwork()
-        return
-
-
-    def onCheckableComboBoxFeaturesChanged(self):
-        """ Function to manage the features choosen by the user
-        to base the neural network on
-        """
-        # print("----- Features check combo box changed -----")
-        index =  self.checkableComboBox_choiceOfFeatures.currentIndex
-
-        item = self.checkableComboBox_choiceOfFeatures.model().item(index, 0)
-        print(str(item.text()))
-        if item.checkState():
-            if not self.featuresList.count(item.text()):
-                self.featuresList.append(str(item.text()))
-        else:
-            if self.featuresList.count(item.text()):
-                self.featuresList.remove(item.text())
-
-        return
-
-
-    def onPreprocessData(self):
-        """ Function to prepare all the data before training the network
-            - Extract all the features (CLI extractfeatures)
-            - load only the features selected (class input_Data)
-            - pickle all the dataset for the network
-            - Create a zipfile with every file needed for the network
-        """
-        # print("----- onPreprocessData -----")
-        self.dictFeatData = dict()
-        self.pickle_file = ""
-
-        tempPath = slicer.app.temporaryPath
+        self.deleteFunctionPlot("Generalization")
+        self.deleteFunctionPlot("Specificity")
+        self.deleteFunctionPlot("Compactness")
         
-        outputDir = os.path.join(tempPath, "dataFeatures")
-        if os.path.isdir(outputDir):
-            shutil.rmtree(outputDir)
-        os.mkdir(outputDir) 
-
-        #
-        # Extract features on shapes, with SurfaceFeaturesExtractor
-        meansList = ""
-        for k, v in self.dictGroups.items():
-            if meansList == "":
-                meansList = str(v)
-            else:
-                meansList = meansList + "," +  str(v)
-
-        # print(self.dictShapeModels)
-        for group, listvtk in self.dictShapeModels.items():
-            for shape in listvtk:
-                self.logic.extractFeatures(shape, meansList, outputDir, train = True)
-
-                # # Storage of the means for each group
-                self.logic.storageFeaturesData(self.dictFeatData, self.dictShapeModels)
-
-        # 
-        # Pickle the data for the network
-        ft_list = self.allFeatures
-        self.controlAverage = None
-        if self.collapsibleGroupBox_advancedParameters.checked and self.checkBox_features.checked:
-            ft_list = self.featuresList
-            if not len(ft_list):
-                slicer.util.delayDisplay("Missing features")
-                return
-
-        if ft_list.count('Distance to control group') and ft_list.count('Distances to average shapes'): 
-        # if both checked, remove distance to control, otherwise the feature will be used twice
-            ft_list.remove('Distance to control group')
-        else:
-            self.controlAverage = int(str(self.comboBox_controlGroup_features.currentText))
-
-        self.pickle_file = self.logic.pickleData(self.dictFeatData, ft_list, self.controlAverage)
-        
-        #
-        # Zipping JSON + PICKLE files in one ZIP file
-        # 
-        tempPath = slicer.app.temporaryPath
-        networkDir = os.path.join(tempPath, 'Network')
-
-        meanGroupsDir = os.path.join(networkDir, 'meanGroups')
-        os.mkdir(meanGroupsDir) 
-        dictMeanGroups = dict()
-        for group, file in self.dictGroups.items():
-            # Copy the meanShapes into the NetworkDir
-            shutil.copyfile(file, os.path.join(meanGroupsDir, os.path.basename(file)))
-            dictMeanGroups[group] = os.path.basename(file)
-
-        with open(os.path.join(meanGroupsDir,'meanGroups.json'), 'w') as f:
-            json.dump(dictMeanGroups, f, ensure_ascii=False, indent = 4)
-
-        # Zipper tout ca 
-        self.archiveName = shutil.make_archive(base_name = networkDir, format = 'zip', root_dir = tempPath, base_dir = 'Network')
-        self.pushButton_trainNetwork.setEnabled(True)
-        self.pushButton_exportUntrainedNetwork.setEnabled(True)
-
-        return
-
-    def onExportUntrainedNetwork(self):
-        """ Function to export the neural netowrk as
-        a zipfile for later reuse
-        """
-        # print("----- onExportUntrainedNetwork -----")
-
-        num_steps = 1001
-        num_layers = 2
-
-        if self.collapsibleGroupBox_advancedParameters.checked:
-            if self.checkBox_numsteps.checked:
-                num_steps = self.spinBox_numsteps.value
-            if self.checkBox_numberOfLayers.checked:
-                num_layers = self.spinBox_numberOfLayers.value
-        # Path of the csv file
-        dlg = ctk.ctkFileDialog()
-        filepath = dlg.getSaveFileName(None, "Export Classification neural network", os.path.join(qt.QDir.homePath(), "Desktop"), "Archive Zip (*.zip)")
-
-        self.logic.exportUntrainedNetwork(self.archiveName, filepath, num_steps = num_steps, num_layers = num_layers)
-        return
+    def deleteFunctionPlot(self,name_y):
+        node = slicer.mrmlScene.GetFirstNodeByName("PCA "+name_y+" table")
+        if node is not None:
+            slicer.mrmlScene.RemoveNode(node)
+        node = slicer.mrmlScene.GetFirstNodeByName(name_y)
+        if node is not None:
+            slicer.mrmlScene.RemoveNode(node)
+        node = slicer.mrmlScene.GetFirstNodeByName("PCA "+name_y+" plot chart")
+        if node is not None:
+            slicer.mrmlScene.RemoveNode(node)
 
 
-    def onTrainNetwork(self):
-        """ Function to call the logic function related 
-        to the training of the neural network
-        """
-        # print("----- onTrainNetwork -----")
-        self.label_stateNetwork.text = 'Computation running...'
-        self.label_stateNetwork.show()
+    def generateProjectionPlot(self):
+        projectionTableNode = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLTableNode","PCA projection table")
+        table = projectionTableNode.GetTable()
 
-        num_steps = 1001
-        num_layers = 2
+        pc1=vtk.vtkFloatArray()
+        pc2=vtk.vtkFloatArray()
 
-        if self.collapsibleGroupBox_advancedParameters.checked:
-            if self.checkBox_numsteps.checked:
-                num_steps = self.spinBox_numsteps.value
-            if self.checkBox_numberOfLayers.checked:
-                num_layers = self.spinBox_numberOfLayers.value
-        
-        accuracy = self.logic.trainNetworkClassification(self.archiveName, num_steps = num_steps, num_layers = num_layers)
-        
-        print("ESTIMATED ACCURACY :: " + str(accuracy))
+        pc1.SetName("pc1")
+        pc2.SetName("pc2")
 
-        self.label_stateNetwork.text = ("Estimated accuracy: %.1f%%" % accuracy)
-        self.pushButton_exportNetwork.setEnabled(True)
+        table.AddColumn(pc1)
+        table.AddColumn(pc2)
 
-        return
+        #Projection plot serie
+        projectionPlotSeries = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLPlotSeriesNode", "PCA projection")
+        projectionPlotSeries.SetAndObserveTableNodeID(projectionTableNode.GetID())
+        projectionPlotSeries.SetXColumnName("pc1")
+        projectionPlotSeries.SetYColumnName("pc2")
+        projectionPlotSeries.SetPlotType(slicer.vtkMRMLPlotSeriesNode.PlotTypeScatter)
+        projectionPlotSeries.SetLineStyle(slicer.vtkMRMLPlotSeriesNode.LineStyleNone)
+        projectionPlotSeries.SetUniqueColor()
 
-    def onExportNetwork(self):
-        """ Function to export the neural netowrk as
-        a zipfile for later reuse
-        """
-        # print("----- onExportNetwork -----")
+        # Create projection plot chart node
+        projectionPlotChartNode = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLPlotChartNode","PCA projection plot chart")
+        projectionPlotChartNode.AddAndObservePlotSeriesNodeID(projectionPlotSeries.GetID())
+        projectionPlotChartNode.SetTitle('Population projection')
+        projectionPlotChartNode.SetXAxisTitle('pc1')
+        projectionPlotChartNode.SetYAxisTitle('pc2')
 
-        # Path of the csv file
-        dlg = ctk.ctkFileDialog()
-        filepath = dlg.getSaveFileName(None, "Export Classification neural network", os.path.join(qt.QDir.homePath(), "Desktop"), "Archive Zip (*.zip)")
+        return projectionPlotChartNode
 
-        directory = os.path.dirname(filepath)
-        networkpath = filepath.split(".zip",1)[0]
-
-        self.logic.exportModelNetwork(networkpath)
-        self.pathLineEdit_networkPath.currentPath = filepath
-        self.label_stateNetwork.hide()
-        return
-
-    def onNetworkPath(self):
-        """ Function to launch the network loading 
-        when specifying the path to the zipfile
-        """
-        # print("----- onNetworkPath -----")
-        condition1 = self.logic.checkExtension(self.pathLineEdit_networkPath.currentPath, '.zip')
-        if not condition1:
-            self.pathLineEdit_networkPath.setCurrentPath(" ")
-            return
-
-        self.dictGroups = dict()
-        validModel = self.logic.validModelNetwork(self.pathLineEdit_networkPath.currentPath, self.dictGroups)
-
-        # print(self.dictGroups)
-        if not validModel:
-            print("Error: Classifier not valid")
-            self.pathLineEdit_networkPath.currentPath = ""
-        else: 
-            print("Network accepted")
-
-        return
-
+    def generateVariancePlot(self):
     
-    def onVTKInputData(self):
-        """ Function to select the vtk Input Data
-        """
-        # Remove the old vtk file in the temporary directory of slicer if it exists
-        if self.patientList:
-            print("onVTKInputData remove old vtk file")
-            oldVTKPath = os.path.join(slicer.app.temporaryPath,os.path.basename(self.patientList[0]))
-            if os.path.exists(oldVTKPath):
-                os.remove(oldVTKPath)
-        # print(self.patientList)
-        # Re-Initialization of the patient list
-        self.patientList = list()
+        varianceTableNode = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLTableNode","PCA variance table")
+        table = varianceTableNode.GetTable()
 
-        # Delete the path in CSV file
-        currentNode = self.MRMLNodeComboBox_VTKInputData.currentNode()
-        if currentNode == None:
-            return
-        self.pathLineEdit_CSVInputData.setCurrentPath(" ")
+        x=vtk.vtkFloatArray()
+        evr=vtk.vtkFloatArray()
+        sumevr=vtk.vtkFloatArray()
+        level95=vtk.vtkFloatArray()
+        level1=vtk.vtkFloatArray()
 
-        # Adding the vtk file to the list of patient
-        currentNode = self.MRMLNodeComboBox_VTKInputData.currentNode()
-        if not currentNode == None:
-            #     Save the selected node in the temporary directory of slicer
-            vtkfilepath = os.path.join(slicer.app.temporaryPath, self.MRMLNodeComboBox_VTKInputData.currentNode().GetName() + ".vtk")
-            self.logic.saveVTKFile(self.MRMLNodeComboBox_VTKInputData.currentNode().GetPolyData(), vtkfilepath)
-            #     Adding to the list
-            self.patientList.append(vtkfilepath)
-        print(self.patientList)
+        x.SetName("Component")
+        evr.SetName("ExplainedVarianceRatio")
+        sumevr.SetName("SumExplainedVarianceRatio")
+        level95.SetName("level95%")
+        level1.SetName("level1%")
 
-    
-    def onCSVInputData(self):
-        """ Function to select the CSV Input Data
-        """
-        self.patientList = list()
-        # Delete the path in VTK file
-        if not os.path.exists(self.pathLineEdit_CSVInputData.currentPath):
-            return
-        self.MRMLNodeComboBox_VTKInputData.setCurrentNode(None)
+        table.AddColumn(x)
+        table.AddColumn(evr)
+        table.AddColumn(sumevr)
+        table.AddColumn(level95)
+        table.AddColumn(level1)
+        #level1
+        level1PlotSeries = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLPlotSeriesNode", "Level 1%")
+        level1PlotSeries.SetAndObserveTableNodeID(varianceTableNode.GetID())
+        level1PlotSeries.SetXColumnName("Component")
+        level1PlotSeries.SetYColumnName("level1%")
+        level1PlotSeries.SetPlotType(slicer.vtkMRMLPlotSeriesNode.PlotTypeScatter)
+        level1PlotSeries.SetMarkerStyle(slicer.vtkMRMLPlotSeriesNode.MarkerStyleNone)
+        level1PlotSeries.SetUniqueColor()
 
-        # Adding the name of the node a list
-        if os.path.exists(self.pathLineEdit_CSVInputData.currentPath):
-            patientTable = vtk.vtkTable
-            patientTable = self.logic.readCSVFile(self.pathLineEdit_CSVInputData.currentPath)
-            for i in range(0, patientTable.GetNumberOfRows()):
-                self.patientList.append(patientTable.GetValue(i,0).ToString())
+        #level95
+        level95PlotSeries = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLPlotSeriesNode", "Level 95%")
+        level95PlotSeries.SetAndObserveTableNodeID(varianceTableNode.GetID())
+        level95PlotSeries.SetXColumnName("Component")
+        level95PlotSeries.SetYColumnName("level95%")
+        level95PlotSeries.SetPlotType(slicer.vtkMRMLPlotSeriesNode.PlotTypeScatter)
+        level95PlotSeries.SetMarkerStyle(slicer.vtkMRMLPlotSeriesNode.MarkerStyleNone)
+        level95PlotSeries.SetUniqueColor()
+
+        #Sum Explained Variance plot serie
+        sumevrPlotSeries = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLPlotSeriesNode", "Sum variance (%)")
+        sumevrPlotSeries.SetAndObserveTableNodeID(varianceTableNode.GetID())
+        sumevrPlotSeries.SetXColumnName("Component")
+        sumevrPlotSeries.SetYColumnName("SumExplainedVarianceRatio")
+        sumevrPlotSeries.SetPlotType(slicer.vtkMRMLPlotSeriesNode.PlotTypeScatter)
+        sumevrPlotSeries.SetUniqueColor()
+
+        #Explained Variance plot serie
+        evrPlotSeries = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLPlotSeriesNode", "Variance (%)")
+        evrPlotSeries.SetAndObserveTableNodeID(varianceTableNode.GetID())
+        evrPlotSeries.SetXColumnName("Component")
+        evrPlotSeries.SetYColumnName("ExplainedVarianceRatio")
+        evrPlotSeries.SetPlotType(slicer.vtkMRMLPlotSeriesNode.PlotTypeScatterBar)
+        evrPlotSeries.SetUniqueColor()
+
+        # Create variance plot chart node
+        plotChartNode = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLPlotChartNode","PCA variance plot chart")
+        plotChartNode.AddAndObservePlotSeriesNodeID(evrPlotSeries.GetID())
+        plotChartNode.AddAndObservePlotSeriesNodeID(sumevrPlotSeries.GetID())
+        plotChartNode.AddAndObservePlotSeriesNodeID(level95PlotSeries.GetID())
+        plotChartNode.AddAndObservePlotSeriesNodeID(level1PlotSeries.GetID())
+        plotChartNode.SetTitle('Explained Variance Ratio')
+        plotChartNode.SetXAxisTitle('Component')
+        plotChartNode.SetYAxisTitle('Explained Variance Ratio') 
+
+        return plotChartNode
+
+    def generateEvaluationPlots(self):
+        #compactness
+        compactnessPCN=self.generateFunctionPlot("Component","Compactness")
+        #specificity
+        specificityPCN=self.generateFunctionPlot("Component","Specificity")
+        #generalization
+        generalizationPCN=self.generateFunctionPlot("Component","Generalization")
+
+        return compactnessPCN,specificityPCN,generalizationPCN
+
+    def generateFunctionPlot(self,name_x,name_y):
+        self.deleteFunctionPlot(name_y)
+
+        TableNode = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLTableNode","PCA "+name_y+" table")
+        table = TableNode.GetTable()
+
+        x=vtk.vtkFloatArray()
+        y=vtk.vtkFloatArray()
+
+        x.SetName(name_x)
+        y.SetName(name_y)
+
+        table.AddColumn(x)
+        table.AddColumn(y)
+
+        #Sum Explained specificity plot serie
+        PlotSeries = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLPlotSeriesNode", name_y)
+        PlotSeries.SetAndObserveTableNodeID(TableNode.GetID())
+        PlotSeries.SetXColumnName(name_x)
+        PlotSeries.SetYColumnName(name_y)
+        PlotSeries.SetPlotType(slicer.vtkMRMLPlotSeriesNode.PlotTypeScatter)
+        PlotSeries.SetUniqueColor()
+
+        # Create specificity plot chart node
+        PCN = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLPlotChartNode","PCA "+name_y+" plot chart")
+        PCN.AddAndObservePlotSeriesNodeID(PlotSeries.GetID())
+        PCN.SetTitle(name_y)
+        PCN.SetXAxisTitle(name_x)
+        PCN.SetYAxisTitle(name_y) 
+
+        return PCN
+
+
+    def updateVariancePlot(self,num_components):
+
+        varianceTableNode = slicer.mrmlScene.GetFirstNodeByName("PCA variance table")
+        table = varianceTableNode.GetTable()
+        table.Initialize()
+
+        level95 , level1=self.logic.pca_exploration.getPlotLevel(num_components)
+        level95.SetName("level95%")
+        level1.SetName("level1%")
+        table.AddColumn(level95)
+        table.AddColumn(level1)
+
+        x,evr,sumevr= self.logic.pca_exploration.getPCAVarianceExplainedRatio(num_components)
+        x.SetName("Component")
+        evr.SetName("ExplainedVarianceRatio")
+        sumevr.SetName("SumExplainedVarianceRatio")
+
+        table.AddColumn(x)
+        table.AddColumn(evr)
+        table.AddColumn(sumevr)
+
+    def updateProjectionPlot(self):   
+        projectionTableNode = slicer.mrmlScene.GetFirstNodeByName("PCA projection table")
+        table = projectionTableNode.GetTable()
+        table.Initialize()
+
+        pc1,pc2=self.logic.pca_exploration.getPCAProjections()
+
+        pc1.SetName("pc1")
+        pc2.SetName("pc2")
+
+        table.AddColumn(pc1)
+        table.AddColumn(pc2)
+
+    def updateEvaluationPlots(self):   
+        #compactness
+        x,compac,compac_err=self.logic.pca_exploration.getCompactness()
+        self.updateFunctionPlot("Component","Compactness",x,compac)
+
+        #specificity
+        x,spec,spec_err=self.logic.pca_exploration.getSpecificity()
+        self.updateFunctionPlot("Component","Specificity",x,spec)
+
+        #generalization
+        x,gene,gene_err=self.logic.pca_exploration.getGeneralization()
+        self.updateFunctionPlot("Component","Generalization",x,gene)
+
+
+
+    def updateFunctionPlot(self,name_x,name_y,x,y):
+        TableNode = slicer.mrmlScene.GetFirstNodeByName("PCA "+name_y+" table")
+        table = TableNode.GetTable()
+        table.Initialize()
+
+        x.SetName(name_x)
+        y.SetName(name_y)
+
+        table.AddColumn(x)
+        table.AddColumn(y)
+
+
+    #polydata
+    def generate3DVisualisationNodes(self):
+        self.delete3DVisualisationNodes()
+        ##For Mean shape
+        #clear scene from previous PCA exploration
         
-    def onPreprocessNewData(self):
-        """ Function to preprocess the data to classify,
-        independently of the classification. 
-        - Extract Features
-        - Pickle data
-        """
-        # print("------ Preprocess New Data ------")
-        if self.MRMLNodeComboBox_VTKInputData.currentNode() == None and not self.pathLineEdit_CSVInputData.currentPath:
-            slicer.util.errorDisplay('Miss the Input Data')
-            return
-
-        # *** Define the group type of a patient ***
-        self.dictFeatData = dict()
-        tempPath = slicer.app.temporaryPath
-        networkDir = os.path.join(tempPath, 'Network')
-
-        outputDir = os.path.join(tempPath, "dataToClassify")
-        if os.path.isdir(outputDir):
-            shutil.rmtree(outputDir)
-        os.mkdir(outputDir) 
-
-        #
-        # Extract features on shapes, with SurfaceFeaturesExtractor and get new path (in slicer temp path)
-        meansList = ""
-        for k, v in self.dictGroups.items():
-            if meansList == "":
-                meansList = str(v)
-            else:
-                meansList = meansList + "," +  str(v)
-
-        for shape in self.patientList:
-            # Extract features de la/les shapes a classifier
-            self.logic.extractFeatures(shape, meansList, outputDir, train = False)
-
-        # Change paths in patientList to have shape with features
-        self.logic.storageDataToClassify(self.dictFeatData, self.patientList, outputDir)
-
-        pickleToClassify = self.logic.pickleToClassify(self.patientList, os.path.join(slicer.app.temporaryPath,'Network'))
-        self.archiveName = shutil.make_archive(base_name = networkDir, format = 'zip', root_dir = tempPath, base_dir = 'Network')
-
-        self.pushButton_exportToClassify.setEnabled(True)
-        self.pushButton_classifyIndex.setEnabled(True)
-        return
-
-
-    def onExportToClassify(self):
-        """ Function to extract the classifier and the data to classify
-        Possibility to run remotely with this zip file 
-        """
-        tempPath = slicer.app.temporaryPath
-        networkDir = os.path.join(tempPath, 'Network')
-
-        dlg = ctk.ctkFileDialog()
-        filepath = dlg.getSaveFileName(None, "Export Network and shapes to classify", os.path.join(qt.QDir.homePath(), "Desktop"), "Archive Zip (*.zip)")
-
-        directory = os.path.dirname(filepath)
-        path = filepath.split(".zip",1)[0]
-
-        shutil.make_archive(path, 'zip', networkDir)
-
-        return
+        #create Model Node
+        PCANode = slicer.vtkMRMLModelNode()
+        PCANode.SetAndObservePolyData(self.logic.pca_exploration.getPolyDataMean())
+        PCANode.SetName("PCA Mean")
+        #create display node
         
-    def onClassifyIndex(self):
-        """ Function classify shapes
-            - preprocess (extract features) the data
-            - generate a complete zipfile for the network
-        """
-        # print("------ Compute the OA index Type of a patient ------")
-        tempPath = slicer.app.temporaryPath
-        networkDir = os.path.join(tempPath, 'Network')
+        modelDisplay = slicer.vtkMRMLModelDisplayNode()
+        modelDisplay.SetColor(0.5,0.5,0.5) 
+        modelDisplay.SetOpacity(0.8)
+        #modelDisplay.SetBackfaceCulling(0)
+        modelDisplay.SetScene(slicer.mrmlScene)
+        modelDisplay.SetName("PCA Mean Display")
+        modelDisplay.VisibilityOff()
+        
+        slicer.mrmlScene.AddNode(modelDisplay)
+        PCANode.SetAndObserveDisplayNodeID(modelDisplay.GetID())
 
-        self.dictResults = dict()
-        self.dictResults = self.logic.evalClassification(networkDir + ".zip")
-        self.displayResult(self.dictResults)
-        return
+        slicer.mrmlScene.AddNode(PCANode)
 
-    # ---------------------------------------------------- #
-    #               Tab: Result / Analysis                 #
-    # ---------------------------------------------------- #
+        self.setMeanShapeVisibility()
 
-    def displayResult(self, dictResults):
-        """ Function to display the result in a table
-        """
-        for VTKfilename, resultGroup in dictResults.items():
-            row = self.tableWidget_result.rowCount
-            self.tableWidget_result.setRowCount(row + 1)
-            # Column 0: VTK file
-            labelVTKFile = qt.QLabel(os.path.basename(VTKfilename))
-            labelVTKFile.setAlignment(0x84)
-            self.tableWidget_result.setCellWidget(row, 0, labelVTKFile)
-            # Column 1: Assigned Group
-            labelAssignedGroup = qt.QLabel(resultGroup)
-            labelAssignedGroup.setAlignment(0x84)
-            self.tableWidget_result.setCellWidget(row, 1, labelAssignedGroup)
+        ##For Exploration
+        #clear scene from previous PCA exploration
+        
+        #create Model Node
+        PCANode = slicer.vtkMRMLModelNode()
+        PCANode.SetAndObservePolyData(self.logic.pca_exploration.getPolyDataExploration())
+        PCANode.SetName("PCA Exploration")
+        #create display node
+        R,G,B=self.logic.pca_exploration.getColor()
+        modelDisplay = slicer.vtkMRMLModelDisplayNode()
+        modelDisplay.SetColor(R,G,B) 
+        modelDisplay.SetOpacity(1)
+        modelDisplay.AutoScalarRangeOff()
+        #modelDisplay.SetBackfaceCulling(0)
+        modelDisplay.SetScene(slicer.mrmlScene)
+        modelDisplay.SetName("PCA Display")
 
-        # open the results tab
-        self.collapsibleButton_Result.setChecked(True)
-        self.onSelectedCollapsibleButtonOpen(self.collapsibleButton_Result)
+        signedcolornode=self.logic.generateSignedDistanceLUT()
+        unsignedcolornode=self.logic.generateUnsignedDistanceLUT()
+
+        signedcolornode.SetName('PCA Signed Distance Color Table')
+        unsignedcolornode.SetName('PCA Unsigned Distance Color Table')
+
+        slicer.mrmlScene.AddNode(signedcolornode)
+        slicer.mrmlScene.AddNode(unsignedcolornode)
+
+        slicer.mrmlScene.AddNode(modelDisplay)
+        PCANode.SetAndObserveDisplayNodeID(modelDisplay.GetID())
+
+        slicer.mrmlScene.AddNode(PCANode)
+
+    def delete3DVisualisationNodes(self):
+        node = slicer.mrmlScene.GetFirstNodeByName("PCA Exploration")
+        if node is not None:
+            slicer.mrmlScene.RemoveNode(node)
+        node = slicer.mrmlScene.GetFirstNodeByName("PCA Display")
+        if node is not None:
+            slicer.mrmlScene.RemoveNode(node)
+        node = slicer.mrmlScene.GetFirstNodeByName("PCA Mean")
+        if node is not None:
+            slicer.mrmlScene.RemoveNode(node)
+        node = slicer.mrmlScene.GetFirstNodeByName("PCA Mean Display")
+        if node is not None:
+            slicer.mrmlScene.RemoveNode(node)
+        node = slicer.mrmlScene.GetFirstNodeByName('PCA Signed Distance Color Table')
+        if node is not None:
+            slicer.mrmlScene.RemoveNode(node)
+        node = slicer.mrmlScene.GetFirstNodeByName('PCA Unsigned Distance Color Table')
+        if node is not None:
+            slicer.mrmlScene.RemoveNode(node)
+
+    def setMeanShapeVisibility(self):
+        node = slicer.mrmlScene.GetFirstNodeByName("PCA Mean Display")
+        if self.showmean==False:
+            node.VisibilityOff()
+        else :
+            node.VisibilityOn()
 
 
-    def onExportResult(self):
-        """ Function to export the result in a CSV File
-        """
-        # Path of the csv file
-        dlg = ctk.ctkFileDialog()
-        filepath = dlg.getSaveFileName(None, "Export CSV file for Classification groups", os.path.join(qt.QDir.homePath(), "Desktop"), "CSV File (*.csv)")
-
-        directory = os.path.dirname(filepath)
-        basename = os.path.basename(filepath)
-
-        # Store data in a dictionary
-        self.logic.creationCSVFileForResult(self.tableWidget_result, directory, basename)
-
-        # Message in the python console and for the user
-        print("Export CSV File: " + filepath)
-        slicer.util.delayDisplay("Result saved")
 
 
 # ------------------------------------------------------------------------------------ #
@@ -1493,9 +1732,11 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         self.interface = interface
         self.table = vtk.vtkTable
         self.colorBar = {'Point1': [0, 0, 1, 0], 'Point2': [0.5, 1, 1, 0], 'Point3': [1, 1, 0, 0]}
-        self.input_Data = inputData.inputData()
 
-    
+        self.pca_exploration=shapca.pcaExplorer()
+        
+
+  
     def get(self, objectName):
         """ Functions to recovery the widget in the .ui file
         """
@@ -1525,7 +1766,6 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         # Remove the path of the directory
         directoryList.pop(group - 1)
 
-    
     def checkExtension(self, filename, extension):
         """ Check if the path given has the right extension
         """
@@ -1540,6 +1780,7 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         """ Function to read a CSV file
         """
         print("CSV FilePath: " + filename)
+        sys.stdout.flush()
         CSVreader = vtk.vtkDelimitedTextReader()
         CSVreader.SetFieldDelimiterCharacters(",")
         CSVreader.SetFileName(filename)
@@ -1574,44 +1815,9 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
 
         return True
 
-    def checkSeveralMeshInDict(self, dict):
-        """ Function to check if in each group 
-        there is at least more than one mesh
-        """
-        for key, value in dict.items():
-            if type(value) is not ListType or len(value) == 1:
-                slicer.util.errorDisplay('The group ' + str(key) + ' must contain more than one mesh.')
-                return False
-        return True
 
-    def checkOneMeshPerGroupInDict(self, dict):
-        """ Function to check if in each group 
-        there is at least more than one mesh 
-        """
-        for key, value in dict.items():
-            if type(value) is ListType: # or len(value) != 1:
-                slicer.util.errorDisplay('The group ' + str(key) + ' must contain exactly one mesh.')
-                return False
-        return True
 
-    def creationDictShapeModel(self, dict):
-        """Function to store the shape models for each group in a dictionary
-        The function return True IF
-            - all the paths exist
-            - the extension of the paths is .h5
-            - there are only one shape model per group
-        else False
-        """
-        for i in range(0, self.table.GetNumberOfRows()):
-            if not os.path.exists(self.table.GetValue(i,0).ToString()):
-                slicer.util.errorDisplay('VTK file not found, path not good at lign ' + str(i+2))
-                return False
-            if not os.path.splitext(os.path.basename(self.table.GetValue(i,0).ToString()))[1] == '.vtk':
-                slicer.util.errorDisplay('Wrong extension file at lign ' + str(i+2) + '. A vtk file is needed!')
-                return False
-            dict[self.table.GetValue(i,1).ToInt()] = self.table.GetValue(i,0).ToString()
 
-        return True
 
     def addColorMap(self, table, dictVTKFiles):
         """ Function to add a color map "DisplayClassificationGroup" 
@@ -1790,94 +1996,7 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
                 b = value[3]
                 colorTransferFunction.AddRGBPoint(x,r,g,b)
         return colorTransferFunction
-
-    def deleteArrays(self, key, value):
-        """ Function to copy and delete all the arrays of all the meshes contained in a list
-        """
-        for vtkFile in value:
-            # Read VTK File
-            reader = vtk.vtkDataSetReader()
-            reader.SetFileName(vtkFile)
-            reader.ReadAllVectorsOn()
-            reader.ReadAllScalarsOn()
-            reader.Update()
-            polyData = reader.GetOutput()
-
-            # Copy of the polydata
-            polyDataCopy = vtk.vtkPolyData()
-            polyDataCopy.DeepCopy(polyData)
-            pointData = polyDataCopy.GetPointData()
-
-            # Remove all the arrays
-            numAttributes = pointData.GetNumberOfArrays()
-            for i in range(0, numAttributes):
-                pointData.RemoveArray(0)
-
-            # Creation of the path of the vtk file without arrays to save it in the temporary directory of Slicer
-            filename = os.path.basename(vtkFile)
-            filepath = slicer.app.temporaryPath + '/' + filename
-
-            # Save the vtk file without array in the temporary directory in Slicer
-            self.saveVTKFile(polyDataCopy, filepath)
-        return
-
-    def saveVTKFile(self, polydata, filepath):
-        """ Function to save a VTK file to the filepath given 
-        """
-        writer = vtk.vtkPolyDataWriter()
-        writer.SetFileName(filepath)
-        if vtk.VTK_MAJOR_VERSION <= 5:
-            writer.SetInput(polydata)
-        else:
-            writer.SetInputData(polydata)
-        writer.Update()
-        writer.Write()
-        return
-
-    def printStatus(self, caller, event):
-        print("Got a %s from a %s" % (event, caller.GetClassName()))
-        if caller.IsA('vtkMRMLCommandLineModuleNode'):
-            print("Status is %s" % caller.GetStatusString())
-            # print("output:   \n %s" % caller.GetOutputText())
-            # print("error:   \n %s" % caller.GetErrorText())
-        return
-
-    def computeMean(self, numGroup, vtkList):
-        """ Function to compute the mean between all 
-        the mesh-files contained in one group
-        """
-        print("--- Compute the mean of all the group ---")
-        # Call of computeMean : computation of an average shape for a group of shaoes 
-        # Arguments:
-        #  --inputList is the list of vtkfile we want to compute the average
-        #  --outputSurface is the resulting mean shape
         
-        parameters = {}
-
-        vtkfilelist = []
-        for vtkFiles in vtkList:
-            vtkfilelist.append(vtkFiles)
-        parameters["inputList"] = vtkfilelist
-
-        outModel = slicer.vtkMRMLModelNode()
-        slicer.mrmlScene.AddNode(outModel)
-        parameters["outputSurface"] = outModel.GetID()
-
-        computeMean = slicer.modules.computemean
-        
-        # print parameters
-
-        cliNode = slicer.cli.run(computeMean, None, parameters, wait_for_completion=True)
-        cliNode.AddObserver('ModifiedEvent', self.printStatus)
-
-        resultdir = slicer.app.temporaryPath
-        slicer.util.saveNode(outModel, str(os.path.join(resultdir,"meanGroup" + str(numGroup) + ".vtk")))
-        slicer.mrmlScene.RemoveNode(outModel) 
-
-        return 
-        
-
-
     def removeDataVTKFiles(self, value):
         """ Function to remove in the temporary directory all 
         the data used to create the mean for each group
@@ -1887,13 +2006,6 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
             filepath = slicer.app.temporaryPath + '/' + os.path.basename(vtkFile)
             if os.path.exists(filepath):
                 os.remove(filepath)
-
-    # Function to storage the mean of each group in a dictionary
-    def storageMean(self, dictGroups, key):
-        filename = "meanGroup" + str(key)
-        meanPath = slicer.app.temporaryPath + '/' + filename + '.vtk'
-        dictGroups[key] = meanPath
-        # print(dictGroups)
 
     def creationCSVFile(self, directory, CSVbasename, dictForCSV, option):
         """ Function to create a CSV file:
@@ -1923,588 +2035,85 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
                 cw.writerow([value, str(key)])
         file.close()
 
-    def saveNewClassificationGroups(self, basename, directory, dictShapeModels):
-
-        """ Function to save the data of the new Classification Groups in the directory given by the user
-            - The mean vtk files of each groups
-            - The shape models of each groups
-            - The CSV file containing:
-                - First column: the paths of mean vtk file of each group
-                - Second column: the groups associated
-                - Third column: the paths of the shape model of each group
-        """ 
-        dictForCSV = dict()
-        for key, value in dictShapeModels.items():
-            # Save the shape model (h5 file) of each group
-            h5Basename = "G" + str(key) + ".h5"
-            oldh5path = slicer.app.temporaryPath + "/" + h5Basename
-            newh5path = directory + "/" + h5Basename
-            shutil.copyfile(oldh5path, newh5path)
-            dictForCSV[key] = newh5path
-
-        # Save the CSV file containing all the data useful in order to compute OAIndex of a patient
-        self.creationCSVFile(directory, basename, dictForCSV, "NCG")
-
-    def removeDataAfterNCG(self, dict):
-        """ Function to remove in the temporary directory all the 
-        data useless after to do a export of the new Classification Groups
+    def checkSeveralMeshInDict(self, dict):
+        """ Function to check if in each group 
+        there is at least more than one mesh
         """
-        for key in dict.keys():
-            # Remove of the shape model of each group
-            path = dict[key]
-            if os.path.exists(path):
-                os.remove(path)
+        for key, value in dict.items():
+            if type(value) is not type(list()) or len(value) == 1:
+                msg='The group ' + str(key) + ' must contain more than one mesh.'
+                raise CSVFileError(msg)
+                return False
+        return True
 
-    def actionOnDictionary(self, dict, file, listSaveVTKFiles, action):
-        """ Function to make some action on a dictionary
-            Action Remove:
-                Remove the vtk file to the dictionary dict
-                If the vtk file was found:
-                    Return a list containing the key and the vtk file
-                Else:
-                    Return False
-            Action Find:
-                Find the vtk file in the dictionary dict
-                If the vtk file was found:
-                    Return True
-                Else:
-                    Return False
-        """
-        if action == 'remove' or action == 'find':
-            if not file == None:
-                for key, value in dict.items():
-                    for vtkFile in value:
-                        filename = os.path.basename(vtkFile)
-                        if filename == file:
-                            if action == 'remove':
-                                value.remove(vtkFile)
-                                listSaveVTKFiles.append(key)
-                                listSaveVTKFiles.append(vtkFile)
-                                return listSaveVTKFiles
-                            return True
-            return False
+    #################
+    # PCA ALGORITHM #       
+    #################
 
-        # Action Add:
-        #      Add a vtk file to the dictionary dict at the given key contained in the first case of the list
-        if action == 'add':
-            if not listSaveVTKFiles == None and not file == None:
-                value = dict.get(listSaveVTKFiles[0], None)
-                value.append(listSaveVTKFiles[1])
+    def disableExplorationScalarView(self):
+        model1=slicer.mrmlScene.GetFirstNodeByName('PCA Exploration')
+
+        if model1 is not None:
+            model1.GetDisplayNode().SetScalarVisibility(0)
+            #model1.GetDisplayNode().SetScalarVisibility(1)
+
+            model1.Modified()
+
+    def enableExplorationScalarView(self):
+        exploration_node=slicer.mrmlScene.GetFirstNodeByName('PCA Exploration')
+        exploration_node.GetDisplayNode().SetActiveScalarName('Distance')
+        exploration_node.GetDisplayNode().SetScalarVisibility(1)
 
 
-    def checkNumberOfPoints(self, dictShapes):
-        """ Function to check that all the shapes have 
-        the same number of points 
-        """
-        num_shape = 0
-        num_points = 0 
-        for key, value in dictShapes.items():
-            if type(value) is ListType:
-                for shape in value:
-                    try:
-                        reader_poly = vtk.vtkPolyDataReader()
-                        reader_poly.SetFileName(shape)
-                        reader_poly.Update()
-                        geometry = reader_poly.GetOutput()
-                        
-                        if num_shape == 0:
-                            num_points = geometry.GetNumberOfPoints()
-                        else:
-                            if not geometry.GetNumberOfPoints() == num_points:
-                                slicer.util.errorDisplay('All the shapes must have the same number of points!')
-                                return False
-                                # raise Exception('Unexpected number of points in the shape: %s' % str(geometry.GetNumberOfPoints()))
-                    
-                    except IOError as e:
-                        print('Could not read:', shape, ':', e, '- it\'s ok, skipping.')
-                    
-                num_shape = num_shape + 1
-            else: 
-                shape = value
-                try:
-                    reader_poly = vtk.vtkPolyDataReader()
-                    reader_poly.SetFileName(shape)
-                    reader_poly.Update()
-                    geometry = reader_poly.GetOutput()
-                    
-                    if num_shape == 0:
-                        num_points = geometry.GetNumberOfPoints()
-                    else:
-                        if not geometry.GetNumberOfPoints() == num_points:
-                            slicer.util.errorDisplay('All the shapes must have the same number of points!')
-                            return False
-                            # raise Exception('Unexpected number of points in the shape: %s' % str(geometry.GetNumberOfPoints()))
-                except IOError as e:
-                    print('Could not read:', shape, ':', e, '- it\'s ok, skipping.')
-
-        return num_points
 
 
-    def extractFeatures(self, shape, meansList, outputDir, train):
-        """ Function to extract the features from the provided shape
-        Call the CLI surfacefeaturesextractor
-        """
-        # #     Creation of the command line
-        # scriptedModulesPath = eval('slicer.modules.%s.path' % self.interface.moduleName.lower())
-        # scriptedModulesPath = os.path.dirname(scriptedModulesPath)
-        # libPath = os.path.join(scriptedModulesPath)
-        # sys.path.insert(0, libPath)
-        # if sys.platform == 'win32':
-        #     surfacefeaturesextractor = os.path.join(scriptedModulesPath, '..', 'cli-modules', 'surfacefeaturesextractor.exe')
-        # else:
-        #     surfacefeaturesextractor = os.path.join(scriptedModulesPath, '..', 'cli-modules', 'surfacefeaturesextractor')            
-        # # surfacefeaturesextractor = "/Users/mirclem/Desktop/work/ShapeVariationAnalyzer/src/CLI/SurfaceFeaturesExtractor-build/src/SurfaceFeaturesExtractor/bin/surfacefeaturesextractor"
-        # # surfacefeaturesextractor = "/Users/prisgdd/Documents/Projects/CNN/SurfaceFeaturesExtractor-build/src/SurfaceFeaturesExtractor/bin/surfacefeaturesextractor"
+        exploration_node.Modified()
+
+    def generateUnsignedDistanceLUT(self):
+        number_of_color=255
+        colorTableNode = slicer.vtkMRMLColorTableNode()
+        colorTableNode.SetName('PCA Unsigned Distance Color Table')
+        colorTableNode.SetTypeToUser()
+        colorTableNode.HideFromEditorsOff()
+        colorTableNode.SaveWithSceneOff()
+        colorTableNode.SetNumberOfColors(number_of_color)
+        colorTableNode.GetLookupTable().SetTableRange(0,number_of_color-1)
+
+
+        c=1
+        for i in range(number_of_color):
+            colorTableNode.AddColor(str(i), 1, c, c, 1)    
+            c = c- 1.0/number_of_color           
         
-        # filename = str(os.path.basename(shape))
+        return colorTableNode
+
+    def generateSignedDistanceLUT(self):
+        number_of_color=255
+        colorTableNode = slicer.vtkMRMLColorTableNode()
+        colorTableNode.SetName('PCA Signed Distance Color Table')
+        colorTableNode.SetTypeToUser()
+        colorTableNode.HideFromEditorsOff()
+        colorTableNode.SaveWithSceneOff()
+        colorTableNode.SetNumberOfColors(number_of_color)
+        colorTableNode.GetLookupTable().SetTableRange(0,number_of_color-1)
+
+        blueshade=0
+        redshade=1
+        for i in range(number_of_color):
+            if blueshade <= 1:
+                colorTableNode.AddColor(str(i), blueshade, blueshade,1 , 1)  
+                #print(str(i), blueshade, blueshade,1 , 1)  
+                blueshade = blueshade+ 2.0/number_of_color 
+            else:
+                colorTableNode.AddColor(str(i), 1, redshade, redshade, 1)    
+                #print(str(i), 1, redshade, redshade, 1)
+                redshade = redshade- 2.0/number_of_color
+
+        return colorTableNode
 
-        # arguments = list()
 
-        # # Input Mesh
-        # arguments.append(shape)
-
-        # # Output Mesh
-        # arguments.append(str(os.path.join(outputDir,filename))) 
-
-        # # List of average shapes
-        # arguments.append("--distMeshOn")
-        # arguments.append("--distMesh")
-        # arguments.append(str(meansList))
-        # # print(arguments)
-
-        # #     Call the executable
-        # process = qt.QProcess()
-        # process.setProcessChannelMode(qt.QProcess.MergedChannels)
-
-        # # print("Calling " + os.path.basename(computeMean))
-        # process.start(surfacefeaturesextractor, arguments)
-        # process.waitForStarted()
-        # # print("state: " + str(process.state()))
-        # process.waitForFinished()
-        # # print("error: " + str(process.error()))
-        
-        # processOutput = str(process.readAll())
-        # print(processOutput)
-
-        parameters = {}
-
-        slicer.util.loadModel(shape)
-        modelNode = slicer.util.getNode(os.path.basename(shape).split('.')[0])
-        parameters["inputMesh"] = modelNode.GetID()
-
-        filename = str(os.path.basename(shape))
-        outModel = slicer.vtkMRMLModelNode()
-        outModel.SetName(filename)
-        slicer.mrmlScene.AddNode(outModel)
-        parameters["outputMesh"] = outModel.GetID()
-
-        parameters["distMeshOn"] = True
-        parameters["distMesh"] = str(meansList)
-
-        # print str(meansList)
-
-        surfacefeaturesextractor = slicer.modules.surfacefeaturesextractor
-        cliNode = slicer.cli.run(surfacefeaturesextractor, None, parameters, wait_for_completion=True)
-        # cliNode = slicer.cli.runSync(surfacefeaturesextractor, None, parameters)
-        cliNode.AddObserver('ModifiedEvent', self.printStatus)
-        slicer.util.saveNode(outModel, str(os.path.join(outputDir,filename)))
-        if train == True:
-            slicer.mrmlScene.RemoveNode(modelNode)
-            slicer.mrmlScene.RemoveNode(outModel)
-        return 
-
-
-    def storageFeaturesData(self, dictFeatData, dictShapeModels):
-        """ Funtion to complete a dict listing all 
-        the shapes with extracted features
-        """
-        for key, value in dictShapeModels.items():
-            newValue = list()
-            for shape in value:
-                filename,_ = os.path.splitext(os.path.basename(shape))
-                ftPath = os.path.join(slicer.app.temporaryPath,'dataFeatures',filename + '.vtk')
-
-                newValue.append(ftPath)
-            dictFeatData[key] = newValue
-        return
-
-    def storageDataToClassify(self, dictFeatData, listPatient, outputDir):
-        """ Funtion to complete a dict listing all 
-        the shapes to be classified
-        """
-        for i in range(0, len(listPatient)):
-            filename,_ = os.path.splitext(os.path.basename(listPatient[i]))
-            ftPath = os.path.join(outputDir, filename + '.vtk')
-            listPatient[i] = ftPath
-        return listPatient
-
-    def pickleData(self, dictFeatData, featuresList, controlGroup):
-        """ Function to pickle the data for the network
-        Update the inputData instance for update in the zipfile later
-        """
-        tempPath = slicer.app.temporaryPath
-        networkDir = os.path.join(tempPath, "Network")
-        if os.path.isdir(networkDir):
-            shutil.rmtree(networkDir)
-        os.mkdir(networkDir) 
-
-        nbGroups = len(dictFeatData.keys())
-        self.input_Data = inputData.inputData()
-        self.input_Data.NUM_CLASSES = nbGroups
-
-        nb_feat = len(featuresList)
-        if featuresList.count('Normals'): 
-            nb_feat += 2 
-        if featuresList.count('Distances to average shapes'):
-            nb_feat = nb_feat + nbGroups - 1
-        if featuresList.count('Position'):
-            nb_feat += 2
-
-        self.input_Data.featuresList = featuresList
-        self.input_Data.controlAverage = controlGroup
-        self.input_Data.NUM_FEATURES = nb_feat
-
-        reader_poly = vtk.vtkPolyDataReader()
-        reader_poly.SetFileName(dictFeatData[0][0])
-
-        reader_poly.Update()
-        self.input_Data.NUM_POINTS = reader_poly.GetOutput().GetNumberOfPoints()
-
-        for file in os.listdir(tempPath):
-            if os.path.splitext(os.path.basename(file))[1] == '.pickle':
-                os.remove(os.path.join(tempPath,file))
-
-        dataset_names = self.input_Data.maybe_pickle(dictFeatData, 3, path=tempPath, force=False)
-
-        # Save info in JSON File
-        network_param = dict()
-        network_param["NUM_CLASSES"] = self.input_Data.NUM_CLASSES
-        network_param["NUM_FEATURES"] = self.input_Data.NUM_FEATURES
-        network_param["NUM_POINTS"] = self.input_Data.NUM_POINTS
-        network_param["Features"] = featuresList
-        network_param["controlAverage"] = self.input_Data.controlAverage 
-
-        jsonDict = dict()
-        jsonDict["CondylesClassifier"] = network_param
-
-        with open(os.path.join(networkDir,'classifierInfo.json'), 'w') as f:
-            json.dump(jsonDict, f, ensure_ascii=False, indent = 4)
-
-        #
-        # Determine dataset size
-        #
-        small_classe = 100000000
-        completeDataset = 0
-        for key, value in dictFeatData.items():
-            if len(value) < small_classe:
-                small_classe = len(value)
-            completeDataset = completeDataset + len(value)
-
-        if small_classe < 4: 
-            train_size = ( small_classe - 1 ) * nbGroups
-        else: 
-            train_size = ( small_classe - 3 ) * nbGroups
-        valid_size = 3 * nbGroups
-        test_size = completeDataset
-
-        valid_dataset, valid_labels, train_dataset, train_labels = self.input_Data.merge_datasets(dataset_names, train_size, valid_size) 
-        _, _, test_dataset, test_labels = self.input_Data.merge_all_datasets(dataset_names, test_size)
-
-        train_dataset, train_labels = self.input_Data.randomize(train_dataset, train_labels)
-        valid_dataset, valid_labels = self.input_Data.randomize(valid_dataset, valid_labels)
-        test_dataset, test_labels = self.input_Data.randomize(test_dataset, test_labels)
-
-        pickle_file = os.path.join(networkDir,'datasets.pickle')
-
-        try:
-            f = open(pickle_file, 'wb')
-            save = {
-                'train_dataset': train_dataset,
-                'train_labels': train_labels,
-                'valid_dataset': valid_dataset,
-                'valid_labels': valid_labels,
-                'test_dataset': test_dataset,
-                'test_labels': test_labels,
-            }
-            pickle.dump(save, f, pickle.HIGHEST_PROTOCOL)
-            f.close()
-        except Exception as e:
-            print('Unable to save data to', pickle_file, ':', e)
-            raise
-
-        statinfo = os.stat(pickle_file)
-        print('Compressed pickle size:', statinfo.st_size)
-
-        return pickle_file
-
-
-    def pickleToClassify(self, patientList, path):
-        """ Function to pickle the data to classify for the network
-        """
-        force = True
-
-        set_filename = os.path.join(path, 'toClassify.pickle')
-        if os.path.exists(set_filename) and not force:
-            # You may override by setting force=True.
-            print('%s already present - Skipping pickling.' % set_filename)
-        else:
-            print('Pickling %s.' % set_filename)
-            dataset, allShapes_feat = self.input_Data.load_features_with_names(patientList)
-            try:
-                with open(set_filename, 'wb') as f:
-                    pickle.dump(allShapes_feat, f, pickle.HIGHEST_PROTOCOL)
-            except Exception as e:
-                print('Unable to save data to', set_filename, ':', e)
-
-        return set_filename
-
-    def exportUntrainedNetwork(self, archiveName, zipPath, num_steps, num_layers):
-        """ Funciton to compress/zip everything needed to 
-        export the Classifier BEFORE training 
-        Useful for remote training 
-        """
-        # Set path for teh network
-        tempPath = slicer.app.temporaryPath
-        networkDir = os.path.join(tempPath, "Network")
-        if os.path.isdir(networkDir):
-            shutil.rmtree(networkDir)
-        os.mkdir(networkDir) 
-
-        with zipfile.ZipFile(archiveName) as zf:
-            zf.extractall(os.path.dirname(archiveName))
-            
-        jsonFile = os.path.join(networkDir, 'classifierInfo.json')
-
-        with open(jsonFile) as f:
-            jsonDict = json.load(f)
-
-        jsonDict['CondylesClassifier']['learning_rate'] = 0.0005
-        jsonDict['CondylesClassifier']['lambda_reg'] = 0.01
-        jsonDict['CondylesClassifier']['num_epochs'] = 5
-        jsonDict['CondylesClassifier']['num_steps'] =  num_steps
-        jsonDict['CondylesClassifier']['batch_size'] = 10
-        jsonDict['CondylesClassifier']['NUM_HIDDEN_LAYERS'] = num_layers
-        
-        if jsonDict['CondylesClassifier']['NUM_HIDDEN_LAYERS'] == 1:
-            jsonDict['CondylesClassifier']['nb_hidden_nodes_1'] = int ( jsonDict['CondylesClassifier']['NUM_POINTS'] * jsonDict['CondylesClassifier']['NUM_FEATURES'] + jsonDict['CondylesClassifier']['NUM_CLASSES'] // 2 )
-            # jsonDict['CondylesClassifier']['nb_hidden_nodes_1'] = int ( math.sqrt ( jsonDict['CondylesClassifier']['NUM_POINTS'] * jsonDict['CondylesClassifier']['NUM_FEATURES'] * jsonDict['CondylesClassifier']['NUM_CLASSES'] ))
-            jsonDict['CondylesClassifier']['nb_hidden_nodes_2'] = 0
-        
-        elif jsonDict['CondylesClassifier']['NUM_HIDDEN_LAYERS'] == 2:
-            r = math.pow( jsonDict['CondylesClassifier']['NUM_POINTS'] * jsonDict['CondylesClassifier']['NUM_FEATURES'] / jsonDict['CondylesClassifier']['NUM_CLASSES'], 1/3)
-            jsonDict['CondylesClassifier']['nb_hidden_nodes_1'] = int ( jsonDict['CondylesClassifier']['NUM_CLASSES'] * math.pow ( r, 2 ))
-            jsonDict['CondylesClassifier']['nb_hidden_nodes_2'] =int ( jsonDict['CondylesClassifier']['NUM_POINTS'] * jsonDict['CondylesClassifier']['NUM_FEATURES'] * r )
-
-        with open(os.path.join(networkDir,'classifierInfo.json'), 'w') as f:
-            json.dump(jsonDict, f, ensure_ascii=False, indent = 4)
-
-        path = zipPath.split(".zip",1)[0]
-        shutil.make_archive(path, 'zip', networkDir)
-
-        return 
-
-
-    def trainNetworkClassification(self, archiveName, num_steps, num_layers):
-        """ Funciton to train the Neural Network 
-        within the virtualenv containing tensorflow
-        First creation of a zipfile with updated info
-        Return the estimated accuracy of the network
-        """
-        # Set path for teh network
-        tempPath = slicer.app.temporaryPath
-        networkDir = os.path.join(tempPath, "Network")
-        if os.path.isdir(networkDir):
-            shutil.rmtree(networkDir)
-        os.mkdir(networkDir) 
-
-        with zipfile.ZipFile(archiveName) as zf:
-            zf.extractall(os.path.dirname(archiveName))
-
-        jsonFile = os.path.join(networkDir, 'classifierInfo.json')
-
-        with open(jsonFile) as f:
-            jsonDict = json.load(f)
-
-        jsonDict['CondylesClassifier']['learning_rate'] = 0.0005
-        jsonDict['CondylesClassifier']['lambda_reg'] = 0.01
-        jsonDict['CondylesClassifier']['num_epochs'] = 50
-        jsonDict['CondylesClassifier']['num_steps'] =  num_steps
-        # jsonDict['CondylesClassifier']['num_steps'] =  2001
-        jsonDict['CondylesClassifier']['batch_size'] = 10
-        jsonDict['CondylesClassifier']['NUM_HIDDEN_LAYERS'] = num_layers
-        
-        if jsonDict['CondylesClassifier']['NUM_HIDDEN_LAYERS'] == 1:
-            jsonDict['CondylesClassifier']['nb_hidden_nodes_1'] = int ( math.sqrt ( jsonDict['CondylesClassifier']['NUM_POINTS'] * jsonDict['CondylesClassifier']['NUM_FEATURES'] * jsonDict['CondylesClassifier']['NUM_CLASSES'] ))
-            jsonDict['CondylesClassifier']['nb_hidden_nodes_2'] = 0
-        
-        elif jsonDict['CondylesClassifier']['NUM_HIDDEN_LAYERS'] == 2:
-            r = math.pow( jsonDict['CondylesClassifier']['NUM_POINTS'] * jsonDict['CondylesClassifier']['NUM_FEATURES'] / jsonDict['CondylesClassifier']['NUM_CLASSES'], 1/3)
-            jsonDict['CondylesClassifier']['nb_hidden_nodes_1'] = int ( jsonDict['CondylesClassifier']['NUM_CLASSES'] * math.pow ( r, 2 ))
-            jsonDict['CondylesClassifier']['nb_hidden_nodes_2'] =int ( jsonDict['CondylesClassifier']['NUM_POINTS'] * jsonDict['CondylesClassifier']['NUM_FEATURES'] * r )
-
-        with open(os.path.join(networkDir,'classifierInfo.json'), 'w') as f:
-            json.dump(jsonDict, f, ensure_ascii=False, indent = 4)
-
-        shutil.make_archive(base_name = networkDir, format = 'zip', root_dir = tempPath, base_dir = 'Network')
-
-        # 
-        # Train network in virtualenv
-        # 
-        currentPath = os.path.dirname(os.path.abspath(__file__))
-        train_file = os.path.join(currentPath,'Resources','Classifier','trainNeuralNetwork.py')
-        envWrapper_file = os.path.join(currentPath,'Wrapper','envTensorFlowWrapper.py')
-
-        pathSlicerExec = str(os.path.dirname(sys.executable))
-
-        pathSlicerPython = os.path.join(pathSlicerExec, "..", "bin", "SlicerPython")
-        args = '{"--inputZip": "' + archiveName + '", "--outputZip": "' + archiveName + '"}' 
-        command = [pathSlicerPython, envWrapper_file, "-pgm", train_file, "-args", args ]
-
-        print command
-        p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        out, err =  p.communicate()
-        print("\nout : " + str(out) + "\nerr : " + str(err))
-
-        if os.path.isdir(networkDir):
-            shutil.rmtree(networkDir)
-        os.mkdir(networkDir) 
-
-        with zipfile.ZipFile(archiveName) as zf:
-            zf.extractall(os.path.dirname(archiveName))
-
-        jsonFile = os.path.join(networkDir, 'classifierInfo.json')
-        with open(jsonFile) as f:
-            jsonDict = json.load(f)
-
-        return jsonDict['CondylesClassifier']['accuracy']
-
-
-    def zipdir(self, path, ziph):
-        # ziph is zipfile handle
-        for root, dirs, files in os.walk(path):
-            for file in files:
-                ziph.write(os.path.join(root, file))
-
-    def exportModelNetwork(self, filepath):
-        tempPath = slicer.app.temporaryPath
-        networkDir = os.path.join(tempPath, 'Network')
-
-        # Zipper tout ca 
-        shutil.make_archive(base_name = filepath, format = 'zip', root_dir = tempPath, base_dir = 'Network')
-
-        return
-
-    def validModelNetwork(self, archiveName, dictGroups):
-        """ Function to valid a given neural network 
-        when its path is specified 
-        If it is accepted, parameters are updated for later reuse
-        """
-        tempPath = slicer.app.temporaryPath
-        networkDir = os.path.join(tempPath, 'Network')
-        # Si y a deja un Network dans le coin, on le degage
-        if os.path.isdir(networkDir):
-            shutil.rmtree(networkDir)
-        os.mkdir(networkDir) 
-
-        # Unpack archive
-        with zipfile.ZipFile(archiveName) as zf:
-            zf.extractall(tempPath)
-
-        # check JSON file
-        jsonFile = os.path.join(networkDir, 'classifierInfo.json')
-        saveModelPath = os.path.join(networkDir, 'CondylesClassifier')
-
-        with open(jsonFile) as f:    
-            jsonDict = json.load(f)
-
-        # In case our JSON file doesnt contain a valid Classifier
-        if not jsonDict.has_key('CondylesClassifier'):
-            print("No CondylesClassifier containing network parameters")
-            return 0
-        myDict = jsonDict['CondylesClassifier']
-        if not ('NUM_CLASSES' in myDict and 'NUM_FEATURES' in myDict and 'NUM_POINTS' in myDict):
-            print("Missing basics network parameters")
-            return 0
-
-        self.input_Data = inputData.inputData()
-        self.input_Data.NUM_POINTS = jsonDict['CondylesClassifier']['NUM_POINTS']
-        self.input_Data.NUM_CLASSES = jsonDict['CondylesClassifier']['NUM_CLASSES']
-        self.input_Data.NUM_FEATURES = jsonDict['CondylesClassifier']['NUM_FEATURES']
-        self.input_Data.featuresList = jsonDict['CondylesClassifier']['Features']
-        self.input_Data.controlAverage  = jsonDict['CondylesClassifier']['controlAverage'] 
-
-        numModelFiles = 0
-        strCondClass = 'CondylesClassifier'
-        for f in os.listdir(networkDir):
-            if f[0:len('CondylesClassifier')] == 'CondylesClassifier' : 
-                numModelFiles = numModelFiles + 1
-
-        if numModelFiles < 3 :
-            print("Missing files for this model")
-            return 0
-
-        # Get the dict of mean shapes
-        meanGroupsDir = os.path.join(networkDir, 'meanGroups')
-        jsonMeans = os.path.join(meanGroupsDir, 'meanGroups.json')
-        with open(jsonMeans) as f:    
-            meanGroupsDict = json.load(f) 
-            for group, file in meanGroupsDict.items():
-                dictGroups[group] = os.path.join(meanGroupsDir,file)
-
-        return 1
-
-    # Function to compute the OA index of a patient
-    def evalClassification(self, archiveName):
-        # Set le path pour le network
-        tempPath = slicer.app.temporaryPath
-        networkDir = os.path.join(tempPath, "Network")
-        if os.path.isdir(networkDir):
-            shutil.rmtree(networkDir)
-        os.mkdir(networkDir) 
-
-        # Classify dans le virtualenv
-        currentPath = os.path.dirname(os.path.abspath(__file__))
-        train_file = os.path.join(currentPath,'Resources','Classifier','evalShape.py')
-        envWrapper_file = os.path.join(currentPath,'Wrapper','envTensorFlowWrapper.py')
-        
-        pathSlicerExec = str(os.path.dirname(sys.executable))
-        pathSlicerPython = os.path.join(pathSlicerExec, "..", "bin", "SlicerPython")
-        
-        args = '{"--inputZip": "' + archiveName + '", "--outputZip": "' + archiveName + '"}' 
-        command = [pathSlicerPython, envWrapper_file, "-pgm", train_file, "-args", args ]
-
-        p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        out, err =  p.communicate()
-        print("\nout : " + str(out) + "\nerr : " + str(err))
-
-        with zipfile.ZipFile(archiveName) as zf:
-            zf.extractall(os.path.dirname(archiveName))
-
-        jsonFile = os.path.join(networkDir, 'results.json')
-        with open(jsonFile) as f:
-            resultsDict = json.load(f)
-
-        # print(str(resultsDict))
-        return resultsDict
-
-
-    def creationCSVFileForResult(self, table, directory, CSVbasename):
-        """ Function to store all the results in a CSV file
-        """
-        CSVFilePath = directory + "/" + CSVbasename
-        file = open(CSVFilePath, 'w')
-        cw = csv.writer(file, delimiter=',')
-        cw.writerow(['VTK Files', 'Assigned Group'])
-        for row in range(0,table.rowCount):
-            # Recovery of the filename of vtk file
-            qlabel = table.cellWidget(row, 0)
-            vtkFile = qlabel.text
-            # Recovery of the assigned group
-            qlabel = table.cellWidget(row, 1)
-            assignedGroup = qlabel.text
-
-            # Write the result in the CSV File
-            cw.writerow([vtkFile, str(assignedGroup)])
 
 class ShapeVariationAnalyzerTest(ScriptedLoadableModuleTest):
     pass
+
+

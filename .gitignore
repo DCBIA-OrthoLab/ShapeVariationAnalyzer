@@ -1,0 +1,12 @@
+### This project ###
+ShapeVariationAnalyzer/Resources/env-tensorflow/
+
+### macOS ###
+*.DS_Store
+.AppleDouble
+.LSOverride
+
+### Python ###
+__pycache__/
+*.py[cod]
+*$py.class

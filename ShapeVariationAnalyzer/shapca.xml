@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<executable>
+  <category>Decomposition</category>
+  <title>shapca</title>
+  <description><![CDATA[This provides a commandline interface to process PCA decomposition on shapes.]]></description>
+  <version>1.0.0</version>
+
+
+  <contributor>Mateo Lopez (UNC)</contributor>
+
+  <parameters>
+    <label>IO</label>
+    <description><![CDATA[Input/output parameters]]></description>
+    <file fileExtensions=".csv">
+      <name>inputCsv</name>
+      <label>Input CSV</label>
+      <longflag>--csv</longflag>
+      <channel>input</channel>
+      <description><![CDATA[Input csv]]></description>
+    </file>
+    <file fileExtensions=".json">
+      <name>inputJson</name>
+      <label>Input JSON</label>
+      <longflag>--json</longflag>
+      <channel>input</channel>
+      <description><![CDATA[Input json]]></description>
+    </file>
+    <file fileExtensions=".json">
+      <name>outputJson</name>
+      <label>Output Decomposition</label>
+      <longflag>--save</longflag>
+      <channel>output</channel>
+      <description><![CDATA[Output Decomposition]]></description>
+    </file>
+    <file fileExtensions=".json">
+      <name>outputEvaluationJson</name>
+      <label>Output model evaluation</label>
+      <longflag>--saveEvaluation</longflag>
+      <channel>output</channel>
+      <description><![CDATA[Output model evaluation]]></description>
+    </file>
+  </parameters>
+
+  <parameters>
+    <label>Evaluation parameters</label>
+    <description><![CDATA[Input/Evaluation Parameters]]></description>
+    <integer>
+      <name>evaluation</name>
+      <label>Evaluation</label>
+      <longflag>--evaluate</longflag>
+      <channel>options</channel>
+      <default>0</default>
+      <description><![CDATA[Define the max number of component to evaluate models. \n if 0, no evaluation. ]]></description>
+    </integer>
+    <integer>
+      <name>shapeNum</name>
+      <label>Number of random shapes</label>
+      <longflag>--shapeNumber</longflag>
+      <channel>options</channel>
+
+      <description><![CDATA[Define the number of shape randomly generated during specificity computation]]></description>
+    </integer>
+  </parameters>
+
+
+</executable>
