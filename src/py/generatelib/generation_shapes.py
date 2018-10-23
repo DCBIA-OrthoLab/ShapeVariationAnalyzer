@@ -12,11 +12,6 @@ comes in to choose a direction that is not flat.
 
 """
 
-# Authors: Gael Varoquaux
-#          Jaques Grobler
-#          Kevin Hughes
-# License: BSD 3 clause
-
 from sklearn.decomposition import PCA
 from scipy import stats
 import vtk
@@ -41,8 +36,6 @@ import numpy as np
 # Generate data
 
 parser = argparse.ArgumentParser(description='Shape Variation Analyzer', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-#parser.add_argument('--model', type=str, help='pickle file with the pca decomposition', required=True)
-#parser.add_argument('--shapeDir', type=str, help='Directory with vtk files .vtk', required=True)
 parser.add_argument('--dataPath', action='store', dest='dirwithSub', help='folder with subclasses', required=True)
 parser.add_argument('--template', help='Template sphere, output from SPHARM-PDM or similar tool', required=True)
 parser.add_argument('--levels', help='Linear subdivision levels', nargs="+", type=int, default=[8,6,4,2])
