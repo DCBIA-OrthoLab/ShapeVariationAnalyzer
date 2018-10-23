@@ -4,7 +4,7 @@
 from __future__ import print_function
 
 import sys,os
-import shapca
+import shapepcalib as shapca
 import numpy as np
 
 

@@ -21,7 +21,7 @@ from scipy import stats
 
 import time
 
-import shapca
+import shapepcalib as shapca
 
 
 class ShapeVariationAnalyzer(ScriptedLoadableModule):
