@@ -1176,9 +1176,12 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
 
 
             date=time.strftime("%b-%d-%Y-%H:%M:%S", time.gmtime())
-            #temp_dir=os.path.join(slicer.app.slicerHome,'ShapeVariationAnalyzer_Temp')
-            temp_dir=os.path.join('/NIRAL/work/lpzmateo/data/ShapeVariationAnalyzer/','ShapeVariationAnalyzer_Temp')
-            os.mkdir(temp_dir)
+            temp_dir=os.path.join(slicer.app.temporaryPath,'ShapeVariationAnalyzer_Temp')
+            #temp_dir=os.path.join('/NIRAL/work/lpzmateo/data/ShapeVariationAnalyzer/','ShapeVariationAnalyzer_Temp')
+            try:
+                os.mkdir(temp_dir)
+            except:
+                pass
             temp_dir=os.path.join(temp_dir,'temp_model_'+date)
             os.mkdir(temp_dir)
             model_path=os.path.join(temp_dir,'temp.json')
@@ -1191,7 +1194,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
             self.eval_param["shapeNum"] = str(shapeNumber)
 
 
-        moduleSPCA = slicer.modules.shapca
+        moduleSPCA = slicer.modules.shapepca
         self.evaluationThread=slicer.cli.run(moduleSPCA, None, self.eval_param, wait_for_completion=False)
 
 
