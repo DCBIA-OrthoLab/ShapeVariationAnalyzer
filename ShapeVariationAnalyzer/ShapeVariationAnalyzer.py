@@ -1388,8 +1388,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
 
         # Switch to a layout that contains a plot view to create a plot widget
         layoutManager = slicer.app.layoutManager()
-        layoutWithPlot = slicer.modules.plots.logic().GetLayoutWithPlot(layoutManager.layout)
-        layoutManager.setLayout(layoutWithPlot)
+        layoutManager.setLayout(36)
 
         # Select chart in plot view
         plotWidget = layoutManager.plotWidget(0)
