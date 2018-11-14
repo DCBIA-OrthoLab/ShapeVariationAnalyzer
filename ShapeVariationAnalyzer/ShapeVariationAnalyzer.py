@@ -32,13 +32,12 @@ class ShapeVariationAnalyzer(ScriptedLoadableModule):
     def __init__(self, parent):
         ScriptedLoadableModule.__init__(self, parent)
         parent.title = "ShapeVariationAnalyzer"
-        parent.categories = ["Quantification"]
+        parent.categories = ["Decomposition"]
         parent.dependencies = []
         parent.contributors = ["Lopez Mateo (University of North Carolina), Priscille de Dumast (University of Michigan), Laura Pascal (University of Michigan)"]
         parent.helpText = """
-            Shape Variation Analyzer allows the classification of 3D models, 
-            according to their morphological variations. 
-            This tool is based on a deep learning neural network.
+            Shape Variation Analyzer allows the PCA decomposition and exploration of 3D models. 
+            The generated models can be evaluated by computing their specificity, compactness and generalization.
             """
         parent.acknowledgementText = """
             This work was supported by the National
