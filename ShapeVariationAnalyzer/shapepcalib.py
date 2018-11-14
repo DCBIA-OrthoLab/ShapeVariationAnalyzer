@@ -1036,3 +1036,7 @@ class pcaExplorer:
 	    return colors
 	
 
+class shapepcalib:
+	def __init__(self,e=None):
+		pass
+		
