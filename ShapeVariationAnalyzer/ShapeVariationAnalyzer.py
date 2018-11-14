@@ -154,6 +154,8 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
 
         self.ctkColorPickerButton_groupColor=self.logic.get('ctkColorPickerButton_groupColor')
 
+        self.checkBox_useHiddenEigenmodes=self.logic.get('checkBox_useHiddenEigenmodes')
+
 
         #self.doubleSpinBox_insideLimit=self.logic.get('doubleSpinBox_insideLimit')
         #self.doubleSpinBox_insideLimit=self.logic.get('doubleSpinBox_outsidesideLimit')
@@ -186,6 +188,8 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.spinBox_numberShape.setMaximum(1000000)
         self.spinBox_numberShape.setValue(10000)
 
+
+        self.checkBox_useHiddenEigenmodes.setChecked(True)
         
 
         self.label_statePCA.hide()
@@ -224,6 +228,8 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
 
         self.label_numberShape.hide()
         self.spinBox_numberShape.hide()
+
+        self.checkBox_useHiddenEigenmodes.hide()
 
 
         #     disable/enable and hide/show widget
@@ -315,6 +321,8 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
 
         self.ctkColorPickerButton_groupColor.connect('colorChanged(QColor)',self.onGroupColorChanged)
 
+        self.checkBox_useHiddenEigenmodes.connect('stateChanged(int)',self.onEigenCheckBoxChanged)
+
         self.evaluationFlag="DONE"
 
     # function called each time that the user "enter" in Diagnostic Index interface
@@ -332,6 +340,9 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
 
 
         print("onCloseScene")
+
+        #self.logic = ShapeVariationAnalyzerLogic(self)
+
         sys.stdout.flush()
         self.dictVTKFiles = dict()
         self.dictGroups = dict()
@@ -353,10 +364,10 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.tableWidget_VTKFiles.setColumnWidth(0, 200)
         horizontalHeader = self.tableWidget_VTKFiles.horizontalHeader()
         horizontalHeader.setStretchLastSection(False)
-        horizontalHeader.setResizeMode(0,qt.QHeaderView.Stretch)
+        '''horizontalHeader.setResizeMode(0,qt.QHeaderView.Stretch)
         horizontalHeader.setResizeMode(1,qt.QHeaderView.ResizeToContents)
         horizontalHeader.setResizeMode(2,qt.QHeaderView.ResizeToContents)
-        horizontalHeader.setResizeMode(3,qt.QHeaderView.ResizeToContents)
+        horizontalHeader.setResizeMode(3,qt.QHeaderView.ResizeToContents)'''
         self.tableWidget_VTKFiles.verticalHeader().setVisible(False)
         self.tableWidget_VTKFiles.setDisabled(True)
         self.pushButton_previewVTKFiles.setDisabled(True)
@@ -395,8 +406,9 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
 
         self.label_numberShape.hide()
         self.spinBox_numberShape.hide()
+        self.checkBox_useHiddenEigenmodes.hide()
 
-
+        self.checkBox_useHiddenEigenmodes.setChecked(True)
         self.pushButton_PCA.setEnabled(False) 
         self.pathLineEdit_CSVFilePCA.disconnect('currentPathChanged(const QString)', self.onCSV_PCA)
         self.pathLineEdit_CSVFilePCA.setCurrentPath(" ")
@@ -983,6 +995,10 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
             for i in range(component_to_add):
                 self.createAndAddSlider(old_num_components+i)
             self.updateVariancePlot(num_components)
+
+        self.logic.pca_exploration.setNumberOfVisibleEigenmodes(num_components)
+        ratio = self.PCA_sliders[0].value
+        self.logic.pca_exploration.updatePolyDataExploration(0,ratio/1000.0)
   
     def onColorModeChange(self):
 
@@ -1206,6 +1222,15 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.checkThreadTimer.start(1000)
         return
 
+    def onEigenCheckBoxChanged(self):
+        if self.checkBox_useHiddenEigenmodes.isChecked()==True:
+            self.logic.pca_exploration.useHiddenModes(True)
+        else:
+            self.logic.pca_exploration.useHiddenModes(False)
+
+        ratio = self.PCA_sliders[0].value
+        self.logic.pca_exploration.updatePolyDataExploration(0,ratio/1000.0)
+
 
 
 
@@ -1282,6 +1307,8 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
 
         self.label_numberShape.show()
         self.spinBox_numberShape.show()
+
+        self.checkBox_useHiddenEigenmodes.show()
 
 
 
