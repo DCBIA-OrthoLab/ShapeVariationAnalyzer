@@ -31,6 +31,15 @@ class pcaExplorer:
 		self.dict_data=None
 		self.dictPCA={}
 
+		self.useHiddenEigenmodes = True
+		self.visibleEigenmodes = 8
+
+
+	def useHiddenModes(self,bl):
+		self.useHiddenEigenmodes = bl
+
+	def setNumberOfVisibleEigenmodes(self,nb):
+		self.visibleEigenmodes = nb
 	#basic function
 	def loadCSVFile(self,file_path):
         # Check if it's a CSV file
@@ -453,7 +462,12 @@ class pcaExplorer:
 	    #print(self.PCA_current_loads) 
 		sys.stdout.flush()
 
-		self.pca_points_numpy=PCA_model.inverse_transform(PCA_current_loads)+mean
+		if self.useHiddenEigenmodes == True:
+			self.pca_points_numpy=PCA_model.inverse_transform(PCA_current_loads)+mean
+		else:
+			numberofmodes=len(PCA_current_loads)
+			loads=np.concatenate((PCA_current_loads[:self.visibleEigenmodes],np.zeros(numberofmodes-self.visibleEigenmodes)))
+			self.pca_points_numpy=PCA_model.inverse_transform(loads)+mean
 
 
 		self.modifyVTKPointsFromNumpy(self.pca_points_numpy[0])
@@ -475,7 +489,12 @@ class pcaExplorer:
 		PCA_current_loads=self.current_pca_model["current_pca_loads"]
 		mean =self.current_pca_model['data_mean']
 
-		self.pca_points_numpy=PCA_model.inverse_transform(PCA_current_loads)+mean
+		if self.useHiddenEigenmodes == True:
+			self.pca_points_numpy=PCA_model.inverse_transform(PCA_current_loads)+mean
+		else:
+			numberofmodes=len(PCA_current_loads)
+			loads=np.concatenate((PCA_current_loads[:self.visibleEigenmodes],np.zeros(numberofmodes-self.visibleEigenmodes)))
+			self.pca_points_numpy=PCA_model.inverse_transform(loads)+mean
 
 
 		self.modifyVTKPointsFromNumpy(self.pca_points_numpy[0])
@@ -497,7 +516,12 @@ class pcaExplorer:
 		PCA_current_loads=self.current_pca_model["current_pca_loads"]
 		mean =self.current_pca_model['data_mean']
 
-		self.pca_points_numpy=PCA_model.inverse_transform(PCA_current_loads)+mean
+		if self.useHiddenEigenmodes == True:
+			self.pca_points_numpy=PCA_model.inverse_transform(PCA_current_loads)+mean
+		else:
+			numberofmodes=len(PCA_current_loads)
+			loads=np.concatenate((PCA_current_loads[:self.visibleEigenmodes],np.zeros(numberofmodes-self.visibleEigenmodes)))
+			self.pca_points_numpy=PCA_model.inverse_transform(loads)+mean
 
 
 		self.modifyVTKPointsFromNumpy(self.pca_points_numpy[0])
@@ -933,7 +957,13 @@ class pcaExplorer:
 	    PCA_current_loads = self.current_pca_model["current_pca_loads"]     
 	    mean =self.current_pca_model['data_mean']
 
-	    self.pca_points_numpy=PCA_model.inverse_transform(PCA_current_loads)+mean
+
+	    if self.useHiddenEigenmodes == True:
+	    	self.pca_points_numpy=PCA_model.inverse_transform(PCA_current_loads)+mean
+	    else:
+	    	numberofmodes=len(PCA_current_loads)
+	    	loads=np.concatenate((PCA_current_loads[:self.visibleEigenmodes],np.zeros(numberofmodes-self.visibleEigenmodes)))
+	    	self.pca_points_numpy=PCA_model.inverse_transform(loads)+mean
 
 	    self.pca_exploration_points=self.generateVTKPointsFromNumpy(self.pca_points_numpy[0])
 	    self.polydataExploration.SetPoints(self.pca_exploration_points)
