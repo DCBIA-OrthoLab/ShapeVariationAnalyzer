@@ -1065,8 +1065,16 @@ class pcaExplorer:
 	    colors.Modified()
 	    return colors
 	
-
 class shapepcalib:
-	def __init__(self,e=None):
-		pass
-		
+	def __init__(self,parent=None):
+	    #ScriptedLoadableModule.__init__(self, parent)
+	    parent.title = "shapepcalib"
+	    parent.categories = ["Decomposition"]
+	    parent.dependencies = []
+	    parent.contributors = ["Lopez Mateo (University of North Carolina)"]
+	    parent.helpText = """
+
+	        """
+	    parent.acknowledgementText = """
+
+	        """
