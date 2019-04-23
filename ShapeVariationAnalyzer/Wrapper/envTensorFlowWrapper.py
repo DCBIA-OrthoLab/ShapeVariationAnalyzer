@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from __future__ import print_function
 import os, sys
 import subprocess
 import json
@@ -57,11 +58,11 @@ def config_env():
             for root in os.listdir(rootDir):
                 if "Python35" in root:
                     pythonpath = '\"' + os.path.join(rootDir, root) + '\"'
-                    print pythonpath
+                    print(pythonpath)
                     pathSlicerPython = '\"' + os.path.join(rootDir, root, "python.exe") + '\"'
-                    print pathSlicerPython
+                    print(pathSlicerPython)
                     dirSitePckgs = os.path.join(rootDir, root, "Lib", "site-packages")
-                    print dirSitePckgs
+                    print(dirSitePckgs)
                     os.environ["path"] = os.getenv("path") + os.path.join(rootDir, root) + ";" + os.path.join(rootDir, root, 'Scripts') + ";" 
                     break
 

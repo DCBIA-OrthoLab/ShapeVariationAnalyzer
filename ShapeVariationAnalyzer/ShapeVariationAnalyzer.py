@@ -1,3 +1,5 @@
+from __future__ import print_function
+from __future__ import division
 import os, sys
 import csv
 import unittest
@@ -1949,7 +1951,7 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
                 widget = qt.QWidget()
                 layout = qt.QHBoxLayout(widget)
                 comboBox = qt.QComboBox()
-                comboBox.addItems(dictVTKFiles.keys())        
+                comboBox.addItems(list(dictVTKFiles.keys()))        
                 comboBox.setCurrentIndex(key)
                 layout.addWidget(comboBox)
                 layout.setAlignment(0x84)

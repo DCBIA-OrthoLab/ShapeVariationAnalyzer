@@ -1,3 +1,5 @@
+from __future__ import print_function
+from __future__ import division
 from sklearn.decomposition import PCA
 from scipy import stats
 from copy import deepcopy
@@ -25,7 +27,7 @@ class JSONFileError(Exception):
 
 
 
-class pcaExplorer:
+class pcaExplorer(object):
 
 	def __init__(self):
 		self.dict_data=None
@@ -676,7 +678,7 @@ class pcaExplorer:
 
 	def getGroups(self):
 
-		return self.dictPCA.keys()
+		return list(self.dictPCA.keys())
 	
 	#sets
 	def changeCurrentGroupColor(self,color):
@@ -1065,7 +1067,7 @@ class pcaExplorer:
 	    colors.Modified()
 	    return colors
 	
-class shapepcalib:
+class shapepcalib(object):
 	def __init__(self,parent=None):
 	    #ScriptedLoadableModule.__init__(self, parent)
 	    parent.title = "shapepcalib"
