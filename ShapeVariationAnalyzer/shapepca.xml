@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <executable>
-  <category>Decomposition</category>
+  <category>Shape Analysis.Advanced</category>
   <title>Shape PCA analysis</title>
   <description><![CDATA[This provides a commandline interface to process PCA decomposition on shapes.]]></description>
   <version>1.0.0</version>

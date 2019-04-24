@@ -1071,7 +1071,7 @@ class shapepcalib(object):
 	def __init__(self,parent=None):
 	    #ScriptedLoadableModule.__init__(self, parent)
 	    parent.title = "shapepcalib"
-	    parent.categories = ["Decomposition"]
+	    parent.categories = ["Shape Analysis.Advanced"]
 	    parent.dependencies = []
 	    parent.contributors = ["Lopez Mateo (University of North Carolina)"]
 	    parent.helpText = """
