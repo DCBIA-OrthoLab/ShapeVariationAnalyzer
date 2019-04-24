@@ -33,8 +33,8 @@ class ShapeVariationAnalyzer(ScriptedLoadableModule):
 
     def __init__(self, parent):
         ScriptedLoadableModule.__init__(self, parent)
-        parent.title = "ShapeVariationAnalyzer"
-        parent.categories = ["Decomposition"]
+        parent.title = "Population Analysis"
+        parent.categories = ["Shape Analysis"]
         parent.dependencies = []
         parent.contributors = ["Lopez Mateo (University of North Carolina), Priscille de Dumast (University of Michigan), Laura Pascal (University of Michigan)"]
         parent.helpText = """
