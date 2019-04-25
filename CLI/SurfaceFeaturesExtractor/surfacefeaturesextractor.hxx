@@ -275,8 +275,8 @@ void SurfaceFeaturesExtractor::store_landmarks_vtk()
 	std::string line, mot;
 	std::string words[NB_LINES][NB_WORDS]; // !!!! WARNING DEFINE AND TO PROTECT IF SUPERIOR TO 20
 	int i,j;
-	int* landmarkPids; 
-	int NbLandmarks;
+	int* landmarkPids = NULL;
+	int NbLandmarks = 0;
 
 	if(fcsvfile)
 	{
