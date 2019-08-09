@@ -98,7 +98,7 @@ void SurfaceFeaturesExtractor::compute_distances()
 
 	// Load each mean groupe shape & create labels
 	std::vector<std::string> meanDistLabels;
-	for (int k=0; k<this->meanShapesList.size(); k++) 
+	for (size_t k=0; k<this->meanShapesList.size(); k++)
 	{
 		std::ostringstream k_temp;
     	k_temp << k;
@@ -109,7 +109,7 @@ void SurfaceFeaturesExtractor::compute_distances()
 	//for (int k=0; k<this->meanShapesList.size(); k++) 
 	//	std::cout<<meanDistLabels[k]<<std::endl;
 
-	for(int k=0; k<meanShapesList.size(); k++)
+	for(size_t k=0; k<meanShapesList.size(); k++)
 	{
 		vtkSmartPointer<vtkFloatArray> meanDistance = vtkSmartPointer<vtkFloatArray>::New() ;
 		meanDistance->SetName(meanDistLabels[k].c_str());
@@ -275,8 +275,8 @@ void SurfaceFeaturesExtractor::store_landmarks_vtk()
 	std::string line, mot;
 	std::string words[NB_LINES][NB_WORDS]; // !!!! WARNING DEFINE AND TO PROTECT IF SUPERIOR TO 20
 	int i,j;
-	int* landmarkPids; 
-	int NbLandmarks;
+	int* landmarkPids = NULL;
+	int NbLandmarks = 0;
 
 	if(fcsvfile)
 	{

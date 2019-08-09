@@ -491,7 +491,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         of a dictionary which will be used to create the CSV file
         """
         # Error message
-        directory = self.directoryButton_creationCSVFile.directory.encode('utf-8')
+        directory = self.directoryButton_creationCSVFile.directory
         if directory in self.directoryList:
             index = self.directoryList.index(directory) + 1
             slicer.util.errorDisplay('Path of directory already used for the group ' + str(index))
@@ -540,7 +540,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
             - Add of the dictionary the new paths of all the vtk files
         """
         # Error message
-        directory = self.directoryButton_creationCSVFile.directory.encode('utf-8')
+        directory = self.directoryButton_creationCSVFile.directory
         if directory in self.directoryList:
             index = self.directoryList.index(directory) + 1
             slicer.util.errorDisplay('Path of directory already used for the group ' + str(index))
@@ -764,11 +764,8 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
             filePathCSV = slicer.app.temporaryPath + '/' + 'VTKFilesPreview_OAIndex.csv'
             self.logic.creationCSVFileForSPV(filePathCSV, self.tableWidget_VTKFiles, self.dictVTKFiles)
 
-            # Launch the CLI ShapePopulationViewer
-            parameters = {}
-            parameters["CSVFile"] = filePathCSV
-            launcherSPV = slicer.modules.shapepopulationviewer
-            slicer.cli.run(launcherSPV, None, parameters, wait_for_completion=True)
+            slicer.modules.shapepopulationviewer.widgetRepresentation().loadCSVFile(filePathCSV)
+            slicer.util.selectModule(slicer.modules.shapepopulationviewer)
 
             # Remove the vtk files previously created in the temporary directory of Slicer
             for value in self.dictVTKFiles.values():
@@ -1835,7 +1832,7 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
             if value == None:
                 dict[self.table.GetValue(i,1).ToInt()] = self.table.GetValue(i,0).ToString()
             else:
-                if type(value) is ListType:
+                if isinstance(value, list):
                     value.append(self.table.GetValue(i,0).ToString())
                 else:
                     tempList = list()
@@ -2053,7 +2050,7 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         elif option == "MeanGroup":
             cw.writerow(['Mean shapes VTK Files', 'Group'])
         for key, value in dictForCSV.items():
-            if type(value) is ListType:
+            if isinstance(value, list):
                 for vtkFile in value:
                     if option == "Groups":
                         cw.writerow([vtkFile, str(key)])
