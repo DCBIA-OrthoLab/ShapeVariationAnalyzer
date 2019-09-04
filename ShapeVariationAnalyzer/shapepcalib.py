@@ -71,24 +71,23 @@ class pcaExplorer(object):
 		min_explained=0
 
 		all_data=None
-		all_files=None
+		all_files=[]
 		#for each group, compute PCA
 		for key, value in self.dictVTKFiles.items():
 		    #read data of the group
 		    data ,polydata,group_name = self.readPCAData(value)
 
+		    #compute PCA
+		    pca_model=self.processPCA(data,group_name, value)
+
 		    #store data
 		    if all_data is None:
 		        all_data=deepcopy(data)
-		    else:
-		        all_data=np.concatenate((all_data,data),axis=0)
-
-		    if all_files is None:
 		        all_files=deepcopy(value)
 		    else:
-		        all_files=all_files.extend(value)
-		    #compute PCA
-		    pca_model=self.processPCA(data,group_name, files)
+		        all_data=np.concatenate((all_data,data),axis=0)
+		        all_files.extend(value)		    
+		    
 		    #PCA model stored in a dict
 		    self.dictPCA[key]=pca_model
 		
@@ -570,6 +569,13 @@ class pcaExplorer(object):
 	    #pc2 = numpy_to_vtk(num_array=pc2, array_type=vtk.VTK_FLOAT)    
 
 	    return pc1, pc2
+
+	def getPCAProjectionLabels(self):
+		labels = self.current_pca_model["source_files"]
+		vtkLabels = vtk.vtkStringArray()
+		for name in labels:
+			vtkLabels.InsertNextValue(name)
+		return vtkLabels
 
 	def getPlotLevel(self,num_component):
 	    

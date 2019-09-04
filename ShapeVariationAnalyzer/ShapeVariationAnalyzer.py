@@ -1465,18 +1465,22 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
 
         pc1=vtk.vtkFloatArray()
         pc2=vtk.vtkFloatArray()
+        labels = vtk.vtkStringArray()
 
         pc1.SetName("pc1")
         pc2.SetName("pc2")
+        labels.SetName("files")
 
         table.AddColumn(pc1)
         table.AddColumn(pc2)
+        table.AddColumn(labels)
 
         #Projection plot serie
         projectionPlotSeries = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLPlotSeriesNode", "PCA projection")
         projectionPlotSeries.SetAndObserveTableNodeID(projectionTableNode.GetID())
         projectionPlotSeries.SetXColumnName("pc1")
         projectionPlotSeries.SetYColumnName("pc2")
+        projectionPlotSeries.SetLabelColumnName("files")
         projectionPlotSeries.SetPlotType(slicer.vtkMRMLPlotSeriesNode.PlotTypeScatter)
         projectionPlotSeries.SetLineStyle(slicer.vtkMRMLPlotSeriesNode.LineStyleNone)
         projectionPlotSeries.SetMarkerStyle(slicer.vtkMRMLPlotSeriesNode.MarkerStyleSquare)
@@ -1629,12 +1633,15 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         table.Initialize()
 
         pc1,pc2=self.logic.pca_exploration.getPCAProjections()
+        labels = self.logic.pca_exploration.getPCAProjectionLabels()
 
         pc1.SetName("pc1")
         pc2.SetName("pc2")
+        labels.SetName("files")
 
         table.AddColumn(pc1)
         table.AddColumn(pc2)
+        table.AddColumn(labels)
 
     def updateEvaluationPlots(self):   
         #compactness
