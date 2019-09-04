@@ -71,22 +71,29 @@ class pcaExplorer(object):
 		min_explained=0
 
 		all_data=None
+		all_files=None
 		#for each group, compute PCA
 		for key, value in self.dictVTKFiles.items():
 		    #read data of the group
 		    data ,polydata,group_name = self.readPCAData(value)
+
 		    #store data
 		    if all_data is None:
 		        all_data=deepcopy(data)
 		    else:
 		        all_data=np.concatenate((all_data,data),axis=0)
+
+		    if all_files is None:
+		        all_files=deepcopy(value)
+		    else:
+		        all_files=all_files.extend(value)
 		    #compute PCA
-		    pca_model=self.processPCA(data,group_name)
+		    pca_model=self.processPCA(data,group_name, files)
 		    #PCA model stored in a dict
 		    self.dictPCA[key]=pca_model
 		
 		#compute PCA for all the data
-		pca_model=self.processPCA(all_data,"All")
+		pca_model=self.processPCA(all_data,"All",all_files)
 		self.dictPCA["All"]=pca_model
 
 		self.polydata=polydata
@@ -760,8 +767,9 @@ class pcaExplorer(object):
 	            nshape+=1
 	            
 	    y_design = np.array(y_design)
+
 	    return y_design.reshape(y_design.shape[0], -1),polydata,group_name
-	def processPCA(self,X,group_name):
+	def processPCA(self,X,group_name, fileList):
 	    X_ = np.mean(X, axis=0, keepdims=True)
 	    X_std = np.std(X,axis=0,keepdims=True)
 
@@ -787,6 +795,7 @@ class pcaExplorer(object):
 	    pca_model["current_pca_loads"] = np.zeros(pca.components_.shape[0]) 
 	    pca_model["group_name"]=group_name
 	    pca_model["color"]=(1,1,1)
+	    pca_model["source_files"]=fileList
 
 	    return pca_model
 	def extractData(self):
