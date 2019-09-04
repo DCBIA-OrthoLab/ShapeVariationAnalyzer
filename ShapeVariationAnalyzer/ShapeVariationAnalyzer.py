@@ -1479,6 +1479,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         projectionPlotSeries.SetYColumnName("pc2")
         projectionPlotSeries.SetPlotType(slicer.vtkMRMLPlotSeriesNode.PlotTypeScatter)
         projectionPlotSeries.SetLineStyle(slicer.vtkMRMLPlotSeriesNode.LineStyleNone)
+        projectionPlotSeries.SetMarkerStyle(slicer.vtkMRMLPlotSeriesNode.MarkerStyleSquare)
         projectionPlotSeries.SetUniqueColor()
 
         # Create projection plot chart node
