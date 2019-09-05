@@ -800,7 +800,10 @@ class pcaExplorer(object):
 	    pca_model["data_projection_std"]=X_pca_std[0]
 	    pca_model["current_pca_loads"] = np.zeros(pca.components_.shape[0]) 
 	    pca_model["group_name"]=group_name
-	    pca_model["color"]=(1,1,1)
+
+	    #generate a random color
+	    color = list(np.random.choice(range(256), size=3) / 255.0)
+	    pca_model["color"]=color
 	    pca_model["source_files"]=fileList
 
 	    return pca_model

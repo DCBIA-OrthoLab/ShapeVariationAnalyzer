@@ -930,6 +930,11 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.explorePCA()
 
     def onGroupColorChanged(self,newcolor):
+
+        #change the plot color
+        plotSeriesNode = slicer.mrmlScene.GetFirstNodeByName("PCA projection")
+        plotSeriesNode.SetColor(newcolor.red()/255.0,newcolor.green()/255.0,newcolor.blue()/255.0)
+
         newcolor=(newcolor.red()/255.0,newcolor.green()/255.0,newcolor.blue()/255.0)
         self.logic.pca_exploration.changeCurrentGroupColor(newcolor)
         r,g,b=self.logic.pca_exploration.getColor()
@@ -937,6 +942,9 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         displayNode.SetColor(r,g,b)
         displayNode.Modified()
         slicer.mrmlScene.GetFirstNodeByName("PCA Exploration").Modified()
+
+
+
         #self.polyDataPCA.Modified()
 
     def onSaveExploration(self):
@@ -1483,7 +1491,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         projectionPlotSeries.SetLabelColumnName("files")
         projectionPlotSeries.SetPlotType(slicer.vtkMRMLPlotSeriesNode.PlotTypeScatter)
         projectionPlotSeries.SetLineStyle(slicer.vtkMRMLPlotSeriesNode.LineStyleNone)
-        projectionPlotSeries.SetMarkerStyle(slicer.vtkMRMLPlotSeriesNode.MarkerStyleSquare)
+        projectionPlotSeries.SetMarkerStyle(slicer.vtkMRMLPlotSeriesNode.MarkerStyleSquare)        
         projectionPlotSeries.SetUniqueColor()
 
         # Create projection plot chart node
@@ -1642,6 +1650,11 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         table.AddColumn(pc1)
         table.AddColumn(pc2)
         table.AddColumn(labels)
+
+        #update color
+        plotSeriesNode = slicer.mrmlScene.GetFirstNodeByName("PCA projection")
+        r, g, b = self.logic.pca_exploration.getColor()
+        plotSeriesNode.SetColor(r, g, b)
 
     def updateEvaluationPlots(self):   
         #compactness
