@@ -1656,6 +1656,12 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         r, g, b = self.logic.pca_exploration.getColor()
         plotSeriesNode.SetColor(r, g, b)
 
+        #fit to contents
+        layoutManager = slicer.app.layoutManager()
+        plotWidget = layoutManager.plotWidget(0)
+        plotWidget.plotController().fitPlotToAxes()
+
+
     def updateEvaluationPlots(self):   
         #compactness
         x,compac,compac_err=self.logic.pca_exploration.getCompactness()
