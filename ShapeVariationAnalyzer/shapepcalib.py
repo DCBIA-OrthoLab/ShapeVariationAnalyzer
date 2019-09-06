@@ -574,7 +574,9 @@ class pcaExplorer(object):
 		labels = self.current_pca_model["source_files"]
 		vtkLabels = vtk.vtkStringArray()
 		for name in labels:
-			vtkLabels.InsertNextValue(name)
+			path, file = os.path.split(name)
+			group = os.path.basename(path)
+			vtkLabels.InsertNextValue(" - " + group + "/" + file)
 		return vtkLabels
 
 	def getPlotLevel(self,num_component):
