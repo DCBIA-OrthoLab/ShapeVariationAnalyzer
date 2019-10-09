@@ -1,3 +1,4 @@
+from __future__ import print_function
 import argparse
 import pickle
 import numpy as np
@@ -43,7 +44,6 @@ def classification(dataset,labels,dataset_test,labels_test):
 		print('in the function')
 		clf.fit(np.nan_to_num(dataset),labels)
 		score =clf.score(np.nan_to_num(dataset_test),labels_test)
-		print('Accuracy for',name, 'is: ',score)
 
 if __name__ == '__main__':
 

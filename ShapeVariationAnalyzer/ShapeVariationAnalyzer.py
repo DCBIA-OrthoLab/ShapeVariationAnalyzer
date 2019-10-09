@@ -1,3 +1,5 @@
+from __future__ import print_function
+from __future__ import division
 import os, sys
 import csv
 import unittest
@@ -31,8 +33,8 @@ class ShapeVariationAnalyzer(ScriptedLoadableModule):
 
     def __init__(self, parent):
         ScriptedLoadableModule.__init__(self, parent)
-        parent.title = "ShapeVariationAnalyzer"
-        parent.categories = ["Decomposition"]
+        parent.title = "Population Analysis"
+        parent.categories = ["Shape Analysis"]
         parent.dependencies = []
         parent.contributors = ["Lopez Mateo (University of North Carolina), Priscille de Dumast (University of Michigan), Laura Pascal (University of Michigan)"]
         parent.helpText = """
@@ -489,7 +491,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         of a dictionary which will be used to create the CSV file
         """
         # Error message
-        directory = self.directoryButton_creationCSVFile.directory.encode('utf-8')
+        directory = self.directoryButton_creationCSVFile.directory
         if directory in self.directoryList:
             index = self.directoryList.index(directory) + 1
             slicer.util.errorDisplay('Path of directory already used for the group ' + str(index))
@@ -538,7 +540,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
             - Add of the dictionary the new paths of all the vtk files
         """
         # Error message
-        directory = self.directoryButton_creationCSVFile.directory.encode('utf-8')
+        directory = self.directoryButton_creationCSVFile.directory
         if directory in self.directoryList:
             index = self.directoryList.index(directory) + 1
             slicer.util.errorDisplay('Path of directory already used for the group ' + str(index))
@@ -762,11 +764,8 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
             filePathCSV = slicer.app.temporaryPath + '/' + 'VTKFilesPreview_OAIndex.csv'
             self.logic.creationCSVFileForSPV(filePathCSV, self.tableWidget_VTKFiles, self.dictVTKFiles)
 
-            # Launch the CLI ShapePopulationViewer
-            parameters = {}
-            parameters["CSVFile"] = filePathCSV
-            launcherSPV = slicer.modules.shapepopulationviewer
-            slicer.cli.run(launcherSPV, None, parameters, wait_for_completion=True)
+            slicer.modules.shapepopulationviewer.widgetRepresentation().loadCSVFile(filePathCSV)
+            slicer.util.selectModule(slicer.modules.shapepopulationviewer)
 
             # Remove the vtk files previously created in the temporary directory of Slicer
             for value in self.dictVTKFiles.values():
@@ -931,6 +930,11 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.explorePCA()
 
     def onGroupColorChanged(self,newcolor):
+
+        #change the plot color
+        plotSeriesNode = slicer.mrmlScene.GetFirstNodeByName("PCA projection")
+        plotSeriesNode.SetColor(newcolor.red()/255.0,newcolor.green()/255.0,newcolor.blue()/255.0)
+
         newcolor=(newcolor.red()/255.0,newcolor.green()/255.0,newcolor.blue()/255.0)
         self.logic.pca_exploration.changeCurrentGroupColor(newcolor)
         r,g,b=self.logic.pca_exploration.getColor()
@@ -938,6 +942,9 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         displayNode.SetColor(r,g,b)
         displayNode.Modified()
         slicer.mrmlScene.GetFirstNodeByName("PCA Exploration").Modified()
+
+
+
         #self.polyDataPCA.Modified()
 
     def onSaveExploration(self):
@@ -1466,20 +1473,25 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
 
         pc1=vtk.vtkFloatArray()
         pc2=vtk.vtkFloatArray()
+        labels = vtk.vtkStringArray()
 
         pc1.SetName("pc1")
         pc2.SetName("pc2")
+        labels.SetName("files")
 
         table.AddColumn(pc1)
         table.AddColumn(pc2)
+        table.AddColumn(labels)
 
         #Projection plot serie
         projectionPlotSeries = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLPlotSeriesNode", "PCA projection")
         projectionPlotSeries.SetAndObserveTableNodeID(projectionTableNode.GetID())
         projectionPlotSeries.SetXColumnName("pc1")
         projectionPlotSeries.SetYColumnName("pc2")
+        projectionPlotSeries.SetLabelColumnName("files")
         projectionPlotSeries.SetPlotType(slicer.vtkMRMLPlotSeriesNode.PlotTypeScatter)
         projectionPlotSeries.SetLineStyle(slicer.vtkMRMLPlotSeriesNode.LineStyleNone)
+        projectionPlotSeries.SetMarkerStyle(slicer.vtkMRMLPlotSeriesNode.MarkerStyleSquare)        
         projectionPlotSeries.SetUniqueColor()
 
         # Create projection plot chart node
@@ -1629,12 +1641,26 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         table.Initialize()
 
         pc1,pc2=self.logic.pca_exploration.getPCAProjections()
+        labels = self.logic.pca_exploration.getPCAProjectionLabels()
 
         pc1.SetName("pc1")
         pc2.SetName("pc2")
+        labels.SetName("files")
 
         table.AddColumn(pc1)
         table.AddColumn(pc2)
+        table.AddColumn(labels)
+
+        #update color
+        plotSeriesNode = slicer.mrmlScene.GetFirstNodeByName("PCA projection")
+        r, g, b = self.logic.pca_exploration.getColor()
+        plotSeriesNode.SetColor(r, g, b)
+
+        #fit to contents
+        layoutManager = slicer.app.layoutManager()
+        plotWidget = layoutManager.plotWidget(0)
+        plotWidget.plotController().fitPlotToAxes()
+
 
     def updateEvaluationPlots(self):   
         #compactness
@@ -1833,7 +1859,7 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
             if value == None:
                 dict[self.table.GetValue(i,1).ToInt()] = self.table.GetValue(i,0).ToString()
             else:
-                if type(value) is ListType:
+                if isinstance(value, list):
                     value.append(self.table.GetValue(i,0).ToString())
                 else:
                     tempList = list()
@@ -1949,7 +1975,7 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
                 widget = qt.QWidget()
                 layout = qt.QHBoxLayout(widget)
                 comboBox = qt.QComboBox()
-                comboBox.addItems(dictVTKFiles.keys())        
+                comboBox.addItems(list(dictVTKFiles.keys()))        
                 comboBox.setCurrentIndex(key)
                 layout.addWidget(comboBox)
                 layout.setAlignment(0x84)
@@ -2051,7 +2077,7 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         elif option == "MeanGroup":
             cw.writerow(['Mean shapes VTK Files', 'Group'])
         for key, value in dictForCSV.items():
-            if type(value) is ListType:
+            if isinstance(value, list):
                 for vtkFile in value:
                     if option == "Groups":
                         cw.writerow([vtkFile, str(key)])

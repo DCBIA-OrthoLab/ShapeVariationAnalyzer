@@ -1,3 +1,5 @@
+from __future__ import print_function
+from __future__ import division
 from sklearn.decomposition import PCA
 from scipy import stats
 from copy import deepcopy
@@ -25,7 +27,7 @@ class JSONFileError(Exception):
 
 
 
-class pcaExplorer:
+class pcaExplorer(object):
 
 	def __init__(self):
 		self.dict_data=None
@@ -69,22 +71,28 @@ class pcaExplorer:
 		min_explained=0
 
 		all_data=None
+		all_files=[]
 		#for each group, compute PCA
 		for key, value in self.dictVTKFiles.items():
 		    #read data of the group
 		    data ,polydata,group_name = self.readPCAData(value)
+
+		    #compute PCA
+		    pca_model=self.processPCA(data,group_name, value)
+
 		    #store data
 		    if all_data is None:
 		        all_data=deepcopy(data)
+		        all_files=deepcopy(value)
 		    else:
 		        all_data=np.concatenate((all_data,data),axis=0)
-		    #compute PCA
-		    pca_model=self.processPCA(data,group_name)
+		        all_files.extend(value)		    
+		    
 		    #PCA model stored in a dict
 		    self.dictPCA[key]=pca_model
 		
 		#compute PCA for all the data
-		pca_model=self.processPCA(all_data,"All")
+		pca_model=self.processPCA(all_data,"All",all_files)
 		self.dictPCA["All"]=pca_model
 
 		self.polydata=polydata
@@ -562,6 +570,15 @@ class pcaExplorer:
 
 	    return pc1, pc2
 
+	def getPCAProjectionLabels(self):
+		labels = self.current_pca_model["source_files"]
+		vtkLabels = vtk.vtkStringArray()
+		for name in labels:
+			path, file = os.path.split(name)
+			group = os.path.basename(path)
+			vtkLabels.InsertNextValue(" - " + group + "/" + file)
+		return vtkLabels
+
 	def getPlotLevel(self,num_component):
 	    
 	    level95=np.ones(num_component)*95
@@ -676,7 +693,7 @@ class pcaExplorer:
 
 	def getGroups(self):
 
-		return self.dictPCA.keys()
+		return list(self.dictPCA.keys())
 	
 	#sets
 	def changeCurrentGroupColor(self,color):
@@ -758,8 +775,9 @@ class pcaExplorer:
 	            nshape+=1
 	            
 	    y_design = np.array(y_design)
+
 	    return y_design.reshape(y_design.shape[0], -1),polydata,group_name
-	def processPCA(self,X,group_name):
+	def processPCA(self,X,group_name, fileList):
 	    X_ = np.mean(X, axis=0, keepdims=True)
 	    X_std = np.std(X,axis=0,keepdims=True)
 
@@ -784,7 +802,11 @@ class pcaExplorer:
 	    pca_model["data_projection_std"]=X_pca_std[0]
 	    pca_model["current_pca_loads"] = np.zeros(pca.components_.shape[0]) 
 	    pca_model["group_name"]=group_name
-	    pca_model["color"]=(1,1,1)
+
+	    #generate a random color
+	    color = list(np.random.choice(range(256), size=3) / 255.0)
+	    pca_model["color"]=color
+	    pca_model["source_files"]=fileList
 
 	    return pca_model
 	def extractData(self):
@@ -1065,11 +1087,11 @@ class pcaExplorer:
 	    colors.Modified()
 	    return colors
 	
-class shapepcalib:
+class shapepcalib(object):
 	def __init__(self,parent=None):
 	    #ScriptedLoadableModule.__init__(self, parent)
 	    parent.title = "shapepcalib"
-	    parent.categories = ["Decomposition"]
+	    parent.categories = ["Shape Analysis.Advanced"]
 	    parent.dependencies = []
 	    parent.contributors = ["Lopez Mateo (University of North Carolina)"]
 	    parent.helpText = """

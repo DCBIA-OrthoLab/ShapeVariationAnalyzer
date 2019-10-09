@@ -33,7 +33,7 @@ int main (int argc, char *argv[])
     if ( distMeshOn )
     {
         // Load each mesh used for distances 
-        for (int k=0; k<distMesh.size(); k++) 
+        for (size_t k=0; k<distMesh.size(); k++)
         {
             vtkSmartPointer<vtkPolyDataReader> readerMean = vtkSmartPointer<vtkPolyDataReader>::New();
             readerMean->SetFileName(distMesh[k].c_str());

@@ -11,6 +11,7 @@ can be very flat in one direction--which is where PCA
 comes in to choose a direction that is not flat.
 
 """
+from __future__ import print_function
 
 # Authors: Gael Varoquaux
 #          Jaques Grobler
@@ -22,7 +23,7 @@ import vtk
 import os
 import argparse
 import timeit
-import cPickle as pickle
+import pickle as pickle
 import random
 from imblearn.over_sampling import SMOTE
 #import matplotlib.pyplot as plt

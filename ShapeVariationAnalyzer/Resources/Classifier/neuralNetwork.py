@@ -4,7 +4,7 @@ import pandas as pd
 import tensorflow as tf
 
 
-class neuralNetwork():
+class neuralNetwork(object):
 	def __init__(self, parent=None, num_classes_param=0, num_points_param=0, num_features_param = 0):
 		if parent:
 			parent.title = " "

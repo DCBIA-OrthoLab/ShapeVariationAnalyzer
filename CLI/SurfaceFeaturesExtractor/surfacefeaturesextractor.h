@@ -27,6 +27,7 @@ public:
     /** Function Update()
      * Update the filter and process the output
      */
+    using vtkAlgorithm::Update;
     void Update();
 
     /**

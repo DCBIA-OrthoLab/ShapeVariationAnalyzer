@@ -15,11 +15,11 @@
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_5">
    <item>
-    <widget class="ctkCollapsibleButton" name="CollapsibleButton_creationCSVFile" native="true">
-     <property name="text" stdset="0">
+    <widget class="ctkCollapsibleButton" name="CollapsibleButton_creationCSVFile">
+     <property name="text">
       <string>Creation of CSV File for Classification Groups</string>
      </property>
-     <property name="checked" stdset="0">
+     <property name="checked">
       <bool>false</bool>
      </property>
      <layout class="QVBoxLayout" name="verticalLayout">
@@ -44,7 +44,7 @@
           </layout>
          </item>
          <item>
-          <widget class="ctkDirectoryButton" name="DirectoryButton_creationCSVFile" native="true"/>
+          <widget class="ctkDirectoryButton" name="DirectoryButton_creationCSVFile"/>
          </item>
          <item>
           <widget class="QStackedWidget" name="stackedWidget_manageGroup">
@@ -102,11 +102,11 @@
     </widget>
    </item>
    <item>
-    <widget class="ctkCollapsibleButton" name="CollapsibleButton_previewClassificationGroups" native="true">
-     <property name="text" stdset="0">
+    <widget class="ctkCollapsibleButton" name="CollapsibleButton_previewClassificationGroups">
+     <property name="text">
       <string>Preview/Update Groups</string>
      </property>
-     <property name="checked" stdset="0">
+     <property name="checked">
       <bool>false</bool>
      </property>
      <layout class="QVBoxLayout" name="verticalLayout_7">
@@ -124,7 +124,7 @@
           </widget>
          </item>
          <item>
-          <widget class="ctkPathLineEdit" name="pathLineEdit_previewGroups" native="true"/>
+          <widget class="ctkPathLineEdit" name="pathLineEdit_previewGroups"/>
          </item>
         </layout>
        </widget>
@@ -184,11 +184,11 @@
     </widget>
    </item>
    <item>
-    <widget class="ctkCollapsibleButton" name="collapsibleButton_PCA" native="true">
-     <property name="text" stdset="0">
+    <widget class="ctkCollapsibleButton" name="collapsibleButton_PCA">
+     <property name="text">
       <string>PCA</string>
      </property>
-     <property name="checked" stdset="0">
+     <property name="checked">
       <bool>false</bool>
      </property>
      <layout class="QGridLayout" name="gridLayout_4">
@@ -228,7 +228,7 @@
             <number>1</number>
            </property>
            <item row="0" column="1">
-            <widget class="ctkPathLineEdit" name="pathLineEdit_CSVFilePCA" native="true"/>
+            <widget class="ctkPathLineEdit" name="pathLineEdit_CSVFilePCA"/>
            </item>
            <item row="0" column="0">
             <widget class="QLabel" name="label_CSVFileDataset">
@@ -441,7 +441,7 @@
             </widget>
            </item>
            <item row="2" column="2">
-            <widget class="ctkColorPickerButton" name="ctkColorPickerButton_groupColor" native="true"/>
+            <widget class="ctkColorPickerButton" name="ctkColorPickerButton_groupColor"/>
            </item>
           </layout>
          </item>
@@ -451,7 +451,7 @@
             <number>1</number>
            </property>
            <item row="0" column="1">
-            <widget class="ctkPathLineEdit" name="pathLineEdit_exploration" native="true"/>
+            <widget class="ctkPathLineEdit" name="pathLineEdit_exploration"/>
            </item>
            <item row="0" column="0">
             <widget class="QLabel" name="label_json">
@@ -511,6 +511,19 @@
      </layout>
     </widget>
    </item>
+   <item>
+    <spacer name="verticalSpacer">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>40</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
   </layout>
  </widget>
  <customwidgets>
@@ -534,8 +547,13 @@
   <customwidget>
    <class>ctkCollapsibleGroupBox</class>
    <extends>QGroupBox</extends>
-   <header location="global">ctkCollapsibleGroupBox.h</header>
+   <header>ctkCollapsibleGroupBox.h</header>
    <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>ctkColorPickerButton</class>
+   <extends>QPushButton</extends>
+   <header>ctkColorPickerButton.h</header>
   </customwidget>
   <customwidget>
    <class>ctkDirectoryButton</class>
@@ -546,11 +564,6 @@
    <class>ctkPathLineEdit</class>
    <extends>QWidget</extends>
    <header>ctkPathLineEdit.h</header>
-  </customwidget>
-  <customwidget>
-   <class>ctkColorPickerButton</class>
-   <extends>QWidget</extends>
-   <header>ctkcolorpickerbutton.h</header>
   </customwidget>
  </customwidgets>
  <resources/>
