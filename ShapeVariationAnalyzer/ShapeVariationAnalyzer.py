@@ -42,11 +42,14 @@ class ShapeVariationAnalyzer(ScriptedLoadableModule):
             The generated models can be evaluated by computing their specificity, compactness and generalization.
             """
         parent.acknowledgementText = """
-            This work was supported by the National
-            Institutes of Dental and Craniofacial Research
+            This work was supported by Kitware Inc.,
+            the University of North Carolina,
+            the National Institutes of Dental and Craniofacial Research
             and Biomedical Imaging and Bioengineering of
-            the National Institutes of Health under Award
-            Number R01DE024450.
+            the National Institutes of Health, 
+            under Award Number 5R01EB021391-04 to develop the 
+            Shape AnaLysis Toolbox for medical image computing projects.
+
             """
 
 
