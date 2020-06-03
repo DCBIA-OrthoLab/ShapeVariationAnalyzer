@@ -42,5 +42,6 @@ add_subdirectory(CLI/SurfaceFeaturesExtractor)
 
 #-----------------------------------------------------------------------------
 if(ShapeVariationAnalyzer_BUILD_SLICER_EXTENSION)
+  include(${Slicer_EXTENSION_GENERATE_CONFIG})
 	include(${Slicer_EXTENSION_CPACK})
 endif()
