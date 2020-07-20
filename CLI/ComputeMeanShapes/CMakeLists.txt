@@ -20,7 +20,7 @@ set(MODULE_SRCS
   )
 
 set(MODULE_TARGET_LIBRARIES
-	${ITK_LIBRARIES} ${VTK_LIBRARIES}
+  ${ITK_LIBRARIES} ${VTK_LIBRARIES}
   )
 
 #-----------------------------------------------------------------------------
