@@ -7,10 +7,19 @@ if(Slicer_SOURCE_DIR)
     python
     python-pip
     python-setuptools
-    python-numpy
-    python-scipy
     python-wheel
     )
+  # Support Slicer older than Slicer@f348d6f from 2019-10-09
+  if(EXISTS ${Slicer_SOURCE_DIR}/SuperBuild/External_python-numpy.cmake)
+    list(APPEND ${proj}_DEPENDENCIES python-numpy)
+  else()
+    list(APPEND ${proj}_DEPENDENCIES NUMPY)
+  endif()
+  if(EXISTS ${Slicer_SOURCE_DIR}/SuperBuild/External_python-scipy.cmake)
+    list(APPEND ${proj}_DEPENDENCIES python-scipy)
+  else()
+    list(APPEND ${proj}_DEPENDENCIES SciPy)
+  endif()
 endif()
 
 if(NOT DEFINED Slicer_USE_SYSTEM_${proj})
