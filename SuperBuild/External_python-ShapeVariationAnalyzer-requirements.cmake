@@ -58,7 +58,12 @@ if(NOT Slicer_USE_SYSTEM_${proj})
   if(NOT Slicer_SOURCE_DIR)
     # Alternative python prefix for installing extension python packages
     set(python_packages_DIR "${CMAKE_BINARY_DIR}/python-packages-install")
+
+    # Convert to native path to satisfy pip install command
     file(TO_NATIVE_PATH ${python_packages_DIR} python_packages_DIR_NATIVE_DIR)
+
+    # Escape command argument for pip install command
+    string(REGEX REPLACE "\\\\" "\\\\\\\\" python_packages_DIR_NATIVE_DIR "${python_packages_DIR_NATIVE_DIR}")
 
     list(APPEND pip_install_args
       --prefix ${python_packages_DIR_NATIVE_DIR}
