@@ -2,6 +2,25 @@ set(proj python-ShapeVariationAnalyzer-requirements)
 
 # Set dependency list
 set(${proj}_DEPENDENCIES "")
+if(Slicer_SOURCE_DIR)
+  set(${proj}_DEPENDENCIES
+    python
+    python-pip
+    python-setuptools
+    python-wheel
+    )
+  # Support Slicer older than Slicer@f348d6f from 2019-10-09
+  if(EXISTS ${Slicer_SOURCE_DIR}/SuperBuild/External_python-numpy.cmake)
+    list(APPEND ${proj}_DEPENDENCIES python-numpy)
+  else()
+    list(APPEND ${proj}_DEPENDENCIES NUMPY)
+  endif()
+  if(EXISTS ${Slicer_SOURCE_DIR}/SuperBuild/External_python-scipy.cmake)
+    list(APPEND ${proj}_DEPENDENCIES python-scipy)
+  else()
+    list(APPEND ${proj}_DEPENDENCIES SciPy)
+  endif()
+endif()
 
 if(NOT DEFINED Slicer_USE_SYSTEM_${proj})
   set(Slicer_USE_SYSTEM_${proj} ${Slicer_USE_SYSTEM_python})
