@@ -2,6 +2,16 @@ set(proj python-ShapeVariationAnalyzer-requirements)
 
 # Set dependency list
 set(${proj}_DEPENDENCIES "")
+if(Slicer_SOURCE_DIR)
+  set(${proj}_DEPENDENCIES
+    python
+    python-pip
+    python-setuptools
+    python-numpy
+    python-scipy
+    python-wheel
+    )
+endif()
 
 if(NOT DEFINED Slicer_USE_SYSTEM_${proj})
   set(Slicer_USE_SYSTEM_${proj} ${Slicer_USE_SYSTEM_python})
