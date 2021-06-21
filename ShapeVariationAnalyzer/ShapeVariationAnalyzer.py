@@ -2288,7 +2288,7 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         for key, value in dict.items():
             if type(value) is not type(list()) or len(value) == 1:
                 msg='The group ' + str(key) + ' must contain more than one mesh.'
-                raise CSVFileError(msg)
+                raise shapca.CSVFileError(msg)
                 return False
         return True
 
