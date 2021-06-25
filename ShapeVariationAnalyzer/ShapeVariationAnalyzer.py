@@ -291,7 +291,6 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.pushButton_removeGroup.connect('clicked()', self.onRemoveGroupForCreationCSVFile)
         self.pushButton_modifyGroup.connect('clicked()', self.onModifyGroupForCreationCSVFile)
         self.pushButton_exportCSVfile.connect('clicked()', self.onExportForCreationCSVFile)
-        
 
         #          Tab: Preview / Update Classification Groups
         self.collapsibleButton_previewClassificationGroups.connect('clicked()',
@@ -965,9 +964,9 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
             if key != "All":
                 self.comboBox_groupPCA.addItem(str(key)+': '+group_name)
             else: 
-                self.comboBox_groupPCA.addItem(key)  
+                self.comboBox_groupPCA.addItem(key)
 
-        
+
         self.setColorModeSpinBox()    
         self.showmean=False
 
@@ -1994,7 +1993,7 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         # Fill a dictionary which contains the vtk files for the classification groups sorted by group
         valueList = list()
         for file in os.listdir(directory):
-            if file.endswith(".vtk"):
+            if file.endswith(".vtk") or file.endswith(".xml"):
                 filepath = directory + '/' + file
                 valueList.append(filepath)
         dictCSVFile[group] = valueList
@@ -2061,9 +2060,56 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
 
         return True
 
+    def extractSpokes(self, polyData, cellType):
 
+        spokePoints = vtk.vtkPoints()
+        spokeLines = vtk.vtkCellArray()
+        typeArray = vtk.vtkIntArray()
+        typeArray.SetName("cellType")
+        typeArray.SetNumberOfComponents(1)
+        arr_length = polyData.GetPointData().GetArray("spokeLength")
+        arr_dirs = polyData.GetPointData().GetArray("spokeDirection")
 
+        for i in range(polyData.GetNumberOfPoints()):
+            pt0 = polyData.GetPoint(i)
+            spokeLength = arr_length.GetTuple1(i)
+            direction = arr_dirs.GetTuple3(i)
+            pt1 = [pt0[0] + spokeLength * direction[0],
+                   pt0[1] + spokeLength * direction[1],
+                   pt0[2] + spokeLength * direction[2]]
+            id0 = spokePoints.InsertNextPoint(pt0)
+            id1 = spokePoints.InsertNextPoint(pt1)
 
+            arrow = vtk.vtkLine()
+            arrow.GetPointIds().SetId(0, id0)
+            arrow.GetPointIds().SetId(1, id1)
+            spokeLines.InsertNextCell(arrow)
+            typeArray.InsertNextValue(cellType)
+            typeArray.InsertNextValue(cellType)
+
+        spokePD = vtk.vtkPolyData()
+        spokePD.SetPoints(spokePoints)
+        spokePD.SetLines(spokeLines)
+        spokePD.GetPointData().SetActiveScalars("cellType")
+        spokePD.GetPointData().SetScalars(typeArray)
+
+        return spokePD
+
+    def extractEdges(self, polyData, cellType):
+        edgeExtractor = vtk.vtkExtractEdges()
+        edgeExtractor.SetInputData(polyData)
+        edgeExtractor.Update()
+        edges = edgeExtractor.GetOutput()
+
+        outputType = vtk.vtkIntArray()
+        outputType.SetName("cellType")
+        outputType.SetNumberOfComponents(1)
+
+        for i in range(edges.GetNumberOfPoints()):
+            outputType.InsertNextValue(cellType)
+        edges.GetPointData().SetActiveScalars("cellType")
+        edges.GetPointData().SetScalars(outputType)
+        return edges
 
     def addColorMap(self, table, dictVTKFiles):
         """ Function to add a color map "DisplayClassificationGroup" 
@@ -2072,13 +2118,46 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         """
         for key, value in dictVTKFiles.items():
             for vtkFile in value:
-                # Read VTK File
-                reader = vtk.vtkDataSetReader()
-                reader.SetFileName(vtkFile)
-                reader.ReadAllVectorsOn()
-                reader.ReadAllScalarsOn()
-                reader.Update()
-                polyData = reader.GetOutput()
+                polyData = vtk.vtkPolyData()
+                if os.path.basename(vtkFile).endswith(".vtk"):
+                    # Read VTK File
+                    reader = vtk.vtkDataSetReader()
+                    reader.SetFileName(vtkFile)
+                    reader.ReadAllVectorsOn()
+                    reader.ReadAllScalarsOn()
+                    reader.Update()
+                    polyData = reader.GetOutput()
+                elif os.path.basename(vtkFile).endswith(".xml"):
+                    # Read S-Rep file
+                    parser = vtk.vtkXMLDataParser()
+                    parser.SetFileName(vtkFile)
+                    parser.Parse()
+                    root = parser.GetRootElement()
+
+                    reader0 = vtk.vtkXMLPolyDataReader()
+                    reader0.SetFileName(root.FindNestedElementWithName("upSpoke").GetCharacterData())
+                    reader0.Update()
+
+                    reader1 = vtk.vtkXMLPolyDataReader()
+                    reader1.SetFileName(root.FindNestedElementWithName("downSpoke").GetCharacterData())
+                    reader1.Update()
+
+                    reader2 = vtk.vtkXMLPolyDataReader()
+                    reader2.SetFileName(root.FindNestedElementWithName("crestSpoke").GetCharacterData())
+                    reader2.Update()
+
+                    append = vtk.vtkAppendPolyData()
+                    append.AddInputData(self.extractSpokes(reader0.GetOutput(), 0))
+                    append.AddInputData(self.extractSpokes(reader1.GetOutput(), 4))
+                    append.AddInputData(self.extractSpokes(reader2.GetOutput(), 2))
+                    append.AddInputData(self.extractEdges(reader0.GetOutput(), 1))
+                    append.AddInputData(self.extractEdges(reader2.GetOutput(), 3))
+                    append.Update()
+                    polyData = append.GetOutput()
+
+                    vtkFile = os.path.splitext(vtkFile)[0]+'.vtk'
+                else:
+                    print("Wrong file type!")
 
                 # Copy of the polydata
                 polyDataCopy = vtk.vtkPolyData()
@@ -2104,6 +2183,8 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
                 # to visualize them in Shape Population Viewer
                 writer = vtk.vtkPolyDataWriter()
                 filepath = slicer.app.temporaryPath + '/' + os.path.basename(vtkFile)
+                if os.path.exists(filepath):
+                    print("Error: two input files under different groups have the same name!")
                 writer.SetFileName(filepath)
                 if vtk.VTK_MAJOR_VERSION <= 5:
                     writer.SetInput(polyDataCopy)
@@ -2138,6 +2219,8 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
                 # Recovery of the vtk filename
                 qlabel = table.cellWidget(row, 0)
                 vtkFile = qlabel.text
+                if vtkFile.endswith('.xml'):
+                    vtkFile = os.path.splitext(vtkFile)[0] + '.vtk'
                 pathVTKFile = slicer.app.temporaryPath + '/' + vtkFile
                 cw.writerow([pathVTKFile])
         file.close()
@@ -2249,6 +2332,8 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         """
         # remove of all the vtk file
         for vtkFile in value:
+            if vtkFile.endswith('.xml'):
+                vtkFile = os.path.splitext(vtkFile)[0] + '.vtk'
             filepath = slicer.app.temporaryPath + '/' + os.path.basename(vtkFile)
             if os.path.exists(filepath):
                 os.remove(filepath)
