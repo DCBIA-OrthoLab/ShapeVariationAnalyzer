@@ -24,6 +24,7 @@ from scipy import stats
 import time
 
 import shapepcalib as shapca
+from cpns.cpns import CPNS
 
 
 class ShapeVariationAnalyzer(ScriptedLoadableModule):
@@ -2060,57 +2061,6 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
 
         return True
 
-    def extractSpokes(self, polyData, cellType):
-
-        spokePoints = vtk.vtkPoints()
-        spokeLines = vtk.vtkCellArray()
-        typeArray = vtk.vtkIntArray()
-        typeArray.SetName("cellType")
-        typeArray.SetNumberOfComponents(1)
-        arr_length = polyData.GetPointData().GetArray("spokeLength")
-        arr_dirs = polyData.GetPointData().GetArray("spokeDirection")
-
-        for i in range(polyData.GetNumberOfPoints()):
-            pt0 = polyData.GetPoint(i)
-            spokeLength = arr_length.GetTuple1(i)
-            direction = arr_dirs.GetTuple3(i)
-            pt1 = [pt0[0] + spokeLength * direction[0],
-                   pt0[1] + spokeLength * direction[1],
-                   pt0[2] + spokeLength * direction[2]]
-            id0 = spokePoints.InsertNextPoint(pt0)
-            id1 = spokePoints.InsertNextPoint(pt1)
-
-            arrow = vtk.vtkLine()
-            arrow.GetPointIds().SetId(0, id0)
-            arrow.GetPointIds().SetId(1, id1)
-            spokeLines.InsertNextCell(arrow)
-            typeArray.InsertNextValue(cellType)
-            typeArray.InsertNextValue(cellType)
-
-        spokePD = vtk.vtkPolyData()
-        spokePD.SetPoints(spokePoints)
-        spokePD.SetLines(spokeLines)
-        spokePD.GetPointData().SetActiveScalars("cellType")
-        spokePD.GetPointData().SetScalars(typeArray)
-
-        return spokePD
-
-    def extractEdges(self, polyData, cellType):
-        edgeExtractor = vtk.vtkExtractEdges()
-        edgeExtractor.SetInputData(polyData)
-        edgeExtractor.Update()
-        edges = edgeExtractor.GetOutput()
-
-        outputType = vtk.vtkIntArray()
-        outputType.SetName("cellType")
-        outputType.SetNumberOfComponents(1)
-
-        for i in range(edges.GetNumberOfPoints()):
-            outputType.InsertNextValue(cellType)
-        edges.GetPointData().SetActiveScalars("cellType")
-        edges.GetPointData().SetScalars(outputType)
-        return edges
-
     def addColorMap(self, table, dictVTKFiles):
         """ Function to add a color map "DisplayClassificationGroup" 
         to all the vtk files which allow the user to visualize each 
@@ -2147,11 +2097,11 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
                     reader2.Update()
 
                     append = vtk.vtkAppendPolyData()
-                    append.AddInputData(self.extractSpokes(reader0.GetOutput(), 0))
-                    append.AddInputData(self.extractSpokes(reader1.GetOutput(), 4))
-                    append.AddInputData(self.extractSpokes(reader2.GetOutput(), 2))
-                    append.AddInputData(self.extractEdges(reader0.GetOutput(), 1))
-                    append.AddInputData(self.extractEdges(reader2.GetOutput(), 3))
+                    append.AddInputData(CPNS.extractSpokes(reader0.GetOutput(), 0))
+                    append.AddInputData(CPNS.extractSpokes(reader1.GetOutput(), 4))
+                    append.AddInputData(CPNS.extractSpokes(reader2.GetOutput(), 2))
+                    append.AddInputData(CPNS.extractEdges(reader0.GetOutput(), 1))
+                    append.AddInputData(CPNS.extractEdges(reader2.GetOutput(), 3))
                     append.Update()
                     polyData = append.GetOutput()
 

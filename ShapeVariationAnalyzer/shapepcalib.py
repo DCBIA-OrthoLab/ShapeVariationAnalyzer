@@ -4,27 +4,27 @@ from sklearn.decomposition import PCA
 from scipy import stats
 from copy import deepcopy
 
+import numpy as np
+import json
+import os
+import pickle
+import sys
 import vtk
 
-import numpy as np
-
-import pickle
-import json
-
-import os,sys
 
 class BoundError(Exception):
-        def __init__(self, value):
-            self.value = value
+    def __init__(self, value):
+        self.value = value
+
 
 class CSVFileError(Exception):
-        def __init__(self,value):
-            self.value=value
+    def __init__(self,value):
+        self.value=value
+
 
 class JSONFileError(Exception):
-        def __init__(self,value):
-            self.value=value
-
+    def __init__(self,value):
+        self.value=value
 
 
 class pcaExplorer(object):
@@ -75,7 +75,7 @@ class pcaExplorer(object):
         #for each group, compute PCA
         for key, value in self.dictVTKFiles.items():
             #read data of the group
-            data ,polydata,group_name = self.readPCAData(value)
+            data, polydata, group_name = self.readPCAData(value)
 
             #compute PCA
             pca_model=self.processPCA(data,group_name, value)
@@ -101,7 +101,7 @@ class pcaExplorer(object):
         self.polydataExploration=vtk.vtkPolyData()
         self.polydataExploration.DeepCopy(polydata)
 
-        self.initEploration()
+        self.initExploration()
 
     def save(self,JSONpath):
         
@@ -157,7 +157,7 @@ class pcaExplorer(object):
         self.loadExploration(json_dict,pickle_dict)
 
 
-        self.initEploration()
+        self.initExploration()
 
     def setCurrentPCAModel(self, keygroup):
 
@@ -735,7 +735,6 @@ class pcaExplorer(object):
         polydata = 0
         group_name=None
 
-
         for vtkfile in fileList:
             if vtkfile.endswith((".vtk")):
                 #print("Reading", vtkfile)
@@ -854,7 +853,7 @@ class pcaExplorer(object):
         self.original_files=json_dict["original_files"]
         #self.dictPCA["original_files"] = json_dict["original_files"]
     #Common
-    def initEploration(self):
+    def initExploration(self):
         self.setColorModeParam(10,10)
         self.setColorMode(0)
         self.setCurrentPCAModel(0)

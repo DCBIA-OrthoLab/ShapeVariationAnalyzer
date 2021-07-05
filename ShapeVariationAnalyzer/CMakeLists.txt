@@ -12,6 +12,9 @@ set(MODULE_PYTHON_RESOURCES
   shapepcalib.py 
   shapepca.py
   shapepca.xml
+  cpns/cpns.py
+  cpns/principal_nested_spheres.py
+  cpns/pns_utils.py
   #Resources/Classifier/neuralNetwork.py
   #Resources/Classifier/evalShape.py
   #Resources/Classifier/trainNeuralNetwork.py

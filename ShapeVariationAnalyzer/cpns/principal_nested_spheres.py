@@ -2,7 +2,7 @@ import numpy as np
 import scipy
 from scipy import optimize as opt
 from sklearn.decomposition import PCA
-from pns_utils import *
+from .pns_utils import *
 class PNS(object):
     """
     Fit nested_spheres to data. This is a python code to PNS matlab code
