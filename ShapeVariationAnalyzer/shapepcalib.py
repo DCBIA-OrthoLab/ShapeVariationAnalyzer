@@ -95,11 +95,11 @@ class pcaExplorer(object):
 
         # Compute PCA for each group
         if self.isSRep is True:  # S-Rep
-            CPNSModel = CPNS()
-            CPNSModel.setInputFileList(all_files)
-            CPNSModel.Update()
-            all_data = np.transpose(CPNSModel.getZCompMatrix())
-            self.polydata = CPNSModel.getPolyData(np.zeros((all_data.shape[1], 1)))
+            self.CPNSModel = CPNS()
+            self.CPNSModel.setInputFileList(all_files)
+            self.CPNSModel.Update()
+            all_data = np.transpose(self.CPNSModel.getZCompMatrix())
+            self.polydata = self.CPNSModel.getPolyData(np.zeros((all_data.shape[1], 1)))
 
             num_samples = 0
             for i in range(len(group_files)):
@@ -919,17 +919,22 @@ class pcaExplorer(object):
         data = reader.GetOutput()
         return data
     def modifyVTKPointsFromNumpy(self,npArray):
-        num_points = int(npArray.shape[0]/3)
-
-        for i in range(num_points):
-            self.pca_exploration_points.SetPoint(i,npArray[3*i],npArray[3*i+1],npArray[3*i+2])
+        if self.isSRep is False:
+            num_points = int(npArray.shape[0] / 3)
+            for i in range(num_points):
+                self.pca_exploration_points.SetPoint(i,npArray[3*i],npArray[3*i+1],npArray[3*i+2])
+        else:
+            new_points = self.CPNSModel.getPolyData(npArray[:, np.newaxis]).GetPoints()
+            self.pca_exploration_points.DeepCopy(new_points)
         self.pca_exploration_points.Modified()
     def generateVTKPointsFromNumpy(self,npArray):
-        num_points = int(npArray.shape[0]/3)
-
-        vtk_points = vtk.vtkPoints()
-        for i in range(num_points):
-            vtk_points.InsertNextPoint(npArray[3*i],npArray[3*i+1],npArray[3*i+2])
+        if self.isSRep is False:
+            num_points = int(npArray.shape[0]/3)
+            vtk_points = vtk.vtkPoints()
+            for i in range(num_points):
+                vtk_points.InsertNextPoint(npArray[3*i],npArray[3*i+1],npArray[3*i+2])
+        else:
+            vtk_points = self.CPNSModel.getPolyData(npArray[:, np.newaxis]).GetPoints()
         return vtk_points
     def generateVTKFloatFromNumpy(self,np_array):
         size = np_array.size
@@ -1026,7 +1031,6 @@ class pcaExplorer(object):
         PCA_current_loads = self.current_pca_model["current_pca_loads"]
         mean =self.current_pca_model['data_mean']
 
-
         if self.useHiddenEigenmodes == True:
             self.pca_points_numpy=PCA_model.inverse_transform(PCA_current_loads)+mean
         else:
@@ -1034,7 +1038,7 @@ class pcaExplorer(object):
             loads=np.concatenate((PCA_current_loads[:self.visibleEigenmodes],np.zeros(numberofmodes-self.visibleEigenmodes)))
             self.pca_points_numpy=PCA_model.inverse_transform(loads)+mean
 
-        self.pca_exploration_points=self.generateVTKPointsFromNumpy(self.pca_points_numpy[0])
+        self.pca_exploration_points = self.generateVTKPointsFromNumpy(self.pca_points_numpy[0])
         self.polydataExploration.SetPoints(self.pca_exploration_points)
 
         self.autoOrientNormals(self.polydataExploration)
@@ -1042,9 +1046,9 @@ class pcaExplorer(object):
 
         self.polydataExploration.Modified()
     def initPolyDataMean(self):
-        mean =self.current_pca_model['data_mean']
+        mean = self.current_pca_model['data_mean']
 
-        mean_points=self.generateVTKPointsFromNumpy(mean[0])
+        mean_points = self.generateVTKPointsFromNumpy(mean[0])
 
         self.polydataMean.SetPoints(mean_points)
 
