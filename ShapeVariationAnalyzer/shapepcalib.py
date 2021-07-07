@@ -108,11 +108,6 @@ class pcaExplorer(object):
                 pca_model = self.processPCA(data, group_names[i], group_files[i])
                 self.dictPCA[group_keys[i]] = pca_model
                 num_samples = num_samples_new
-
-            #compute PCA for all the data
-            pca_model = self.processPCA(all_data, "All", all_files)
-            self.dictPCA["All"] = pca_model
-
         else:  # vtkPolyData
             for i in range(len(self.dictVTKFiles)):
                 #compute PCA and store model in a dict
@@ -125,9 +120,9 @@ class pcaExplorer(object):
                 else:
                     all_data = np.concatenate((all_data, group_data[i]), axis=0)
 
-            #compute PCA for all the data
-            pca_model = self.processPCA(all_data, "All", all_files)
-            self.dictPCA["All"] = pca_model
+        #compute PCA for all the data
+        pca_model = self.processPCA(all_data, "All", all_files)
+        self.dictPCA["All"] = pca_model
 
         self.polydataMean=vtk.vtkPolyData()
         self.polydataMean.DeepCopy(self.polydata)
@@ -155,6 +150,7 @@ class pcaExplorer(object):
 
         json_dict["original_files"] = self.original_files
         json_dict["python_objects_path"] = self.PYCpath
+        json_dict["is_srep"] = self.isSRep
 
         with open(JSONpath,'w') as jsonfile:
             json.dump(json_dict,jsonfile,indent=4)
@@ -905,6 +901,16 @@ class pcaExplorer(object):
 
         self.original_files=json_dict["original_files"]
         #self.dictPCA["original_files"] = json_dict["original_files"]
+        if json_dict["is_srep"] is True:
+            self.isSRep = True
+            self.table = self.readCSVFile(self.original_files)
+            all_files = []
+            for i in range(self.table.GetNumberOfRows()):
+                all_files.append(self.table.GetValue(i, 0).ToString())
+            self.CPNSModel = CPNS()
+            self.CPNSModel.setInputFileList(all_files)
+            self.CPNSModel.Update()
+
     #Common
     def initExploration(self):
         self.setColorModeParam(10,10)
