@@ -3,6 +3,7 @@ from __future__ import division
 from sklearn.decomposition import PCA
 from scipy import stats
 from copy import deepcopy
+from cpns.cpns import CPNS
 
 import numpy as np
 import json
@@ -36,6 +37,7 @@ class pcaExplorer(object):
         self.useHiddenEigenmodes = True
         self.visibleEigenmodes = 8
 
+        self.isSRep = False
 
     def useHiddenModes(self,bl):
         self.useHiddenEigenmodes = bl
@@ -72,34 +74,65 @@ class pcaExplorer(object):
 
         all_data=None
         all_files=[]
-        #for each group, compute PCA
+        group_names = []
+        group_data = []
+        group_files = []
+        group_keys = []
+        self.polydata = None
+
+        # For each group, record data and group name
         for key, value in self.dictVTKFiles.items():
             #read data of the group
-            data, polydata, group_name = self.readPCAData(value)
+            data, polydata, group_name = self.readPCAData(value)  # if S-Rep, return data and polydata as None
+            group_names.append(group_name)
+            group_data.append(data)
+            group_files.append(value)
+            group_keys.append(key)
+            all_files.extend(value)
 
-            #compute PCA
-            pca_model=self.processPCA(data,group_name, value)
+            if self.polydata is None:
+                self.polydata = polydata
 
-            #store data
-            if all_data is None:
-                all_data=deepcopy(data)
-                all_files=deepcopy(value)
-            else:
-                all_data=np.concatenate((all_data,data),axis=0)
-                all_files.extend(value)
+        # Compute PCA for each group
+        if self.isSRep is True:  # S-Rep
+            CPNSModel = CPNS()
+            CPNSModel.setInputFileList(all_files)
+            CPNSModel.Update()
+            all_data = np.transpose(CPNSModel.getZCompMatrix())
+            self.polydata = CPNSModel.getPolyData(np.zeros((all_data.shape[1], 1)))
 
-            #PCA model stored in a dict
-            self.dictPCA[key]=pca_model
+            num_samples = 0
+            for i in range(len(group_files)):
+                num_samples_new = num_samples + len(group_files[i])
+                data = all_data[num_samples:num_samples_new, :]
+                pca_model = self.processPCA(data, group_names[i], group_files[i])
+                self.dictPCA[group_keys[i]] = pca_model
+                num_samples = num_samples_new
 
-        #compute PCA for all the data
-        pca_model=self.processPCA(all_data,"All",all_files)
-        self.dictPCA["All"]=pca_model
+            #compute PCA for all the data
+            pca_model = self.processPCA(all_data, "All", all_files)
+            self.dictPCA["All"] = pca_model
 
-        self.polydata=polydata
+        else:  # vtkPolyData
+            for i in range(len(self.dictVTKFiles)):
+                #compute PCA and store model in a dict
+                pca_model = self.processPCA(group_data[i], group_names[i], group_files[i])
+                self.dictPCA[group_keys[i]] = pca_model
+
+                #store data
+                if all_data is None:
+                    all_data = deepcopy(group_data[i])
+                else:
+                    all_data = np.concatenate((all_data, group_data[i]), axis=0)
+
+            #compute PCA for all the data
+            pca_model = self.processPCA(all_data, "All", all_files)
+            self.dictPCA["All"] = pca_model
+
         self.polydataMean=vtk.vtkPolyData()
-        self.polydataMean.DeepCopy(polydata)
+        self.polydataMean.DeepCopy(self.polydata)
         self.polydataExploration=vtk.vtkPolyData()
-        self.polydataExploration.DeepCopy(polydata)
+        self.polydataExploration.DeepCopy(self.polydata)
 
         self.initExploration()
 
@@ -729,6 +762,8 @@ class pcaExplorer(object):
         Read data from fileList and format it for PCA computation
         """
 
+        # get polydata statistics
+
         y_design = []
         numpoints = -1
         nshape = 0
@@ -736,7 +771,7 @@ class pcaExplorer(object):
         group_name=None
 
         for vtkfile in fileList:
-            if vtkfile.endswith((".vtk")):
+            if vtkfile.endswith(".vtk"):
                 #print("Reading", vtkfile)
                 reader = vtk.vtkPolyDataReader()
                 reader.SetFileName(vtkfile)
@@ -765,10 +800,28 @@ class pcaExplorer(object):
                     p = shapedatapoints.GetPoint(i)
                     y_design[nshape].append(p)
                 nshape+=1
+            elif vtkfile.endswith(".xml"):
+                self.isSRep = True
+                if group_name is None:
+                    group_name = os.path.basename(os.path.dirname(vtkfile))
 
-        y_design = np.array(y_design)
-
-        return y_design.reshape(y_design.shape[0], -1),polydata,group_name
+        if (self.isSRep is True):
+            if (len(y_design) is 0):
+                print("Reading s-rep dataset")
+                y_design = None
+                polydata = None
+            else:
+                print("Error: input folder contains both .vtk and srep(.xml) files!")
+                y_design = np.array(y_design)
+                y_design = y_design.reshape(y_design.shape[0], -1)
+        else:
+            if len(y_design) is not 0:
+                print("Reading poly dataset")
+                y_design = np.array(y_design)
+                y_design = y_design.reshape(y_design.shape[0], -1)
+            else:
+                print("No input from group: ", group_name)
+        return y_design, polydata, group_name
 
 
     def processPCA(self,X,group_name, fileList):

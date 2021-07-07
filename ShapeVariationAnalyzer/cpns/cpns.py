@@ -17,8 +17,10 @@ class CPNS(object):
     In: Breuß M., Bruckstein A., Maragos P. (eds) Innovations for Shape Analysis. Mathematics and Visualization.
     Springer, Berlin, Heidelberg. https://doi.org/10.1007/978-3-642-34141-0_5
 
-    NOTE: PCA is perform outside the class by using the transformed composite Z matrix(self.ZComp) and
-    shape can be reconstructed by using self.getPolyData(CPNSScores, polyData)
+    NOTE:
+        (1) PCA is perform outside the class by using the transformed composite Z matrix(self.ZComp) and
+        shape can be reconstructed by using self.getPolyData(CPNSScores, polyData)
+        (2) The input shape will be re-centered using mean hub point positions.
 
     Author: Ye Han
     Date: Jun 30, 2021
@@ -346,6 +348,11 @@ class CPNS(object):
             spokeDirs[3 * ns:(3 * ns + 3), [0]] = spokeDir
 
         return X, radii, spokeDirs
+
+    @staticmethod
+    def projectShape(self, filePath):
+        # TODO: project an input shape onto the feature space for statistical analysis on unseen data
+        pass
 
     def createUpSpokePolyData(self, X, radii, spokeDirs):
         upSpoke = vtk.vtkPolyData()
