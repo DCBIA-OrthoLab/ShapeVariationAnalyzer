@@ -4,6 +4,7 @@ from sklearn.decomposition import PCA
 from scipy import stats
 from copy import deepcopy
 from cpns.cpns import CPNS
+from vtk.util.numpy_support import vtk_to_numpy
 
 import numpy as np
 import json
@@ -1077,15 +1078,20 @@ class pcaExplorer(object):
         if self.colormode==0:
             return
 
-        if self.colormode==1:
-            mean =self.current_pca_model['data_mean'][0]
+        if self.isSRep is False:
+            mean = self.current_pca_model['data_mean'][0]
             exploration_points=self.pca_points_numpy[0]
-            colors=self.unsignedDistance(mean,exploration_points)
+        else:
+            mean = self.CPNSModel.getPolyData(np.transpose(self.current_pca_model['data_mean']))
+            mean = vtk_to_numpy(mean.GetPoints().GetData()).reshape(-1)
+            exploration_points = self.CPNSModel.getPolyData(np.transpose(self.pca_points_numpy))
+            exploration_points = vtk_to_numpy(exploration_points.GetPoints().GetData()).reshape(-1)
 
-        if self.colormode==2:
-            mean =self.current_pca_model['data_mean'][0]
-            exploration_points=self.pca_points_numpy[0]
-            colors=self.signedDistance(mean,exploration_points)
+        if self.colormode == 1:
+            colors = self.unsignedDistance(mean, exploration_points)
+
+        if self.colormode == 2:
+            colors = self.signedDistance(mean, exploration_points)
 
         self.polydataExploration.GetPointData().SetScalars(colors)
         self.polydataExploration.GetPointData().Modified()
