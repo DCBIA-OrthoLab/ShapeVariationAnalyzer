@@ -101,6 +101,8 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         #          Tab: Creation of New Classification Groups
         self.collapsibleButton_previewClassificationGroups = self.getUI('CollapsibleButton_previewClassificationGroups')
         self.pathLineEdit_previewGroups = self.getUI('pathLineEdit_previewGroups')
+        self.pathLineEdit_previewGroups.filters = ctk.ctkPathLineEdit.Files
+        self.pathLineEdit_previewGroups.nameFilters = ['*.csv']
         self.collapsibleGroupBox_previewVTKFiles = self.getUI('CollapsibleGroupBox_previewVTKFiles')
         self.checkableComboBox_ChoiceOfGroup = self.getUI('CheckableComboBox_ChoiceOfGroup')
         self.tableWidget_VTKFiles = self.getUI('tableWidget_VTKFiles')
@@ -128,7 +130,11 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
 
         self.collapsibleButton_PCA = self.getUI('collapsibleButton_PCA')
         self.pathLineEdit_CSVFilePCA = self.getUI('pathLineEdit_CSVFilePCA')  
+        self.pathLineEdit_CSVFilePCA.filters = ctk.ctkPathLineEdit.Files
+        self.pathLineEdit_CSVFilePCA.nameFilters = ['*.csv']
         self.pathLineEdit_exploration = self.getUI('pathLineEdit_exploration')
+        self.pathLineEdit_exploration.filters = ctk.ctkPathLineEdit.Files
+        self.pathLineEdit_exploration.nameFilters = ['*.json']
         self.comboBox_groupPCA = self.getUI('comboBox_groupPCA')
         self.comboBox_colorMode = self.getUI('comboBox_colorMode')
 
