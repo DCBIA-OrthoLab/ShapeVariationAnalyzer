@@ -79,7 +79,7 @@ class CPNS(object):
             if self.nRows is None or self.nCols is None:
                 self.nRows = nRows
                 self.nCols = nCols
-            elif nRows is not self.nRows or nCols is not self.nCols:
+            elif nRows != self.nRows or nCols != self.nCols:
                 print("nRows/nCols does not match!")
                 self.clear()
                 return False
@@ -316,7 +316,7 @@ class CPNS(object):
     def computeShape(self, CPNSScores):
         # Check dimension
         CPNSDim = CPNSScores.shape[0]
-        if CPNSDim is not self.ZComp.shape[0]:
+        if CPNSDim != self.ZComp.shape[0]:
             print("Error, input CPNS scores dimension is incorrect!")
             return None
 
