@@ -132,6 +132,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.pathLineEdit_CSVFilePCA = self.getUI('pathLineEdit_CSVFilePCA')  
         self.pathLineEdit_CSVFilePCA.filters = ctk.ctkPathLineEdit.Files
         self.pathLineEdit_CSVFilePCA.nameFilters = ['*.csv']
+        self.checkBox_transformToLPS = self.getUI('checkBox_transformToLPS')
         self.pathLineEdit_exploration = self.getUI('pathLineEdit_exploration')
         self.pathLineEdit_exploration.filters = ctk.ctkPathLineEdit.Files
         self.pathLineEdit_exploration.nameFilters = ['*.json']
@@ -209,6 +210,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.spinBox_numberShape.setValue(10000)
         self.spinBox_decimals.setValue(3)
 
+        self.checkBox_transformToLPS.setChecked(True)
         self.checkBox_useHiddenEigenmodes.setChecked(True)
         
         self.label_statePCA.hide()
@@ -913,7 +915,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.setColorModeSpinBox()
 
         self.showmean=False
-        self.generate3DVisualisationNodes()
+        self.generate3DVisualisationNodes(LPS=self.checkBox_transformToLPS.isChecked())
         self.generate2DVisualisationNodes()
 
         index = self.comboBox_colorMode.findText('Group color', qt.Qt.MatchFixedString)
@@ -984,7 +986,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.setColorModeSpinBox()    
         self.showmean=False
 
-        self.generate3DVisualisationNodes()
+        self.generate3DVisualisationNodes(LPS=self.checkBox_transformToLPS.isChecked())
         self.generate2DVisualisationNodes()
 
         index = self.comboBox_colorMode.findText('Group color', qt.Qt.MatchFixedString)
@@ -1777,7 +1779,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
 
 
     #polydata
-    def generate3DVisualisationNodes(self):
+    def generate3DVisualisationNodes(self, LPS=True):
         self.delete3DVisualisationNodes()
         ##For Mean shape
         #clear scene from previous PCA exploration
@@ -1786,8 +1788,19 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         PCANode = slicer.vtkMRMLModelNode()
         PCANode.SetAndObservePolyData(self.logic.pca_exploration.getPolyDataMean())
         PCANode.SetName("PCA Mean")
+
+        # add transform if use LPS system
+        if LPS == True:
+            transformNode = slicer.vtkMRMLTransformNode()
+            slicer.mrmlScene.AddNode(transformNode)
+            transfromMatrix = transformNode.GetMatrixTransformFromParent()
+            transfromMatrix.SetElement(0, 0, -1)
+            transfromMatrix.SetElement(1, 1, -1)
+            transformNode.SetAndObserveMatrixTransformFromParent(transfromMatrix)
+            transformNode.TransformModified()
+            PCANode.SetAndObserveTransformNodeID(transformNode.GetID())
+
         #create display node
-        
         modelDisplay = slicer.vtkMRMLModelDisplayNode()
         modelDisplay.SetColor(0.5,0.5,0.5) 
         modelDisplay.SetOpacity(0.8)
@@ -1819,6 +1832,10 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         #modelDisplay.SetBackfaceCulling(0)
         modelDisplay.SetScene(slicer.mrmlScene)
         modelDisplay.SetName("PCA Display")
+
+        # add transform if use LPS system
+        if LPS == True:
+            PCANode.SetAndObserveTransformNodeID(transformNode.GetID())
 
         signedcolornode=self.logic.generateSignedDistanceLUT()
         unsignedcolornode=self.logic.generateUnsignedDistanceLUT()

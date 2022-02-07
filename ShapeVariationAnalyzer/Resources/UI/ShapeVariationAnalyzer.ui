@@ -198,9 +198,27 @@
          <string>Selection of groups</string>
         </property>
         <layout class="QGridLayout" name="gridLayout_5">
-         <property name="verticalSpacing">
-          <number>6</number>
-         </property>
+         <item row="0" column="0">
+          <layout class="QGridLayout" name="gridLayout_3">
+           <item row="0" column="0">
+            <widget class="QLabel" name="label_CSVFileDataset">
+             <property name="text">
+              <string>CSV File dataset</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="ctkPathLineEdit" name="pathLineEdit_CSVFilePCA" native="true"/>
+           </item>
+           <item row="0" column="2">
+            <widget class="QCheckBox" name="checkBox_transformToLPS">
+             <property name="text">
+              <string>Transform to LPS</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
          <item row="1" column="0">
           <layout class="QGridLayout" name="gridLayout_6">
            <item row="0" column="0">
@@ -214,26 +232,6 @@
             <widget class="QLabel" name="label_statePCA">
              <property name="text">
               <string>Computing PCA...</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </item>
-         <item row="0" column="0">
-          <layout class="QGridLayout" name="gridLayout_3">
-           <property name="horizontalSpacing">
-            <number>6</number>
-           </property>
-           <property name="verticalSpacing">
-            <number>1</number>
-           </property>
-           <item row="0" column="1">
-            <widget class="ctkPathLineEdit" name="pathLineEdit_CSVFilePCA" native="true"/>
-           </item>
-           <item row="0" column="0">
-            <widget class="QLabel" name="label_CSVFileDataset">
-             <property name="text">
-              <string>CSV File dataset</string>
              </property>
             </widget>
            </item>
