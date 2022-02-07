@@ -153,6 +153,8 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.spinBox_colorModeParam1=self.getUI('spinBox_colorModeParam_1')
         self.spinBox_colorModeParam2=self.getUI('spinBox_colorModeParam_2')
         self.spinBox_numberShape=self.getUI('spinBox_numberShape')
+        self.spinBox_decimals = self.getUI('spinBox_decimals')
+        self.label_decimals = self.getUI('label_decimals')
 
         self.ctkColorPickerButton_groupColor=self.getUI('ctkColorPickerButton_groupColor')
 
@@ -205,6 +207,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.spinBox_numberShape.setMinimum(100)
         self.spinBox_numberShape.setMaximum(1000000)
         self.spinBox_numberShape.setValue(10000)
+        self.spinBox_decimals.setValue(3)
 
         self.checkBox_useHiddenEigenmodes.setChecked(True)
         
@@ -241,6 +244,8 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.label_colorModeParam2.hide()
         self.label_numberShape.hide()
         self.spinBox_numberShape.hide()
+        self.spinBox_decimals.hide()
+        self.label_decimals.hide()
         self.checkBox_useHiddenEigenmodes.hide()
 
 
@@ -419,6 +424,8 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.label_colorModeParam2.hide()
         self.label_numberShape.hide()
         self.spinBox_numberShape.hide()
+        self.spinBox_decimals.hide()
+        self.label_decimals.hide()
         self.checkBox_useHiddenEigenmodes.hide()
         self.checkBox_useHiddenEigenmodes.setChecked(True)
         self.pushButton_PCA.setEnabled(False) 
@@ -1068,7 +1075,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
             old_num_components=len(self.PCA_sliders)
             component_to_add=num_components-len(self.PCA_sliders)
             for i in range(component_to_add):
-                self.createAndAddSlider(old_num_components+i)
+                self.createAndAddSlider(old_num_components+i, self.spinBox_decimals)
                 self.comboBox_SingleExportPC.addItem(old_num_components+i+1)
             self.updateVariancePlot(num_components)
 
@@ -1348,7 +1355,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
 
         # Create sliders and add the PC to the combobox for Single Export
         for i in range(sliders_number):
-            self.createAndAddSlider(i)
+            self.createAndAddSlider(i, self.spinBox_decimals)
             self.comboBox_SingleExportPC.addItem(i+1)
        
 
@@ -1388,6 +1395,8 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
 
         self.label_numberShape.show()
         self.spinBox_numberShape.show()
+        self.spinBox_decimals.show()
+        self.label_decimals.show()
 
         self.checkBox_useHiddenEigenmodes.show()
 
@@ -1417,7 +1426,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.PCA_sliders_label=list()
         self.PCA_sliders_value_label=list()
 
-    def createAndAddSlider(self,num_slider):
+    def createAndAddSlider(self,num_slider, spinbox_decimals):
         exp_ratio=self.logic.pca_exploration.getExplainedRatio()
         #create the slider
         slider =qt.QSlider(qt.Qt.Horizontal)
@@ -1431,7 +1440,10 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
        
         #create the variance ratio label
         label = qt.QLabel()
-        label.setText(str(num_slider+1)+':   '+str(round(exp_ratio[num_slider],5)*100)+'%')
+        er = round(exp_ratio[num_slider] * 100, spinbox_decimals.value)
+        if spinbox_decimals.value == 0:
+            er = round(er)
+        label.setText(str(num_slider+1)+':   '+str(er)+'%')
         label.setAlignment(qt.Qt.AlignCenter)
 
         #create the value label
@@ -1439,6 +1451,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         '''if num_slider==4:
             print(X)'''
         valueLabel = qt.QLabel()
+        valueLabel.setMinimumWidth(40)
         valueLabel.setText(str(round(stats.norm.isf(X),3)))
 
         #slider and label added to lists
@@ -1714,7 +1727,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         table = projectionTableNode.GetTable()
         table.Initialize()
 
-        pc1,pc2=self.logic.pca_exploration.getPCAProjections()
+        pc1,pc2=self.logic.pca_exploration.getPCAProjections(normalized=True)
         labels = self.logic.pca_exploration.getPCAProjectionLabels()
 
         pc1.SetName("pc1")

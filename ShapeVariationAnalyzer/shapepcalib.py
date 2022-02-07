@@ -583,15 +583,20 @@ class pcaExplorer(object):
         return self.polydataMean
 
     #Plots
-    def getPCAProjections(self):
+    def getPCAProjections(self, normalized=False):
         X_pca = self.current_pca_model["data_projection"]
+        X_std = self.current_pca_model["data_projection_std"]
 
         pc1 = X_pca[:,0].flatten()
+        if normalized is True:
+            pc1 = pc1 / X_std[0]
         pc1 = self.generateVTKFloatFromNumpy(pc1)
         #pc1 = numpy_to_vtk(num_array=pc1, array_type=vtk.VTK_FLOAT)
 
 
         pc2 = X_pca[:,1].flatten()
+        if normalized is True:
+            pc2 = pc2 / X_std[1]
         pc2 = self.generateVTKFloatFromNumpy(pc2)
         #pc2 = numpy_to_vtk(num_array=pc2, array_type=vtk.VTK_FLOAT)
 
