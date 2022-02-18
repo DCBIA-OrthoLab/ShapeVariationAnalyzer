@@ -1,5 +1,7 @@
 from __future__ import print_function
 from __future__ import division
+
+import logging
 import os, sys
 import csv
 import unittest
@@ -157,6 +159,16 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.spinBox_decimals = self.getUI('spinBox_decimals')
         self.label_decimals = self.getUI('label_decimals')
 
+        self.pushButton_updateProjectionPlot = self.getUI('pushButton_updateProjectionPlot')
+        self.label_pc1 = self.getUI('label_pc1')
+        self.label_pc2 = self.getUI('label_pc2')
+        self.RangeWidget_pc1 = self.getUI('RangeWidget_pc1')
+        self.RangeWidget_pc2 = self.getUI('RangeWidget_pc2')
+        self.checkBox_insidePc1 = self.getUI('checkBox_insidePc1')
+        self.checkBox_insidePc2 = self.getUI('checkBox_insidePc2')
+        self.label_pcLogic = self.getUI('label_pcLogic')
+        self.comboBox_pcLogic = self.getUI('comboBox_pcLogic')
+
         self.ctkColorPickerButton_groupColor=self.getUI('ctkColorPickerButton_groupColor')
 
         self.checkBox_useHiddenEigenmodes=self.getUI('checkBox_useHiddenEigenmodes')
@@ -209,9 +221,21 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.spinBox_numberShape.setMaximum(1000000)
         self.spinBox_numberShape.setValue(10000)
         self.spinBox_decimals.setValue(3)
+        self.RangeWidget_pc1.singleStep = 0.01
+        self.RangeWidget_pc1.setRange(-3.30, 3.30)
+        self.RangeWidget_pc1.minimumValue = -3.30
+        self.RangeWidget_pc1.maximumValue = 3.30
+        self.RangeWidget_pc2.singleStep = 0.01
+        self.RangeWidget_pc2.setRange(-3.30, 3.30)
+        self.RangeWidget_pc2.minimumValue = -3.30
+        self.RangeWidget_pc2.maximumValue = 3.30
+        self.comboBox_pcLogic.addItem("AND")
+        self.comboBox_pcLogic.addItem("OR")
 
         self.checkBox_transformToLPS.setChecked(True)
         self.checkBox_useHiddenEigenmodes.setChecked(True)
+        self.checkBox_insidePc1.setChecked(True)
+        self.checkBox_insidePc2.setChecked(True)
         
         self.label_statePCA.hide()
         self.ctkColorPickerButton_groupColor.color=qt.QColor(255,255,255)
@@ -249,6 +273,15 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.spinBox_decimals.hide()
         self.label_decimals.hide()
         self.checkBox_useHiddenEigenmodes.hide()
+        self.pushButton_updateProjectionPlot.hide()
+        self.label_pc1.hide()
+        self.label_pc2.hide()
+        self.RangeWidget_pc1.hide()
+        self.RangeWidget_pc2.hide()
+        self.checkBox_insidePc1.hide()
+        self.checkBox_insidePc2.hide()
+        self.label_pcLogic.hide()
+        self.comboBox_pcLogic.hide()
 
 
 
@@ -339,6 +372,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.spinBox_colorModeParam2.connect('valueChanged(int)',self.onUpdateColorModeParam)
         self.ctkColorPickerButton_groupColor.connect('colorChanged(QColor)',self.onGroupColorChanged)
         self.checkBox_useHiddenEigenmodes.connect('stateChanged(int)',self.onEigenCheckBoxChanged)
+        self.pushButton_updateProjectionPlot.connect('clicked()',self.onUpdateProjectionPlot)
         self.evaluationFlag="DONE"
 
         #       Tab : PCA Export
@@ -428,6 +462,15 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.spinBox_numberShape.hide()
         self.spinBox_decimals.hide()
         self.label_decimals.hide()
+        self.pushButton_updateProjectionPlot.hide()
+        self.label_pc1.hide()
+        self.label_pc2.hide()
+        self.RangeWidget_pc1.hide()
+        self.RangeWidget_pc2.hide()
+        self.checkBox_insidePc1.hide()
+        self.checkBox_insidePc2.hide()
+        self.label_pcLogic.hide()
+        self.comboBox_pcLogic.hide()
         self.checkBox_useHiddenEigenmodes.hide()
         self.checkBox_useHiddenEigenmodes.setChecked(True)
         self.pushButton_PCA.setEnabled(False) 
@@ -1315,8 +1358,13 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         ratio = self.PCA_sliders[0].value
         self.logic.pca_exploration.updatePolyDataExploration(0,ratio/1000.0)
 
-
-
+    def onUpdateProjectionPlot(self):
+        min_pc1 = self.RangeWidget_pc1.minimumValue
+        max_pc1 = self.RangeWidget_pc1.maximumValue
+        min_pc2 = self.RangeWidget_pc2.minimumValue
+        max_pc2 = self.RangeWidget_pc2.maximumValue
+        self.updateProjectionPlot([min_pc1, max_pc1], self.checkBox_insidePc1.checked, [min_pc2, max_pc2],
+                                  self.checkBox_insidePc2.checked, self.comboBox_pcLogic.currentText)
 
     def explorePCA(self):
         # Detection of the selected group Id 
@@ -1363,8 +1411,20 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
 
         #Update the plot view
         self.updateVariancePlot(sliders_number)
-        self.updateProjectionPlot()
-
+        # Set up projection plot widgets
+        X_pca = self.logic.pca_exploration.current_pca_model["data_projection"]
+        X_std = self.logic.pca_exploration.current_pca_model["data_projection_std"]
+        pc1 = X_pca[:, 0].flatten() / X_std[0]
+        pc2 = X_pca[:, 1].flatten() / X_std[1]
+        min_pc1 = np.round(np.min(pc1) - 0.005, 2)
+        max_pc1 = np.round(np.max(pc1) + 0.005, 2)
+        min_pc2 = np.round(np.min(pc2) - 0.005, 2)
+        max_pc2 = np.round(np.max(pc2) + 0.005, 2)
+        self.RangeWidget_pc1.minimum = min_pc1
+        self.RangeWidget_pc1.maximum = max_pc1
+        self.RangeWidget_pc2.minimum = min_pc2
+        self.RangeWidget_pc2.maximum = max_pc2
+        self.updateProjectionPlot([min_pc1, max_pc1], self.checkBox_insidePc1.checked, [min_pc2, max_pc2], self.checkBox_insidePc2.checked, self.comboBox_pcLogic.currentText)
         if self.logic.pca_exploration.evaluationExist():
             self.updateEvaluationPlots()
 
@@ -1399,6 +1459,15 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.spinBox_numberShape.show()
         self.spinBox_decimals.show()
         self.label_decimals.show()
+        self.pushButton_updateProjectionPlot.show()
+        self.label_pc1.show()
+        self.label_pc2.show()
+        self.RangeWidget_pc1.show()
+        self.RangeWidget_pc2.show()
+        self.checkBox_insidePc1.show()
+        self.checkBox_insidePc2.show()
+        self.label_pcLogic.show()
+        self.comboBox_pcLogic.show()
 
         self.checkBox_useHiddenEigenmodes.show()
 
@@ -1724,7 +1793,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         table.AddColumn(evr)
         table.AddColumn(sumevr)
 
-    def updateProjectionPlot(self):   
+    def updateProjectionPlot(self, range_pc1, inside1, range_pc2, inside2, logic_text):
         projectionTableNode = slicer.mrmlScene.GetFirstNodeByName("PCA projection table")
         table = projectionTableNode.GetTable()
         table.Initialize()
@@ -1732,13 +1801,46 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         pc1,pc2=self.logic.pca_exploration.getPCAProjections(normalized=True)
         labels = self.logic.pca_exploration.getPCAProjectionLabels()
 
-        pc1.SetName("pc1")
-        pc2.SetName("pc2")
-        labels.SetName("files")
+        nlabels = labels.GetNumberOfValues()
+        plot_index = []
+        for i in range(nlabels):
+            keep1 = True
+            if inside1:
+                if pc1.GetTuple1(i) < range_pc1[0] or pc1.GetTuple1(i) > range_pc1[1]:
+                    keep1 = False
+            else:
+                if range_pc1[0] < pc1.GetTuple1(i) < range_pc1[1]:
+                    keep1 = False
+            keep2 = True
+            if inside2:
+                if pc2.GetTuple1(i) < range_pc2[0] or pc2.GetTuple1(i) > range_pc2[1]:
+                    keep2 = False
+            else:
+                if range_pc2[0] < pc2.GetTuple1(i) < range_pc2[1]:
+                    keep2 = False
+            if logic_text == "AND" and (keep1 and keep2):
+                plot_index.append(i)
+            elif logic_text == "OR" and (keep1 or keep2):
+                plot_index.append(i)
+            else:
+                continue
 
-        table.AddColumn(pc1)
-        table.AddColumn(pc2)
-        table.AddColumn(labels)
+        plot_pc1 = vtk.vtkFloatArray()
+        plot_pc2 = vtk.vtkFloatArray()
+        plot_labels = vtk.vtkStringArray()
+        plot_pc1.SetNumberOfComponents(1)
+        plot_pc2.SetNumberOfComponents(1)
+        plot_pc1.SetName("pc1")
+        plot_pc2.SetName("pc2")
+        plot_labels.SetName("files")
+        for index in plot_index:
+            plot_pc1.InsertNextTuple([pc1.GetTuple1(index)])
+            plot_pc2.InsertNextTuple([pc2.GetTuple1(index)])
+            plot_labels.InsertNextValue(labels.GetValue(index))
+
+        table.AddColumn(plot_pc1)
+        table.AddColumn(plot_pc2)
+        table.AddColumn(plot_labels)
 
         #update color
         plotSeriesNode = slicer.mrmlScene.GetFirstNodeByName("PCA projection")
@@ -1793,10 +1895,12 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         if LPS == True:
             transformNode = slicer.vtkMRMLTransformNode()
             slicer.mrmlScene.AddNode(transformNode)
-            transfromMatrix = transformNode.GetMatrixTransformFromParent()
+            transfromMatrix = vtk.vtkMatrix4x4()
             transfromMatrix.SetElement(0, 0, -1)
             transfromMatrix.SetElement(1, 1, -1)
-            transformNode.SetAndObserveMatrixTransformFromParent(transfromMatrix)
+            transfromMatrix.SetElement(2, 2, 1)
+            transfromMatrix.SetElement(3, 3, 1)
+            transformNode.SetMatrixTransformFromParent(transfromMatrix)
             transformNode.TransformModified()
             PCANode.SetAndObserveTransformNodeID(transformNode.GetID())
 

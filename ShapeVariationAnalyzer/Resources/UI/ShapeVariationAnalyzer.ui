@@ -13,13 +13,13 @@
   <property name="windowTitle">
    <string>Form</string>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout_5">
+  <layout class="QVBoxLayout" name="verticalLayout_2">
    <item>
-    <widget class="ctkCollapsibleButton" name="CollapsibleButton_creationCSVFile" native="true">
-     <property name="text" stdset="0">
+    <widget class="ctkCollapsibleButton" name="CollapsibleButton_creationCSVFile">
+     <property name="text">
       <string>Creation of CSV File for Classification Groups</string>
      </property>
-     <property name="checked" stdset="0">
+     <property name="checked">
       <bool>false</bool>
      </property>
      <layout class="QVBoxLayout" name="verticalLayout">
@@ -44,7 +44,7 @@
           </layout>
          </item>
          <item>
-          <widget class="ctkDirectoryButton" name="DirectoryButton_creationCSVFile" native="true"/>
+          <widget class="ctkDirectoryButton" name="DirectoryButton_creationCSVFile"/>
          </item>
          <item>
           <widget class="QStackedWidget" name="stackedWidget_manageGroup">
@@ -102,11 +102,11 @@
     </widget>
    </item>
    <item>
-    <widget class="ctkCollapsibleButton" name="CollapsibleButton_previewClassificationGroups" native="true">
-     <property name="text" stdset="0">
+    <widget class="ctkCollapsibleButton" name="CollapsibleButton_previewClassificationGroups">
+     <property name="text">
       <string>Preview/Update Groups</string>
      </property>
-     <property name="checked" stdset="0">
+     <property name="checked">
       <bool>false</bool>
      </property>
      <layout class="QVBoxLayout" name="verticalLayout_7">
@@ -124,7 +124,7 @@
           </widget>
          </item>
          <item>
-          <widget class="ctkPathLineEdit" name="pathLineEdit_previewGroups" native="true"/>
+          <widget class="ctkPathLineEdit" name="pathLineEdit_previewGroups"/>
          </item>
         </layout>
        </widget>
@@ -184,14 +184,17 @@
     </widget>
    </item>
    <item>
-    <widget class="ctkCollapsibleButton" name="collapsibleButton_PCA" native="true">
-     <property name="text" stdset="0">
+    <widget class="ctkCollapsibleButton" name="collapsibleButton_PCA">
+     <property name="text">
       <string>PCA</string>
      </property>
-     <property name="checked" stdset="0">
+     <property name="checked">
+      <bool>true</bool>
+     </property>
+     <property name="collapsed">
       <bool>false</bool>
      </property>
-     <layout class="QGridLayout" name="gridLayout_4">
+     <layout class="QGridLayout" name="gridLayout_17">
       <item row="0" column="0">
        <widget class="QGroupBox" name="groupBox_PCA_options">
         <property name="title">
@@ -208,7 +211,7 @@
             </widget>
            </item>
            <item row="0" column="1">
-            <widget class="ctkPathLineEdit" name="pathLineEdit_CSVFilePCA" native="true"/>
+            <widget class="ctkPathLineEdit" name="pathLineEdit_CSVFilePCA"/>
            </item>
            <item row="0" column="2">
             <widget class="QCheckBox" name="checkBox_transformToLPS">
@@ -252,7 +255,7 @@
             <number>1</number>
            </property>
            <item row="0" column="1">
-            <widget class="ctkPathLineEdit" name="pathLineEdit_exploration" native="true"/>
+            <widget class="ctkPathLineEdit" name="pathLineEdit_exploration"/>
            </item>
            <item row="0" column="0">
             <widget class="QLabel" name="label_json">
@@ -506,6 +509,61 @@
            </item>
           </layout>
          </item>
+         <item row="8" column="0">
+          <layout class="QGridLayout" name="gridLayout_4">
+           <item row="0" column="0" colspan="4">
+            <widget class="QPushButton" name="pushButton_updateProjectionPlot">
+             <property name="text">
+              <string>Update Projection Plot</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="QLabel" name="label_pc1">
+             <property name="text">
+              <string>PC1</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="ctkRangeWidget" name="RangeWidget_pc1"/>
+           </item>
+           <item row="1" column="2">
+            <widget class="QCheckBox" name="checkBox_insidePc1">
+             <property name="text">
+              <string>Inside</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="3">
+            <widget class="QLabel" name="label_pcLogic">
+             <property name="text">
+              <string>PC Logic</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="0">
+            <widget class="QLabel" name="label_pc2">
+             <property name="text">
+              <string>PC2</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="1">
+            <widget class="ctkRangeWidget" name="RangeWidget_pc2"/>
+           </item>
+           <item row="2" column="2">
+            <widget class="QCheckBox" name="checkBox_insidePc2">
+             <property name="text">
+              <string>Inside</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="3">
+            <widget class="QComboBox" name="comboBox_pcLogic"/>
+           </item>
+          </layout>
+         </item>
         </layout>
        </widget>
       </item>
@@ -513,11 +571,11 @@
     </widget>
    </item>
    <item>
-    <widget class="ctkCollapsibleButton" name="CollapsibleButton_PCAExport" native="true">
-     <property name="text" stdset="0">
+    <widget class="ctkCollapsibleButton" name="CollapsibleButton_PCAExport">
+     <property name="text">
       <string>Export</string>
      </property>
-     <property name="checked" stdset="0">
+     <property name="checked">
       <bool>false</bool>
      </property>
      <layout class="QVBoxLayout" name="verticalLayout">
@@ -578,7 +636,7 @@
                <number>10</number>
               </property>
               <item>
-               <widget class="ctkDirectoryButton" name="DirectoryButton_PCASingleExport" native="true">
+               <widget class="ctkDirectoryButton" name="DirectoryButton_PCASingleExport">
                 <property name="enabled">
                  <bool>true</bool>
                 </property>
@@ -1064,6 +1122,11 @@
    <class>ctkPathLineEdit</class>
    <extends>QWidget</extends>
    <header>ctkPathLineEdit.h</header>
+  </customwidget>
+  <customwidget>
+   <class>ctkRangeWidget</class>
+   <extends>QWidget</extends>
+   <header>ctkRangeWidget.h</header>
   </customwidget>
  </customwidgets>
  <resources/>
