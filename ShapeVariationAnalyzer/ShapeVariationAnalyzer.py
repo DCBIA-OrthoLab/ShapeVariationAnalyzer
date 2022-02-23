@@ -1416,14 +1416,14 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         X_std = self.logic.pca_exploration.current_pca_model["data_projection_std"]
         pc1 = X_pca[:, 0].flatten() / X_std[0]
         pc2 = X_pca[:, 1].flatten() / X_std[1]
-        min_pc1 = np.round(np.min(pc1) - 0.005, 2)
-        max_pc1 = np.round(np.max(pc1) + 0.005, 2)
-        min_pc2 = np.round(np.min(pc2) - 0.005, 2)
-        max_pc2 = np.round(np.max(pc2) + 0.005, 2)
-        self.RangeWidget_pc1.minimum = min_pc1
-        self.RangeWidget_pc1.maximum = max_pc1
-        self.RangeWidget_pc2.minimum = min_pc2
-        self.RangeWidget_pc2.maximum = max_pc2
+        self.RangeWidget_pc1.minimum = np.round(np.min(pc1) - 0.005, 2)
+        self.RangeWidget_pc1.maximum = np.round(np.max(pc1) + 0.005, 2)
+        self.RangeWidget_pc2.minimum = np.round(np.min(pc2) - 0.005, 2)
+        self.RangeWidget_pc2.maximum = np.round(np.max(pc2) + 0.005, 2)
+        min_pc1 = self.RangeWidget_pc1.minimumValue
+        max_pc1 = self.RangeWidget_pc1.maximumValue
+        min_pc2 = self.RangeWidget_pc2.minimumValue
+        max_pc2 = self.RangeWidget_pc2.maximumValue
         self.updateProjectionPlot([min_pc1, max_pc1], self.checkBox_insidePc1.checked, [min_pc2, max_pc2], self.checkBox_insidePc2.checked, self.comboBox_pcLogic.currentText)
         if self.logic.pca_exploration.evaluationExist():
             self.updateEvaluationPlots()
