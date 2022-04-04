@@ -1,5 +1,7 @@
 from __future__ import print_function
 from __future__ import division
+
+import logging
 import os, sys
 import csv
 import unittest
@@ -24,6 +26,7 @@ from scipy import stats
 import time
 
 import shapepcalib as shapca
+from cpns.cpns import CPNS
 
 
 class ShapeVariationAnalyzer(ScriptedLoadableModule):
@@ -100,6 +103,8 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         #          Tab: Creation of New Classification Groups
         self.collapsibleButton_previewClassificationGroups = self.getUI('CollapsibleButton_previewClassificationGroups')
         self.pathLineEdit_previewGroups = self.getUI('pathLineEdit_previewGroups')
+        self.pathLineEdit_previewGroups.filters = ctk.ctkPathLineEdit.Files
+        self.pathLineEdit_previewGroups.nameFilters = ['*.csv']
         self.collapsibleGroupBox_previewVTKFiles = self.getUI('CollapsibleGroupBox_previewVTKFiles')
         self.checkableComboBox_ChoiceOfGroup = self.getUI('CheckableComboBox_ChoiceOfGroup')
         self.tableWidget_VTKFiles = self.getUI('tableWidget_VTKFiles')
@@ -127,7 +132,12 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
 
         self.collapsibleButton_PCA = self.getUI('collapsibleButton_PCA')
         self.pathLineEdit_CSVFilePCA = self.getUI('pathLineEdit_CSVFilePCA')  
+        self.pathLineEdit_CSVFilePCA.filters = ctk.ctkPathLineEdit.Files
+        self.pathLineEdit_CSVFilePCA.nameFilters = ['*.csv']
+        self.checkBox_transformToLPS = self.getUI('checkBox_transformToLPS')
         self.pathLineEdit_exploration = self.getUI('pathLineEdit_exploration')
+        self.pathLineEdit_exploration.filters = ctk.ctkPathLineEdit.Files
+        self.pathLineEdit_exploration.nameFilters = ['*.json']
         self.comboBox_groupPCA = self.getUI('comboBox_groupPCA')
         self.comboBox_colorMode = self.getUI('comboBox_colorMode')
 
@@ -146,6 +156,18 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.spinBox_colorModeParam1=self.getUI('spinBox_colorModeParam_1')
         self.spinBox_colorModeParam2=self.getUI('spinBox_colorModeParam_2')
         self.spinBox_numberShape=self.getUI('spinBox_numberShape')
+        self.spinBox_decimals = self.getUI('spinBox_decimals')
+        self.label_decimals = self.getUI('label_decimals')
+
+        self.pushButton_updateProjectionPlot = self.getUI('pushButton_updateProjectionPlot')
+        self.label_pc1 = self.getUI('label_pc1')
+        self.label_pc2 = self.getUI('label_pc2')
+        self.RangeWidget_pc1 = self.getUI('RangeWidget_pc1')
+        self.RangeWidget_pc2 = self.getUI('RangeWidget_pc2')
+        self.checkBox_insidePc1 = self.getUI('checkBox_insidePc1')
+        self.checkBox_insidePc2 = self.getUI('checkBox_insidePc2')
+        self.label_pcLogic = self.getUI('label_pcLogic')
+        self.comboBox_pcLogic = self.getUI('comboBox_pcLogic')
 
         self.ctkColorPickerButton_groupColor=self.getUI('ctkColorPickerButton_groupColor')
 
@@ -198,8 +220,22 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.spinBox_numberShape.setMinimum(100)
         self.spinBox_numberShape.setMaximum(1000000)
         self.spinBox_numberShape.setValue(10000)
+        self.spinBox_decimals.setValue(3)
+        self.RangeWidget_pc1.singleStep = 0.01
+        self.RangeWidget_pc1.setRange(-3.30, 3.30)
+        self.RangeWidget_pc1.minimumValue = -3.30
+        self.RangeWidget_pc1.maximumValue = 3.30
+        self.RangeWidget_pc2.singleStep = 0.01
+        self.RangeWidget_pc2.setRange(-3.30, 3.30)
+        self.RangeWidget_pc2.minimumValue = -3.30
+        self.RangeWidget_pc2.maximumValue = 3.30
+        self.comboBox_pcLogic.addItem("AND")
+        self.comboBox_pcLogic.addItem("OR")
 
+        self.checkBox_transformToLPS.setChecked(True)
         self.checkBox_useHiddenEigenmodes.setChecked(True)
+        self.checkBox_insidePc1.setChecked(True)
+        self.checkBox_insidePc2.setChecked(True)
         
         self.label_statePCA.hide()
         self.ctkColorPickerButton_groupColor.color=qt.QColor(255,255,255)
@@ -234,7 +270,18 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.label_colorModeParam2.hide()
         self.label_numberShape.hide()
         self.spinBox_numberShape.hide()
+        self.spinBox_decimals.hide()
+        self.label_decimals.hide()
         self.checkBox_useHiddenEigenmodes.hide()
+        self.pushButton_updateProjectionPlot.hide()
+        self.label_pc1.hide()
+        self.label_pc2.hide()
+        self.RangeWidget_pc1.hide()
+        self.RangeWidget_pc2.hide()
+        self.checkBox_insidePc1.hide()
+        self.checkBox_insidePc2.hide()
+        self.label_pcLogic.hide()
+        self.comboBox_pcLogic.hide()
 
 
 
@@ -291,7 +338,6 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.pushButton_removeGroup.connect('clicked()', self.onRemoveGroupForCreationCSVFile)
         self.pushButton_modifyGroup.connect('clicked()', self.onModifyGroupForCreationCSVFile)
         self.pushButton_exportCSVfile.connect('clicked()', self.onExportForCreationCSVFile)
-        
 
         #          Tab: Preview / Update Classification Groups
         self.collapsibleButton_previewClassificationGroups.connect('clicked()',
@@ -326,6 +372,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.spinBox_colorModeParam2.connect('valueChanged(int)',self.onUpdateColorModeParam)
         self.ctkColorPickerButton_groupColor.connect('colorChanged(QColor)',self.onGroupColorChanged)
         self.checkBox_useHiddenEigenmodes.connect('stateChanged(int)',self.onEigenCheckBoxChanged)
+        self.pushButton_updateProjectionPlot.connect('clicked()',self.onUpdateProjectionPlot)
         self.evaluationFlag="DONE"
 
         #       Tab : PCA Export
@@ -413,6 +460,17 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.label_colorModeParam2.hide()
         self.label_numberShape.hide()
         self.spinBox_numberShape.hide()
+        self.spinBox_decimals.hide()
+        self.label_decimals.hide()
+        self.pushButton_updateProjectionPlot.hide()
+        self.label_pc1.hide()
+        self.label_pc2.hide()
+        self.RangeWidget_pc1.hide()
+        self.RangeWidget_pc2.hide()
+        self.checkBox_insidePc1.hide()
+        self.checkBox_insidePc2.hide()
+        self.label_pcLogic.hide()
+        self.comboBox_pcLogic.hide()
         self.checkBox_useHiddenEigenmodes.hide()
         self.checkBox_useHiddenEigenmodes.setChecked(True)
         self.pushButton_PCA.setEnabled(False) 
@@ -900,7 +958,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.setColorModeSpinBox()
 
         self.showmean=False
-        self.generate3DVisualisationNodes()
+        self.generate3DVisualisationNodes(LPS=self.checkBox_transformToLPS.isChecked())
         self.generate2DVisualisationNodes()
 
         index = self.comboBox_colorMode.findText('Group color', qt.Qt.MatchFixedString)
@@ -965,13 +1023,13 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
             if key != "All":
                 self.comboBox_groupPCA.addItem(str(key)+': '+group_name)
             else: 
-                self.comboBox_groupPCA.addItem(key)  
+                self.comboBox_groupPCA.addItem(key)
 
-        
+
         self.setColorModeSpinBox()    
         self.showmean=False
 
-        self.generate3DVisualisationNodes()
+        self.generate3DVisualisationNodes(LPS=self.checkBox_transformToLPS.isChecked())
         self.generate2DVisualisationNodes()
 
         index = self.comboBox_colorMode.findText('Group color', qt.Qt.MatchFixedString)
@@ -1062,7 +1120,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
             old_num_components=len(self.PCA_sliders)
             component_to_add=num_components-len(self.PCA_sliders)
             for i in range(component_to_add):
-                self.createAndAddSlider(old_num_components+i)
+                self.createAndAddSlider(old_num_components+i, self.spinBox_decimals)
                 self.comboBox_SingleExportPC.addItem(old_num_components+i+1)
             self.updateVariancePlot(num_components)
 
@@ -1300,8 +1358,13 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         ratio = self.PCA_sliders[0].value
         self.logic.pca_exploration.updatePolyDataExploration(0,ratio/1000.0)
 
-
-
+    def onUpdateProjectionPlot(self):
+        min_pc1 = self.RangeWidget_pc1.minimumValue
+        max_pc1 = self.RangeWidget_pc1.maximumValue
+        min_pc2 = self.RangeWidget_pc2.minimumValue
+        max_pc2 = self.RangeWidget_pc2.maximumValue
+        self.updateProjectionPlot([min_pc1, max_pc1], self.checkBox_insidePc1.checked, [min_pc2, max_pc2],
+                                  self.checkBox_insidePc2.checked, self.comboBox_pcLogic.currentText)
 
     def explorePCA(self):
         # Detection of the selected group Id 
@@ -1342,14 +1405,26 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
 
         # Create sliders and add the PC to the combobox for Single Export
         for i in range(sliders_number):
-            self.createAndAddSlider(i)
+            self.createAndAddSlider(i, self.spinBox_decimals)
             self.comboBox_SingleExportPC.addItem(i+1)
        
 
         #Update the plot view
         self.updateVariancePlot(sliders_number)
-        self.updateProjectionPlot()
-
+        # Set up projection plot widgets
+        X_pca = self.logic.pca_exploration.current_pca_model["data_projection"]
+        X_std = self.logic.pca_exploration.current_pca_model["data_projection_std"]
+        pc1 = X_pca[:, 0].flatten() / X_std[0]
+        pc2 = X_pca[:, 1].flatten() / X_std[1]
+        self.RangeWidget_pc1.minimum = np.round(np.min(pc1) - 0.005, 2)
+        self.RangeWidget_pc1.maximum = np.round(np.max(pc1) + 0.005, 2)
+        self.RangeWidget_pc2.minimum = np.round(np.min(pc2) - 0.005, 2)
+        self.RangeWidget_pc2.maximum = np.round(np.max(pc2) + 0.005, 2)
+        min_pc1 = self.RangeWidget_pc1.minimumValue
+        max_pc1 = self.RangeWidget_pc1.maximumValue
+        min_pc2 = self.RangeWidget_pc2.minimumValue
+        max_pc2 = self.RangeWidget_pc2.maximumValue
+        self.updateProjectionPlot([min_pc1, max_pc1], self.checkBox_insidePc1.checked, [min_pc2, max_pc2], self.checkBox_insidePc2.checked, self.comboBox_pcLogic.currentText)
         if self.logic.pca_exploration.evaluationExist():
             self.updateEvaluationPlots()
 
@@ -1382,6 +1457,17 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
 
         self.label_numberShape.show()
         self.spinBox_numberShape.show()
+        self.spinBox_decimals.show()
+        self.label_decimals.show()
+        self.pushButton_updateProjectionPlot.show()
+        self.label_pc1.show()
+        self.label_pc2.show()
+        self.RangeWidget_pc1.show()
+        self.RangeWidget_pc2.show()
+        self.checkBox_insidePc1.show()
+        self.checkBox_insidePc2.show()
+        self.label_pcLogic.show()
+        self.comboBox_pcLogic.show()
 
         self.checkBox_useHiddenEigenmodes.show()
 
@@ -1411,7 +1497,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.PCA_sliders_label=list()
         self.PCA_sliders_value_label=list()
 
-    def createAndAddSlider(self,num_slider):
+    def createAndAddSlider(self,num_slider, spinbox_decimals):
         exp_ratio=self.logic.pca_exploration.getExplainedRatio()
         #create the slider
         slider =qt.QSlider(qt.Qt.Horizontal)
@@ -1425,7 +1511,10 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
        
         #create the variance ratio label
         label = qt.QLabel()
-        label.setText(str(num_slider+1)+':   '+str(round(exp_ratio[num_slider],5)*100)+'%')
+        er = round(exp_ratio[num_slider] * 100, spinbox_decimals.value)
+        if spinbox_decimals.value == 0:
+            er = round(er)
+        label.setText(str(num_slider+1)+':   '+str(er)+'%')
         label.setAlignment(qt.Qt.AlignCenter)
 
         #create the value label
@@ -1433,6 +1522,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         '''if num_slider==4:
             print(X)'''
         valueLabel = qt.QLabel()
+        valueLabel.setMinimumWidth(40)
         valueLabel.setText(str(round(stats.norm.isf(X),3)))
 
         #slider and label added to lists
@@ -1703,21 +1793,54 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         table.AddColumn(evr)
         table.AddColumn(sumevr)
 
-    def updateProjectionPlot(self):   
+    def updateProjectionPlot(self, range_pc1, inside1, range_pc2, inside2, logic_text):
         projectionTableNode = slicer.mrmlScene.GetFirstNodeByName("PCA projection table")
         table = projectionTableNode.GetTable()
         table.Initialize()
 
-        pc1,pc2=self.logic.pca_exploration.getPCAProjections()
+        pc1,pc2=self.logic.pca_exploration.getPCAProjections(normalized=True)
         labels = self.logic.pca_exploration.getPCAProjectionLabels()
 
-        pc1.SetName("pc1")
-        pc2.SetName("pc2")
-        labels.SetName("files")
+        nlabels = labels.GetNumberOfValues()
+        plot_index = []
+        for i in range(nlabels):
+            keep1 = True
+            if inside1:
+                if pc1.GetTuple1(i) < range_pc1[0] or pc1.GetTuple1(i) > range_pc1[1]:
+                    keep1 = False
+            else:
+                if range_pc1[0] < pc1.GetTuple1(i) < range_pc1[1]:
+                    keep1 = False
+            keep2 = True
+            if inside2:
+                if pc2.GetTuple1(i) < range_pc2[0] or pc2.GetTuple1(i) > range_pc2[1]:
+                    keep2 = False
+            else:
+                if range_pc2[0] < pc2.GetTuple1(i) < range_pc2[1]:
+                    keep2 = False
+            if logic_text == "AND" and (keep1 and keep2):
+                plot_index.append(i)
+            elif logic_text == "OR" and (keep1 or keep2):
+                plot_index.append(i)
+            else:
+                continue
 
-        table.AddColumn(pc1)
-        table.AddColumn(pc2)
-        table.AddColumn(labels)
+        plot_pc1 = vtk.vtkFloatArray()
+        plot_pc2 = vtk.vtkFloatArray()
+        plot_labels = vtk.vtkStringArray()
+        plot_pc1.SetNumberOfComponents(1)
+        plot_pc2.SetNumberOfComponents(1)
+        plot_pc1.SetName("pc1")
+        plot_pc2.SetName("pc2")
+        plot_labels.SetName("files")
+        for index in plot_index:
+            plot_pc1.InsertNextTuple([pc1.GetTuple1(index)])
+            plot_pc2.InsertNextTuple([pc2.GetTuple1(index)])
+            plot_labels.InsertNextValue(labels.GetValue(index))
+
+        table.AddColumn(plot_pc1)
+        table.AddColumn(plot_pc2)
+        table.AddColumn(plot_labels)
 
         #update color
         plotSeriesNode = slicer.mrmlScene.GetFirstNodeByName("PCA projection")
@@ -1758,7 +1881,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
 
 
     #polydata
-    def generate3DVisualisationNodes(self):
+    def generate3DVisualisationNodes(self, LPS=True):
         self.delete3DVisualisationNodes()
         ##For Mean shape
         #clear scene from previous PCA exploration
@@ -1767,8 +1890,21 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         PCANode = slicer.vtkMRMLModelNode()
         PCANode.SetAndObservePolyData(self.logic.pca_exploration.getPolyDataMean())
         PCANode.SetName("PCA Mean")
+
+        # add transform if use LPS system
+        if LPS == True:
+            transformNode = slicer.vtkMRMLTransformNode()
+            slicer.mrmlScene.AddNode(transformNode)
+            transfromMatrix = vtk.vtkMatrix4x4()
+            transfromMatrix.SetElement(0, 0, -1)
+            transfromMatrix.SetElement(1, 1, -1)
+            transfromMatrix.SetElement(2, 2, 1)
+            transfromMatrix.SetElement(3, 3, 1)
+            transformNode.SetMatrixTransformFromParent(transfromMatrix)
+            transformNode.TransformModified()
+            PCANode.SetAndObserveTransformNodeID(transformNode.GetID())
+
         #create display node
-        
         modelDisplay = slicer.vtkMRMLModelDisplayNode()
         modelDisplay.SetColor(0.5,0.5,0.5) 
         modelDisplay.SetOpacity(0.8)
@@ -1800,6 +1936,10 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         #modelDisplay.SetBackfaceCulling(0)
         modelDisplay.SetScene(slicer.mrmlScene)
         modelDisplay.SetName("PCA Display")
+
+        # add transform if use LPS system
+        if LPS == True:
+            PCANode.SetAndObserveTransformNodeID(transformNode.GetID())
 
         signedcolornode=self.logic.generateSignedDistanceLUT()
         unsignedcolornode=self.logic.generateUnsignedDistanceLUT()
@@ -1994,7 +2134,7 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         # Fill a dictionary which contains the vtk files for the classification groups sorted by group
         valueList = list()
         for file in os.listdir(directory):
-            if file.endswith(".vtk"):
+            if file.endswith(".vtk") or file.endswith(".xml"):
                 filepath = directory + '/' + file
                 valueList.append(filepath)
         dictCSVFile[group] = valueList
@@ -2061,10 +2201,6 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
 
         return True
 
-
-
-
-
     def addColorMap(self, table, dictVTKFiles):
         """ Function to add a color map "DisplayClassificationGroup" 
         to all the vtk files which allow the user to visualize each 
@@ -2072,13 +2208,46 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         """
         for key, value in dictVTKFiles.items():
             for vtkFile in value:
-                # Read VTK File
-                reader = vtk.vtkDataSetReader()
-                reader.SetFileName(vtkFile)
-                reader.ReadAllVectorsOn()
-                reader.ReadAllScalarsOn()
-                reader.Update()
-                polyData = reader.GetOutput()
+                polyData = vtk.vtkPolyData()
+                if os.path.basename(vtkFile).endswith(".vtk"):
+                    # Read VTK File
+                    reader = vtk.vtkDataSetReader()
+                    reader.SetFileName(vtkFile)
+                    reader.ReadAllVectorsOn()
+                    reader.ReadAllScalarsOn()
+                    reader.Update()
+                    polyData = reader.GetOutput()
+                elif os.path.basename(vtkFile).endswith(".xml"):
+                    # Read S-Rep file
+                    parser = vtk.vtkXMLDataParser()
+                    parser.SetFileName(vtkFile)
+                    parser.Parse()
+                    root = parser.GetRootElement()
+
+                    reader0 = vtk.vtkXMLPolyDataReader()
+                    reader0.SetFileName(root.FindNestedElementWithName("upSpoke").GetCharacterData())
+                    reader0.Update()
+
+                    reader1 = vtk.vtkXMLPolyDataReader()
+                    reader1.SetFileName(root.FindNestedElementWithName("downSpoke").GetCharacterData())
+                    reader1.Update()
+
+                    reader2 = vtk.vtkXMLPolyDataReader()
+                    reader2.SetFileName(root.FindNestedElementWithName("crestSpoke").GetCharacterData())
+                    reader2.Update()
+
+                    append = vtk.vtkAppendPolyData()
+                    append.AddInputData(CPNS.extractSpokes(reader0.GetOutput(), 0))
+                    append.AddInputData(CPNS.extractSpokes(reader1.GetOutput(), 4))
+                    append.AddInputData(CPNS.extractSpokes(reader2.GetOutput(), 2))
+                    append.AddInputData(CPNS.extractEdges(reader0.GetOutput(), 1))
+                    append.AddInputData(CPNS.extractEdges(reader2.GetOutput(), 3))
+                    append.Update()
+                    polyData = append.GetOutput()
+
+                    vtkFile = os.path.splitext(vtkFile)[0]+'.vtk'
+                else:
+                    print("Wrong file type!")
 
                 # Copy of the polydata
                 polyDataCopy = vtk.vtkPolyData()
@@ -2104,6 +2273,8 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
                 # to visualize them in Shape Population Viewer
                 writer = vtk.vtkPolyDataWriter()
                 filepath = slicer.app.temporaryPath + '/' + os.path.basename(vtkFile)
+                if os.path.exists(filepath):
+                    print("Error: two input files under different groups have the same name!")
                 writer.SetFileName(filepath)
                 if vtk.VTK_MAJOR_VERSION <= 5:
                     writer.SetInput(polyDataCopy)
@@ -2138,6 +2309,8 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
                 # Recovery of the vtk filename
                 qlabel = table.cellWidget(row, 0)
                 vtkFile = qlabel.text
+                if vtkFile.endswith('.xml'):
+                    vtkFile = os.path.splitext(vtkFile)[0] + '.vtk'
                 pathVTKFile = slicer.app.temporaryPath + '/' + vtkFile
                 cw.writerow([pathVTKFile])
         file.close()
@@ -2249,6 +2422,8 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         """
         # remove of all the vtk file
         for vtkFile in value:
+            if vtkFile.endswith('.xml'):
+                vtkFile = os.path.splitext(vtkFile)[0] + '.vtk'
             filepath = slicer.app.temporaryPath + '/' + os.path.basename(vtkFile)
             if os.path.exists(filepath):
                 os.remove(filepath)
@@ -2288,7 +2463,7 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         for key, value in dict.items():
             if type(value) is not type(list()) or len(value) == 1:
                 msg='The group ' + str(key) + ' must contain more than one mesh.'
-                raise CSVFileError(msg)
+                raise shapca.CSVFileError(msg)
                 return False
         return True
 
