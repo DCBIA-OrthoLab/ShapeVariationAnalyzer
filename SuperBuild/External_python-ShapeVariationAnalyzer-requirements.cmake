@@ -45,12 +45,12 @@ if(NOT Slicer_USE_SYSTEM_${proj})
   joblib==0.16.0 --hash=sha256:d348c5d4ae31496b2aa060d6d9b787864dd204f9480baaa52d18850cb43e9f49
   threadpoolctl==2.1.0 --hash=sha256:38b74ca20ff3bb42caca8b00055111d74159ee95c4370882bbff2b93d24da725
   # Hashes correspond to the following packages:
-  # - scikit_learn-0.23.1-cp36-cp36m-win_amd64.whl
-  # - scikit_learn-0.23.1-cp36-cp36m-macosx_10_9_x86_64.whl 
-  # - scikit_learn-0.23.1-cp36-cp36m-manylinux1_x86_64.whl
-  scikit-learn==0.23.1 --hash=sha256:e585682e37f2faa81ad6cd4472fff646bf2fd0542147bec93697a905db8e6bd2 \
-                       --hash=sha256:058d213092de4384710137af1300ed0ff030b8c40459a6c6f73c31ccd274cc39 \
-                       --hash=sha256:e9879ba9e64ec3add41bf201e06034162f853652ef4849b361d73b0deb3153ad
+  # - scikit_learn-1.0.2-cp39-cp39-win_amd64.whl
+  # - scikit_learn-1.0.2-cp39-cp39-macosx_10_13_x86_64.whl
+  # - scikit_learn-1.0.2-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl 
+  scikit-learn==1.0.2 --hash=sha256:b54a62c6e318ddbfa7d22c383466d38d2ee770ebdb5ddb668d56a099f6eaf75f \
+                       --hash=sha256:a90b60048f9ffdd962d2ad2fb16367a87ac34d76e02550968719eb7b5716fd10 \
+                       --hash=sha256:ff746a69ff2ef25f62b36338c615dd15954ddc3ab8e73530237dd73235e76d62
   ]===])
 
   set(pip_install_args)
