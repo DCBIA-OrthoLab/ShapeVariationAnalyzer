@@ -7,7 +7,30 @@ set(ShapeVariationAnalyzer_VERSION_MINOR 0)
 set(ShapeVariationAnalyzer_VERSION_PATCH 4)
 
 
-option(ShapeVariationAnalyzer_BUILD_SLICER_EXTENSION OFF)
+#-----------------------------------------------------------------------------
+# Standalone vs Slicer extension option
+#-----------------------------------------------------------------------------
+
+# This option should be named after the project name, it corresponds to the
+# option set to ON when the project is build by the Slicer Extension build
+# system.
+
+set(_default OFF)
+set(_reason "${PROJECT_NAME}_BUILD_SLICER_EXTENSION is ON")
+if(NOT DEFINED ${PROJECT_NAME}_BUILD_SLICER_EXTENSION AND DEFINED Slicer_DIR)
+  set(_default ON)
+  set(_reason "Slicer_DIR is SET")
+endif()
+
+option(${PROJECT_NAME}_BUILD_SLICER_EXTENSION "Build as a Slicer Extension" ${_default})
+
+set(_msg "Checking if building as a Slicer extension")
+message(STATUS ${_msg})
+if(${PROJECT_NAME}_BUILD_SLICER_EXTENSION)
+  message(STATUS "${_msg} - yes (${_reason})")
+else()
+  message(STATUS "${_msg} - no (${PROJECT_NAME}_BUILD_SLICER_EXTENSION is OFF)")
+endif()
 
 if(ShapeVariationAnalyzer_BUILD_SLICER_EXTENSION)
   #-----------------------------------------------------------------------------
