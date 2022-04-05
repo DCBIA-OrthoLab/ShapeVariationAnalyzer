@@ -42,8 +42,13 @@ if(NOT Slicer_USE_SYSTEM_${proj})
 
   set(requirements_file ${CMAKE_BINARY_DIR}/${proj}-requirements.txt)
   file(WRITE ${requirements_file} [===[
+  # [joblib]
   joblib==0.16.0 --hash=sha256:d348c5d4ae31496b2aa060d6d9b787864dd204f9480baaa52d18850cb43e9f49
+  # [/joblib]
+  # [threadpoolctl]
   threadpoolctl==2.1.0 --hash=sha256:38b74ca20ff3bb42caca8b00055111d74159ee95c4370882bbff2b93d24da725
+  # [/threadpoolctl]
+  # [scikit-learn]
   # Hashes correspond to the following packages:
   # - scikit_learn-0.23.1-cp36-cp36m-win_amd64.whl
   # - scikit_learn-0.23.1-cp36-cp36m-macosx_10_9_x86_64.whl 
@@ -51,6 +56,7 @@ if(NOT Slicer_USE_SYSTEM_${proj})
   scikit-learn==0.23.1 --hash=sha256:e585682e37f2faa81ad6cd4472fff646bf2fd0542147bec93697a905db8e6bd2 \
                        --hash=sha256:058d213092de4384710137af1300ed0ff030b8c40459a6c6f73c31ccd274cc39 \
                        --hash=sha256:e9879ba9e64ec3add41bf201e06034162f853652ef4849b361d73b0deb3153ad
+  # [/scikit-learn]
   ]===])
 
   set(pip_install_args)
