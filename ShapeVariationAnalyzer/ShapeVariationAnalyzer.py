@@ -2125,7 +2125,10 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         self.colorBar = {'Point1': [0, 0, 1, 0], 'Point2': [0.5, 1, 1, 0], 'Point3': [1, 1, 0, 0]}
 
         self.pca_exploration=shapca.pcaExplorer()
-        
+
+    @staticmethod
+    def dataPath():
+        return os.path.join(os.path.dirname(slicer.util.modulePath('ShapeVariationAnalyzer')), 'ShapeVariationAnalyzerData')
 
     def addGroupToDictionary(self, dictCSVFile, directory, directoryList, group):
         """ Function to add all the vtk filepaths 
@@ -2551,14 +2554,16 @@ class ShapeVariationAnalyzerTest(ScriptedLoadableModuleTest):
     def test_ShapeVariationAnalyzer(self):
 
         logic = ShapeVariationAnalyzerLogic()
-        filepath_in = "./Testing/test.csv"
+        input_dir = os.path.join(logic.dataPath(), "Input")
+        filepath_in = os.path.join(input_dir, "test.csv")
 
         # Test of all the groups
         keygroup = "All"
 
         try:
-            logic.pca_exploration.loadCSVFile(filepath_in)
-            logic.pca_exploration.process()
+            with slicer.util.chdir(input_dir):
+                logic.pca_exploration.loadCSVFile(filepath_in)
+                logic.pca_exploration.process()
             # Add personalized groups to comboboxes with the CSV
             dictPCA = logic.pca_exploration.getDictPCA()
             # Setting PCA model to use

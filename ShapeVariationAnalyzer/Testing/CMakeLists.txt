@@ -16,8 +16,12 @@ set(input_filenames
 
 foreach(filename IN LISTS input_filenames)
   # Copy file to support running tests from the build tree
-  file(COPY ${INPUT}/${test_filename} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+  file(COPY ${INPUT}/${filename} DESTINATION ${CMAKE_BINARY_DIR}/${Slicer_QTSCRIPTEDMODULES_LIB_DIR}/ShapeVariationAnalyzerData/Input)
 
   # Install file to support running tests from an install tree
-  # TODO
+  install(
+    FILES ${INPUT}/${filename}
+    DESTINATION "${Slicer_INSTALL_QTSCRIPTEDMODULES_LIB_DIR}/ShapeVariationAnalyzerData/Input/"
+    COMPONENT RuntimeLibraries
+    )
 endforeach()
