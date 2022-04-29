@@ -2125,7 +2125,10 @@ class ShapeVariationAnalyzerLogic(ScriptedLoadableModuleLogic):
         self.colorBar = {'Point1': [0, 0, 1, 0], 'Point2': [0.5, 1, 1, 0], 'Point3': [1, 1, 0, 0]}
 
         self.pca_exploration=shapca.pcaExplorer()
-        
+
+    @staticmethod
+    def dataPath():
+        return os.path.join(os.path.dirname(slicer.util.modulePath('ShapeVariationAnalyzer')), 'ShapeVariationAnalyzerData')
 
     def addGroupToDictionary(self, dictCSVFile, directory, directoryList, group):
         """ Function to add all the vtk filepaths 
@@ -2549,42 +2552,47 @@ class ShapeVariationAnalyzerTest(ScriptedLoadableModuleTest):
         self.test_ShapeVariationAnalyzer()
 
     def test_ShapeVariationAnalyzer(self):
-        self.logic = ShapeVariationAnalyzerLogic()
-        filepath_in = "./hippo.csv"
+
+        logic = ShapeVariationAnalyzerLogic()
+        input_dir = os.path.join(logic.dataPath(), "Input")
+        filepath_in = os.path.join(input_dir, "test.csv")
+
         # Test of all the groups
         keygroup = "All"
 
         try:
-            self.logic.pca_exploration.loadCSVFile(filepath_in)
-            self.logic.pca_exploration.process()
+            with slicer.util.chdir(input_dir):
+                logic.pca_exploration.loadCSVFile(filepath_in)
+                logic.pca_exploration.process()
             # Add personalized groups to comboboxes with the CSV
-            dictPCA = self.logic.pca_exploration.getDictPCA()
+            dictPCA = logic.pca_exploration.getDictPCA()
             # Setting PCA model to use
-            self.logic.pca_exploration.setCurrentPCAModel(keygroup)
+            logic.pca_exploration.setCurrentPCAModel(keygroup)
         except shapca.CSVFileError as e:
             print('CSVFileError:'+e.value)
             slicer.util.errorDisplay('Invalid CSV file')
-    
-        try:
-            exp_ratio=self.logic.pca_exploration.getExplainedRatio()
-            error_bool = False
-            # Values for the hippo PCA exploration
-            comparison = [38.075,9.688,6.970,5.525,4.338,3.643,2.835,2.487]
-            for num_slider in range(8):
-                #print ( str(comparison[num_slider]) + " compare to " + str(round(exp_ratio[num_slider]*100,3)) )
-                if ( comparison[num_slider] != round(exp_ratio[num_slider]*100,3) ):
-                    error_bool = True
-            if (error_bool == True):
-                print( 'Exploration Error: The PCA results are wrong.')
-            else:
-                print( "The PCA exploration is right.")
-        except:
-            print( 'Exploration failed' )
-            slicer.util.errorDisplay('Exploration failed')
+
+        exp_ratio = logic.pca_exploration.getExplainedRatio()
+
+        has_errors = False
+        # Values for the PCA exploration
+        scale_factor = 10000
+        expected_values = [8812.994, 1162.278, 24.7, 0.027, 0.0]
+        for num_slider, expected_value in enumerate(expected_values):
+            current_value = round(exp_ratio[num_slider] * scale_factor, 3)
+            print(f"Checking value #{num_slider} matches {expected_value}")
+            if expected_value != current_value:
+                print(f"comparison {num_slider} is wrong: {current_value} != {expected_value}")
+                has_errors = True
+
+        if has_errors:
+            self.fail("Exploration Error: The PCA results are incorrect.")
+        else:
+            print("The PCA exploration is correct.")
 
         filepath_out = "./test.vtk"
-        #Export Curent visualisation
-        self.logic.pca_exploration.saveVTKFile(self.logic.pca_exploration.getPolyDataExploration(),filepath_out) 
+        # Export current visualisation
+        logic.pca_exploration.saveVTKFile(logic.pca_exploration.getPolyDataExploration(), filepath_out)
 
         if (os.path.exists(filepath_out)):
             print(filepath_out + " created.")

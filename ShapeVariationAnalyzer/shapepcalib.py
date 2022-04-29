@@ -986,20 +986,21 @@ class pcaExplorer(object):
             Return True
         """
         for i in range(0, self.table.GetNumberOfRows()):
-            if not os.path.exists(self.table.GetValue(i,0).ToString()):
-                msg='VTK file not found, path not good at lign ' + str(i+2)
+            vtk_file = self.table.GetValue(i, 0).ToString()
+            if not os.path.exists(vtk_file):
+                msg = f"Error at line {i + 2}: VTK file not found: {vtk_file}"
                 raise CSVFileError(msg)
                 return False
             value = dict.get(self.table.GetValue(i,1).ToInt(), None)
             if value == None:
-                dict[self.table.GetValue(i,1).ToInt()] = self.table.GetValue(i,0).ToString()
+                dict[self.table.GetValue(i,1).ToInt()] = vtk_file
             else:
                 if type(value) is type(list()):
-                    value.append(self.table.GetValue(i,0).ToString())
+                    value.append(vtk_file)
                 else:
                     tempList = list()
                     tempList.append(value)
-                    tempList.append(self.table.GetValue(i,0).ToString())
+                    tempList.append(vtk_file)
                     dict[self.table.GetValue(i,1).ToInt()] = tempList
 
         return True
