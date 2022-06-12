@@ -351,10 +351,10 @@ def SVM_classification(X_dataset,y_labels,dataset_test,labels_test):
 	#datasets = [linearly_separable]
  	
 
- 	i=1
+	i=1
  		#standardizing features
  		#X_stand = StandardScaler().fit_transform(X)
- 	X_train,X_test, y_train, y_test = train_test_split(X_dataset,y_labels, test_size =0.4)
+	X_train,X_test, y_train, y_test = train_test_split(X_dataset,y_labels, test_size =0.4)
 	    # just plot the dataset first
 	cm = plt.cm.RdBu
 		#cm_bright = ListedColormap(['#FF0000', '#0000FF','#48FF00'])
