@@ -175,7 +175,7 @@ class inputData():
             else:
                 raise Exception('You must set one of feature_polys or feature_polys to extract data from the shape')
 
-        except IOError as e:
+        except OSError as e:
             print('Could not read:', shape, ':', e, '- it\'s ok, skipping.')
 
 

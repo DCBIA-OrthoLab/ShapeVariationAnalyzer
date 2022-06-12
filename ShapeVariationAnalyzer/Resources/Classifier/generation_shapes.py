@@ -1,5 +1,4 @@
 #!/usr/bin/python
-# -*- coding: utf-8 -*-
 
 """
 =========================================================
@@ -11,7 +10,6 @@ can be very flat in one direction--which is where PCA
 comes in to choose a direction that is not flat.
 
 """
-from __future__ import print_function
 
 # Authors: Gael Varoquaux
 #          Jaques Grobler
@@ -95,7 +93,7 @@ def readData(shapedir):
     firstshapedata = 0
 
     for vtkfilename in vtkdirshapes:
-        if vtkfilename.endswith((".vtk")):
+        if vtkfilename.endswith(".vtk"):
             print("Reading", vtkfilename)
             reader = vtk.vtkPolyDataReader()
             reader.SetFileName(os.path.join(shapedir, vtkfilename))
@@ -129,7 +127,7 @@ def writeData(data_for_training,outputdataPath):
 
 	vtkdirshapes = os.listdir(outputdataPath)
 	for vtkfilename in vtkdirshapes:
-		if vtkfilename.endswith((".vtk")):
+		if vtkfilename.endswith(".vtk"):
 			print("Writing", vtkfilename)
 			writer = vtk.vtkPolyDataWriter()
 			writer.SetInput(data_for_training)

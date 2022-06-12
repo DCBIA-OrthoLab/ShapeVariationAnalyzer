@@ -1,5 +1,3 @@
-from __future__ import print_function
-from __future__ import division
 from sklearn.decomposition import PCA
 from scipy import stats
 from copy import deepcopy
@@ -29,7 +27,7 @@ class JSONFileError(Exception):
         self.value=value
 
 
-class pcaExplorer(object):
+class pcaExplorer:
 
     def __init__(self):
         self.dict_data=None
@@ -174,7 +172,7 @@ class pcaExplorer(object):
             raise JSONFileError('File should be a JSON file')
             return
 
-        with open(JSONfile,'r') as jsonfile:
+        with open(JSONfile) as jsonfile:
             json_dict = json.load(jsonfile)
 
         self.PYCpath=json_dict["python_objects_path"]
@@ -416,7 +414,7 @@ class pcaExplorer(object):
             raise JSONFileError('File should be a JSON file')
             return
 
-        with open(JSONpath,'r') as jsonfile:
+        with open(JSONpath) as jsonfile:
             json_dict = json.load(jsonfile)
 
 
@@ -457,7 +455,7 @@ class pcaExplorer(object):
             raise JSONFileError('File should be a JSON file')
             return
 
-        with open(JSONpath,'r') as jsonfile:
+        with open(JSONpath) as jsonfile:
             json_dict = json.load(jsonfile)
 
 
@@ -808,7 +806,7 @@ class pcaExplorer(object):
                     group_name = os.path.basename(os.path.dirname(vtkfile))
 
         if (self.isSRep is True):
-            if (len(y_design) is 0):
+            if (len(y_design) == 0):
                 print("Reading s-rep dataset")
                 y_design = None
                 polydata = None
@@ -817,7 +815,7 @@ class pcaExplorer(object):
                 y_design = np.array(y_design)
                 y_design = y_design.reshape(y_design.shape[0], -1)
         else:
-            if len(y_design) is not 0:
+            if len(y_design) != 0:
                 print("Reading poly dataset")
                 y_design = np.array(y_design)
                 y_design = y_design.reshape(y_design.shape[0], -1)
@@ -1156,7 +1154,7 @@ class pcaExplorer(object):
         colors.Modified()
         return colors
 
-class shapepcalib(object):
+class shapepcalib:
     def __init__(self,parent=None):
         #ScriptedLoadableModule.__init__(self, parent)
         parent.title = "shapepcalib"

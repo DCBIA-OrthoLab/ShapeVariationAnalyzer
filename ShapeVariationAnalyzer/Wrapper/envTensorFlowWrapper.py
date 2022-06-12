@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-from __future__ import print_function
 import os, sys
 import subprocess
 import json
@@ -30,7 +29,7 @@ def config_env():
     pathSlicerExec = str(os.path.dirname(sys.executable))
     if sys.platform == 'win32':
         pathSlicerExec.replace("/","\\")
-    currentPath = os.path.dirname(os.path.abspath(__file__))
+    currentPath = os.path.dirname(__file__)
 
     if sys.platform == 'win32':
         Python35 = 0
@@ -82,7 +81,7 @@ def config_env():
 
 
     print("\n\n II. Create environment tensorflowSlicer")
-    currentPath = os.path.dirname(os.path.abspath(__file__))
+    currentPath = os.path.dirname(__file__)
     tempPath = os.path.join(currentPath, '..', 'Resources')
     env_dir = os.path.join(tempPath, "env-tensorflow") 
     if not os.path.isdir(env_dir):
@@ -132,7 +131,7 @@ def config_env():
         env_syspath = "sys.path.append(\"" + os.path.join(env_dir,'Lib') + "\"); sys.path.append(\"" + os.path.join(env_dir, 'Lib', 'site-packages') + "\"); "
     else:
         env_syspath = "sys.path.append(\"" + os.path.join(env_dir,'lib', 'python%s' % sys.version[:3]) + "\"); sys.path.append(\"" + os.path.join(env_dir,'lib','python%s' % sys.version[:3], 'site-packages') + "\"); sys.path.append(\"" + os.path.join(env_dir,'lib','python%s' % sys.version[:3], 'site-packages','pip','utils') + "\"); "
-    cmd_virtenv = str(' -c ')
+    cmd_virtenv = ' -c '
     cmd_virtenv = cmd_virtenv + "\'import sys; " + env_syspath 
 
     # construct sys.path

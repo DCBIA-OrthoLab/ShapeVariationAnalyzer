@@ -10,7 +10,7 @@ from .principal_nested_spheres import PNS
 from vtk.util.numpy_support import vtk_to_numpy as vtk_to_numpy
 
 
-class CPNS(object):
+class CPNS:
     """
     Fit composite principle nested spheres model to skeletal representations as described in:
     Pizer S.M. et al. (2013) Nested Sphere Statistics of Skeletal Models.
@@ -54,7 +54,7 @@ class CPNS(object):
         self.ZComp = None
 
     def Update(self):
-        if len(self.fileList) is 0:
+        if len(self.fileList) == 0:
             print("No input file list! Please use setInputFiles(fileList)")
             self.clear()
             return False

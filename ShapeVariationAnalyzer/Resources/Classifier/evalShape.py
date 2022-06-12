@@ -1,7 +1,7 @@
-from __future__ import print_function
 import os
 import sys
-from six.moves import cPickle as pickle
+
+import pickle as pickle
 import neuralNetwork as nn
 import numpy as np
 import tensorflow as tf

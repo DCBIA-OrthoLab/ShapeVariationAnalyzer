@@ -1,5 +1,4 @@
 #!/usr/bin/python
-# -*- coding: utf-8 -*-
 
 """
 =========================================================
@@ -56,7 +55,7 @@ def writeData(data_for_training,outputdataPath):
 
 	vtkdirshapes = os.listdir(outputdataPath)
 	for vtkfilename in vtkdirshapes:
-		if vtkfilename.endswith((".vtk")):
+		if vtkfilename.endswith(".vtk"):
 			print("Writing", vtkfilename)
 			writer = vtk.vtkPolyDataWriter()
 			writer.SetInput(data_for_training)
