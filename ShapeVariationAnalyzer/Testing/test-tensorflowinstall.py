@@ -4,7 +4,6 @@ activate this virtualenv environment.
 This can be used when you must use an existing Python interpreter, not
 the virtualenv bin/python
 """
-from __future__ import print_function
 
 import tensorflow
 print("TENSORFLOW VERSION ::: " + str(tensorflow.__version__))

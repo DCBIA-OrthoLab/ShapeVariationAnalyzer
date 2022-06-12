@@ -1,6 +1,3 @@
-
-# coding: utf-8
-
 # Deep Learning
 # =============
 # 
@@ -15,11 +12,10 @@
 
 # These are all the modules we'll be using later. Make sure you can import them
 # before proceeding further.
-from __future__ import print_function
 import numpy as np
 import tensorflow as tf
-from six.moves import cPickle as pickle
-from six.moves import range
+
+import pickle as pickle
 import argparse
 import neuralNetwork as nn
 import os
@@ -225,7 +221,7 @@ with graph.as_default():
 
         if step % 100 == 0:
           print('OUTPUT: Step %d: loss = %.3f' % (step, loss_value))
-          print('Accuracy = %.3f, Auc = %.3f ' % (accuracy[0], auc[0]))
+          print(f'Accuracy = {accuracy[0]:.3f}, Auc = {auc[0]:.3f} ')
           # output some data to the log files for tensorboard
           summary_writer.add_summary(summary, step)
           summary_writer.flush()
@@ -238,7 +234,7 @@ with graph.as_default():
             try:
               batch_valid_data, batch_valid_labels = sess.run([next_valid_data, next_valid_labels])
               _, accuracy, auc = sess.run([y_conv, accuracy_eval, auc_eval], feed_dict={x: batch_valid_data, y_: batch_valid_labels, keep_prob: 1})
-              print('Validation accuracy = %.3f, Auc = %.3f ' % (accuracy[0], auc[0]))
+              print(f'Validation accuracy = {accuracy[0]:.3f}, Auc = {auc[0]:.3f} ')
             except tf.errors.OutOfRangeError:
               break
 

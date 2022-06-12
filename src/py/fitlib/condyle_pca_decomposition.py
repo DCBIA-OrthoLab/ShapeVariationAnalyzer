@@ -1,5 +1,4 @@
 #!/usr/bin/python
-# -*- coding: utf-8 -*-
 
 """
 =========================================================
@@ -58,7 +57,7 @@ def readData(shapedir):
     firstshapedata = 0
 
     for vtkfilename in vtkdirshapes:
-        if vtkfilename.endswith((".vtk")):
+        if vtkfilename.endswith(".vtk"):
             print("Reading", vtkfilename)
             reader = vtk.vtkPolyDataReader()
             reader.SetFileName(os.path.join(shapedir, vtkfilename))

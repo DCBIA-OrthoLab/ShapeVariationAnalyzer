@@ -1,8 +1,7 @@
-
 import numpy as np
 import tensorflow as tf
-from six.moves import cPickle as pickle
-from six.moves import range
+
+import pickle as pickle
 import argparse
 import norm_nn as nn
 import os

@@ -1,7 +1,5 @@
 #!/usr/bin/env python-real
-# -*- coding: utf-8 -*-
 
-from __future__ import print_function
 
 import sys,os
 import shapepcalib as shapca

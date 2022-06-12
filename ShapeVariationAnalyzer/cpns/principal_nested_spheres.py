@@ -3,7 +3,7 @@ import scipy
 from scipy import optimize as opt
 from sklearn.decomposition import PCA
 from .pns_utils import *
-class PNS(object):
+class PNS:
     """
     Fit nested_spheres to data. This is a python code to PNS matlab code
     See Sungkyu Jung et al, 2012 for the original PNS.
@@ -364,7 +364,7 @@ class PNS(object):
                 c0 = center.squeeze()
                 cnt += 1
                 if cnt > 30:
-                    print('Fit subspheres iteration reached 30th with residuals: {}'.format(err))
+                    print(f'Fit subspheres iteration reached 30th with residuals: {err}')
                     break
             return (g_now, center, r)
 

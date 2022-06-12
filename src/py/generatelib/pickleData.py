@@ -1,6 +1,7 @@
 import numpy as np
 import os
-from six.moves import cPickle as pickle
+
+import pickle as pickle
 #import neuralNetwork as nn
 import inputData
 import argparse
