@@ -55,7 +55,10 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
 
         ScriptedLoadableModuleWidget.setup(self)        
 
-        # ---- Widget Setup ----
+        # Load widget from .ui file
+        uiWidget = slicer.util.loadUI(self.resourcePath('UI/ShapeVariationAnalyzer.ui'))
+        self.layout.addWidget(uiWidget)
+        self.ui = slicer.util.childWidgetVariables(uiWidget)
 
         # Global Variables
         self.logic = ShapeVariationAnalyzerLogic()
@@ -78,311 +81,198 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.PCA_sliders_value_label=list()
         self.PCANode = None
 
-        # Interface
-        self.moduleName = 'ShapeVariationAnalyzer'
-        scriptedModulesPath = eval('slicer.modules.%s.path' % self.moduleName.lower())
-        scriptedModulesPath = os.path.dirname(scriptedModulesPath)
-        path = os.path.join(scriptedModulesPath, 'Resources', 'UI', '%s.ui' % self.moduleName)
-        self.widget = slicer.util.loadUI(path)
-        self.layout.addWidget(self.widget)
-
         #     global variables of the Interface:
-        #          Tab: Creation of CSV File for Classification Groups
-        self.collapsibleButton_creationCSVFile = self.getUI('CollapsibleButton_creationCSVFile')
-        self.spinBox_group = self.getUI('spinBox_group')
-        self.directoryButton_creationCSVFile = self.getUI('DirectoryButton_creationCSVFile')
-        self.stackedWidget_manageGroup = self.getUI('stackedWidget_manageGroup')
-        self.pushButton_addGroup = self.getUI('pushButton_addGroup')
-        self.pushButton_removeGroup = self.getUI('pushButton_removeGroup')
-        self.pushButton_modifyGroup = self.getUI('pushButton_modifyGroup')
-        self.pushButton_exportCSVfile = self.getUI('pushButton_exportCSVfile')
-
-        #          Tab: Creation of New Classification Groups
-        self.collapsibleButton_previewClassificationGroups = self.getUI('CollapsibleButton_previewClassificationGroups')
-        self.pathLineEdit_previewGroups = self.getUI('pathLineEdit_previewGroups')
-        self.pathLineEdit_previewGroups.filters = ctk.ctkPathLineEdit.Files
-        self.pathLineEdit_previewGroups.nameFilters = ['*.csv']
-        self.collapsibleGroupBox_previewVTKFiles = self.getUI('CollapsibleGroupBox_previewVTKFiles')
-        self.checkableComboBox_ChoiceOfGroup = self.getUI('CheckableComboBox_ChoiceOfGroup')
-        self.tableWidget_VTKFiles = self.getUI('tableWidget_VTKFiles')
-        self.pushButton_previewVTKFiles = self.getUI('pushButton_previewVTKFiles')
-        self.pushButton_exportUpdatedClassification = self.getUI('pushButton_exportUpdatedClassification')
-
         #          Tab: PCA Analysis
-        self.label_valueExploration=self.getUI('label_valueExploration')
-        self.label_varianceExploration=self.getUI('label_varianceExploration')
-        self.label_groupExploration=self.getUI('label_groupExploration')
-        self.label_minVariance=self.getUI('label_minVariance')
-        self.label_maxSlider=self.getUI('label_maxSlider')
-        self.label_colorMode=self.getUI('label_colorMode')
-        self.label_colorModeParam1=self.getUI('label_colorModeParam1')
-        self.label_colorModeParam2=self.getUI('label_colorModeParam2')
-        self.label_numberShape=self.getUI('label_numberShape')
-        
-        self.label_normalLabel_1=self.getUI('label_normalLabel_1')
-        self.label_normalLabel_2=self.getUI('label_normalLabel_2')
-        self.label_normalLabel_3=self.getUI('label_normalLabel_3')
-        self.label_normalLabel_4=self.getUI('label_normalLabel_4')
-        self.label_normalLabel_5=self.getUI('label_normalLabel_5')
-        self.label_normalLabel_6=self.getUI('label_normalLabel_6')
-        self.label_normalLabel_7=self.getUI('label_normalLabel_7')
-
-        self.collapsibleButton_PCA = self.getUI('collapsibleButton_PCA')
-        self.pathLineEdit_CSVFilePCA = self.getUI('pathLineEdit_CSVFilePCA')  
-        self.pathLineEdit_CSVFilePCA.filters = ctk.ctkPathLineEdit.Files
-        self.pathLineEdit_CSVFilePCA.nameFilters = ['*.csv']
-        self.checkBox_transformToLPS = self.getUI('checkBox_transformToLPS')
-        self.pathLineEdit_exploration = self.getUI('pathLineEdit_exploration')
-        self.pathLineEdit_exploration.filters = ctk.ctkPathLineEdit.Files
-        self.pathLineEdit_exploration.nameFilters = ['*.json']
-        self.comboBox_groupPCA = self.getUI('comboBox_groupPCA')
-        self.comboBox_colorMode = self.getUI('comboBox_colorMode')
-
-        self.pushButton_PCA = self.getUI('pushButton_PCA') 
-        self.pushButton_resetSliders = self.getUI('pushButton_resetSliders')  
-        self.pushButton_saveExploration=self.getUI('pushButton_saveExploration')
-        self.pushButton_toggleMean=self.getUI('pushButton_toggleMean')
-        self.pushButton_evaluateModels=self.getUI('pushButton_evaluateModels')
-
-        self.label_statePCA = self.getUI('label_statePCA')
-
-        self.gridLayout_PCAsliders=self.getUI('gridLayout_PCAsliders')
-
-        self.spinBox_minVariance=self.getUI('spinBox_minVariance')
-        self.spinBox_maxSlider=self.getUI('spinBox_maxSlider')
-        self.spinBox_colorModeParam1=self.getUI('spinBox_colorModeParam_1')
-        self.spinBox_colorModeParam2=self.getUI('spinBox_colorModeParam_2')
-        self.spinBox_numberShape=self.getUI('spinBox_numberShape')
-        self.spinBox_decimals = self.getUI('spinBox_decimals')
-        self.label_decimals = self.getUI('label_decimals')
-
-        self.pushButton_updateProjectionPlot = self.getUI('pushButton_updateProjectionPlot')
-        self.label_pc1 = self.getUI('label_pc1')
-        self.label_pc2 = self.getUI('label_pc2')
-        self.RangeWidget_pc1 = self.getUI('RangeWidget_pc1')
-        self.RangeWidget_pc2 = self.getUI('RangeWidget_pc2')
-        self.checkBox_insidePc1 = self.getUI('checkBox_insidePc1')
-        self.checkBox_insidePc2 = self.getUI('checkBox_insidePc2')
-        self.label_pcLogic = self.getUI('label_pcLogic')
-        self.comboBox_pcLogic = self.getUI('comboBox_pcLogic')
-
-        self.ctkColorPickerButton_groupColor=self.getUI('ctkColorPickerButton_groupColor')
-
-        self.checkBox_useHiddenEigenmodes=self.getUI('checkBox_useHiddenEigenmodes')
-
-        #           Tab: PCA Export
-        self.collapsibleButton_PCAExport = self.getUI('CollapsibleButton_PCAExport')
-        self.comboBox_SingleExportGroup = self.getUI('comboBox_SingleExportGroup')
-        self.comboBox_SingleExportPC = self.getUI('comboBox_SingleExportPC')
-        self.label_PC = self.getUI('label_PC')
-        self.label_Group = self.getUI('label_Group')
-        self.DirectoryButton_PCASingleExport = self.getUI('DirectoryButton_PCASingleExport')
-        self.pushButton_PCAExport = self.getUI('pushButton_PCAExport')
-        self.pushButton_PCACurrentExport = self.getUI('pushButton_PCACurrentExport')
-        self.checkBox_stdMaxMin = self.getUI('checkBox_stdMaxMin')
-        self.checkBox_stdRegular = self.getUI('checkBox_stdRegular')
-        self.doubleSpinBox_stdRegular = self.getUI('doubleSpinBox_stdRegular')
-        self.doubleSpinBox_stdmin = self.getUI('doubleSpinBox_stdmin')
-        self.doubleSpinBox_stdmax = self.getUI('doubleSpinBox_stdmax')
-        self.label_stdRegular = self.getUI('label_stdRegular')
-        self.label_stdmin = self.getUI('label_stdmin')
-        self.label_stdmax = self.getUI('label_stdmax')
-        self.doubleSpinBox_step = self.getUI('doubleSpinBox_step')
-
-        #self.doubleSpinBox_insideLimit=self.getUI('doubleSpinBox_insideLimit')
-        #self.doubleSpinBox_insideLimit=self.getUI('doubleSpinBox_outsidesideLimit')
+        self.ui.pathLineEdit_CSVFilePCA.filters = ctk.ctkPathLineEdit.Files
+        self.ui.pathLineEdit_CSVFilePCA.nameFilters = ['*.csv']
+        self.ui.pathLineEdit_exploration.filters = ctk.ctkPathLineEdit.Files
+        self.ui.pathLineEdit_exploration.nameFilters = ['*.json']
 
         # --------------------------------------------------------- #
         #                  Widget Configuration                     #
         # --------------------------------------------------------- #
 
         ##PCA exploration Widgets Configuration
-        #self.pushButton_PCA.setDisabled(True) 
-        #self.comboBox_groupPCA.setDisabled(True)
-        self.comboBox_colorMode.addItem('Group color')
-        self.comboBox_colorMode.addItem('Unsigned distance to mean shape')
-        self.comboBox_colorMode.addItem('Signed distance to mean shape')
+        #self.ui.pushButton_PCA.setDisabled(True) 
+        #self.ui.comboBox_groupPCA.setDisabled(True)
+        self.ui.comboBox_colorMode.addItem('Group color')
+        self.ui.comboBox_colorMode.addItem('Unsigned distance to mean shape')
+        self.ui.comboBox_colorMode.addItem('Signed distance to mean shape')
 
-        self.spinBox_minVariance.setValue(2)
-        self.spinBox_maxSlider.setMinimum(1)
-        self.spinBox_maxSlider.setMaximum(8)
-        self.spinBox_maxSlider.setValue(8)
+        self.ui.spinBox_minVariance.setValue(2)
+        self.ui.spinBox_maxSlider.setMinimum(1)
+        self.ui.spinBox_maxSlider.setMaximum(8)
+        self.ui.spinBox_maxSlider.setValue(8)
 
-        self.spinBox_colorModeParam1.setMinimum(1)
-        self.spinBox_colorModeParam2.setMinimum(1)
-        self.spinBox_colorModeParam1.setMaximum(10000)
-        self.spinBox_colorModeParam2.setMaximum(10000)
-        self.spinBox_colorModeParam1.setValue(1)
-        self.spinBox_colorModeParam2.setValue(1)
-        self.spinBox_numberShape.setMinimum(100)
-        self.spinBox_numberShape.setMaximum(1000000)
-        self.spinBox_numberShape.setValue(10000)
-        self.spinBox_decimals.setValue(3)
-        self.RangeWidget_pc1.singleStep = 0.01
-        self.RangeWidget_pc1.setRange(-3.30, 3.30)
-        self.RangeWidget_pc1.minimumValue = -3.30
-        self.RangeWidget_pc1.maximumValue = 3.30
-        self.RangeWidget_pc2.singleStep = 0.01
-        self.RangeWidget_pc2.setRange(-3.30, 3.30)
-        self.RangeWidget_pc2.minimumValue = -3.30
-        self.RangeWidget_pc2.maximumValue = 3.30
-        self.comboBox_pcLogic.addItem("AND")
-        self.comboBox_pcLogic.addItem("OR")
+        self.ui.spinBox_colorModeParam_1.setMinimum(1)
+        self.ui.spinBox_colorModeParam_2.setMinimum(1)
+        self.ui.spinBox_colorModeParam_1.setMaximum(10000)
+        self.ui.spinBox_colorModeParam_2.setMaximum(10000)
+        self.ui.spinBox_colorModeParam_1.setValue(1)
+        self.ui.spinBox_colorModeParam_2.setValue(1)
+        self.ui.spinBox_numberShape.setMinimum(100)
+        self.ui.spinBox_numberShape.setMaximum(1000000)
+        self.ui.spinBox_numberShape.setValue(10000)
+        self.ui.spinBox_decimals.setValue(3)
+        self.ui.RangeWidget_pc1.singleStep = 0.01
+        self.ui.RangeWidget_pc1.setRange(-3.30, 3.30)
+        self.ui.RangeWidget_pc1.minimumValue = -3.30
+        self.ui.RangeWidget_pc1.maximumValue = 3.30
+        self.ui.RangeWidget_pc2.singleStep = 0.01
+        self.ui.RangeWidget_pc2.setRange(-3.30, 3.30)
+        self.ui.RangeWidget_pc2.minimumValue = -3.30
+        self.ui.RangeWidget_pc2.maximumValue = 3.30
+        self.ui.comboBox_pcLogic.addItem("AND")
+        self.ui.comboBox_pcLogic.addItem("OR")
 
-        self.checkBox_transformToLPS.setChecked(True)
-        self.checkBox_useHiddenEigenmodes.setChecked(True)
-        self.checkBox_insidePc1.setChecked(True)
-        self.checkBox_insidePc2.setChecked(True)
+        self.ui.checkBox_transformToLPS.setChecked(True)
+        self.ui.checkBox_useHiddenEigenmodes.setChecked(True)
+        self.ui.checkBox_insidePc1.setChecked(True)
+        self.ui.checkBox_insidePc2.setChecked(True)
         
-        self.label_statePCA.hide()
-        self.ctkColorPickerButton_groupColor.color=qt.QColor(255,255,255)
-        self.ctkColorPickerButton_groupColor.setDisplayColorName(False)
+        self.ui.label_statePCA.hide()
+        self.ui.ctkColorPickerButton_groupColor.color=qt.QColor(255,255,255)
+        self.ui.ctkColorPickerButton_groupColor.setDisplayColorName(False)
 
-        self.label_normalLabel_1.hide()
-        self.label_normalLabel_2.hide()
-        self.label_normalLabel_3.hide()
-        self.label_normalLabel_4.hide()
-        self.label_normalLabel_5.hide()
-        self.label_normalLabel_6.hide()
-        self.label_normalLabel_7.hide()
+        self.ui.label_normalLabel_1.hide()
+        self.ui.label_normalLabel_2.hide()
+        self.ui.label_normalLabel_3.hide()
+        self.ui.label_normalLabel_4.hide()
+        self.ui.label_normalLabel_5.hide()
+        self.ui.label_normalLabel_6.hide()
+        self.ui.label_normalLabel_7.hide()
 
-        self.comboBox_groupPCA.hide()
-        self.comboBox_colorMode.hide()
-        self.ctkColorPickerButton_groupColor.hide()
-        self.pushButton_resetSliders.hide()
-        self.label_valueExploration.hide()
-        self.label_groupExploration.hide()
-        self.label_varianceExploration.hide()
-        self.pushButton_saveExploration.hide()
-        self.pushButton_toggleMean.hide()
-        self.pushButton_evaluateModels.hide()
-        self.spinBox_minVariance.hide()
-        self.spinBox_maxSlider.hide()
-        self.label_minVariance.hide()
-        self.label_maxSlider.hide()
-        self.spinBox_colorModeParam1.hide()
-        self.spinBox_colorModeParam2.hide()
-        self.label_colorMode.hide()
-        self.label_colorModeParam1.hide()
-        self.label_colorModeParam2.hide()
-        self.label_numberShape.hide()
-        self.spinBox_numberShape.hide()
-        self.spinBox_decimals.hide()
-        self.label_decimals.hide()
-        self.checkBox_useHiddenEigenmodes.hide()
-        self.pushButton_updateProjectionPlot.hide()
-        self.label_pc1.hide()
-        self.label_pc2.hide()
-        self.RangeWidget_pc1.hide()
-        self.RangeWidget_pc2.hide()
-        self.checkBox_insidePc1.hide()
-        self.checkBox_insidePc2.hide()
-        self.label_pcLogic.hide()
-        self.comboBox_pcLogic.hide()
+        self.ui.comboBox_groupPCA.hide()
+        self.ui.comboBox_colorMode.hide()
+        self.ui.ctkColorPickerButton_groupColor.hide()
+        self.ui.pushButton_resetSliders.hide()
+        self.ui.label_valueExploration.hide()
+        self.ui.label_groupExploration.hide()
+        self.ui.label_varianceExploration.hide()
+        self.ui.pushButton_saveExploration.hide()
+        self.ui.pushButton_toggleMean.hide()
+        self.ui.pushButton_evaluateModels.hide()
+        self.ui.spinBox_minVariance.hide()
+        self.ui.spinBox_maxSlider.hide()
+        self.ui.label_minVariance.hide()
+        self.ui.label_maxSlider.hide()
+        self.ui.spinBox_colorModeParam_1.hide()
+        self.ui.spinBox_colorModeParam_2.hide()
+        self.ui.label_colorMode.hide()
+        self.ui.label_colorModeParam1.hide()
+        self.ui.label_colorModeParam2.hide()
+        self.ui.label_numberShape.hide()
+        self.ui.spinBox_numberShape.hide()
+        self.ui.spinBox_decimals.hide()
+        self.ui.label_decimals.hide()
+        self.ui.checkBox_useHiddenEigenmodes.hide()
+        self.ui.pushButton_updateProjectionPlot.hide()
+        self.ui.label_pc1.hide()
+        self.ui.label_pc2.hide()
+        self.ui.RangeWidget_pc1.hide()
+        self.ui.RangeWidget_pc2.hide()
+        self.ui.checkBox_insidePc1.hide()
+        self.ui.checkBox_insidePc2.hide()
+        self.ui.label_pcLogic.hide()
+        self.ui.comboBox_pcLogic.hide()
 
 
 
 
         #     disable/enable and hide/show widget
         #self.comboBox_healthyGroup.setDisabled(True)
-        self.pushButton_exportUpdatedClassification.setDisabled(True)
-        self.checkableComboBox_ChoiceOfGroup.setDisabled(True)
-        self.tableWidget_VTKFiles.setDisabled(True)
-        self.pushButton_previewVTKFiles.setDisabled(True)
-        self.label_statePCA.hide()
-        self.collapsibleButton_creationCSVFile.setChecked(False)
-        self.collapsibleButton_previewClassificationGroups.setChecked(False)
+        self.ui.pushButton_exportUpdatedClassification.setDisabled(True)
+        self.ui.checkableComboBox_ChoiceOfGroup.setDisabled(True)
+        self.ui.tableWidget_VTKFiles.setDisabled(True)
+        self.ui.pushButton_previewVTKFiles.setDisabled(True)
+        self.ui.label_statePCA.hide()
+        self.ui.collapsibleButton_creationCSVFile.setChecked(False)
+        self.ui.collapsibleButton_previewClassificationGroups.setChecked(False)
 
         #     initialisation of the stackedWidget to display the button "add group"
-        self.stackedWidget_manageGroup.setCurrentIndex(0)
+        self.ui.stackedWidget_manageGroup.setCurrentIndex(0)
 
         #     spinbox configuration in the tab "Creation of CSV File for Classification Groups"
-        self.spinBox_group.setMinimum(0)
-        self.spinBox_group.setMaximum(0)
-        self.spinBox_group.setValue(0)
+        self.ui.spinBox_group.setMinimum(0)
+        self.ui.spinBox_group.setMaximum(0)
+        self.ui.spinBox_group.setValue(0)
 
         #     configuration of the table for preview VTK file
-        self.tableWidget_VTKFiles.setColumnCount(4)
-        self.tableWidget_VTKFiles.setHorizontalHeaderLabels([' VTK files ', ' Group ', ' Visualization ', 'Color'])
-        self.tableWidget_VTKFiles.setColumnWidth(0, 200)
-        horizontalHeader = self.tableWidget_VTKFiles.horizontalHeader()
+        self.ui.tableWidget_VTKFiles.setColumnCount(4)
+        self.ui.tableWidget_VTKFiles.setHorizontalHeaderLabels([' VTK files ', ' Group ', ' Visualization ', 'Color'])
+        self.ui.tableWidget_VTKFiles.setColumnWidth(0, 200)
+        horizontalHeader = self.ui.tableWidget_VTKFiles.horizontalHeader()
         horizontalHeader.setStretchLastSection(False)
         '''horizontalHeader.setResizeMode(0,qt.QHeaderView.Stretch)
         horizontalHeader.setResizeMode(1,qt.QHeaderView.ResizeToContents)
         horizontalHeader.setResizeMode(2,qt.QHeaderView.ResizeToContents)
         horizontalHeader.setResizeMode(3,qt.QHeaderView.ResizeToContents)'''
-        self.tableWidget_VTKFiles.verticalHeader().setVisible(True)
+        self.ui.tableWidget_VTKFiles.verticalHeader().setVisible(True)
 
         #      TAB: PCA Export
-        self.pushButton_PCAExport.setEnabled(False)
-        self.comboBox_SingleExportPC.setEnabled(False)
-        self.comboBox_SingleExportGroup.setEnabled(False)        
-        self.pushButton_PCACurrentExport.setEnabled(False)
-        self.checkBox_stdRegular.setChecked(True)
-        self.checkBox_stdMaxMin.setChecked(False)
-        self.doubleSpinBox_stdmin.setDisabled(True)
-        self.doubleSpinBox_stdmax.setDisabled(True)
+        self.ui.pushButton_PCAExport.setEnabled(False)
+        self.ui.comboBox_SingleExportPC.setEnabled(False)
+        self.ui.comboBox_SingleExportGroup.setEnabled(False)
+        self.ui.pushButton_PCACurrentExport.setEnabled(False)
+        self.ui.checkBox_stdRegular.setChecked(True)
+        self.ui.checkBox_stdMaxMin.setChecked(False)
+        self.ui.doubleSpinBox_stdmin.setDisabled(True)
+        self.ui.doubleSpinBox_stdmax.setDisabled(True)
 
 
         # --------------------------------------------------------- #
         #                       Connection                          #
         # --------------------------------------------------------- #
         #          Tab: Creation of CSV File for Classification Groups
-        self.collapsibleButton_creationCSVFile.connect('clicked()',
-                                                       lambda: self.onSelectedCollapsibleButtonOpen(self.collapsibleButton_creationCSVFile))
-        self.spinBox_group.connect('valueChanged(int)', self.onManageGroup)
-        self.pushButton_addGroup.connect('clicked()', self.onAddGroupForCreationCSVFile)
-        self.pushButton_removeGroup.connect('clicked()', self.onRemoveGroupForCreationCSVFile)
-        self.pushButton_modifyGroup.connect('clicked()', self.onModifyGroupForCreationCSVFile)
-        self.pushButton_exportCSVfile.connect('clicked()', self.onExportForCreationCSVFile)
+        self.ui.collapsibleButton_creationCSVFile.connect('clicked()',
+                                                       lambda: self.onSelectedCollapsibleButtonOpen(self.ui.collapsibleButton_creationCSVFile))
+        self.ui.spinBox_group.connect('valueChanged(int)', self.onManageGroup)
+        self.ui.pushButton_addGroup.connect('clicked()', self.onAddGroupForCreationCSVFile)
+        self.ui.pushButton_removeGroup.connect('clicked()', self.onRemoveGroupForCreationCSVFile)
+        self.ui.pushButton_modifyGroup.connect('clicked()', self.onModifyGroupForCreationCSVFile)
+        self.ui.pushButton_exportCSVfile.connect('clicked()', self.onExportForCreationCSVFile)
 
         #          Tab: Preview / Update Classification Groups
-        self.collapsibleButton_previewClassificationGroups.connect('clicked()',
-                                                                    lambda: self.onSelectedCollapsibleButtonOpen(self.collapsibleButton_previewClassificationGroups))
-        self.pathLineEdit_previewGroups.connect('currentPathChanged(const QString)', self.onSelectPreviewGroups)
-        self.checkableComboBox_ChoiceOfGroup.connect('checkedIndexesChanged()', self.onCheckableComboBoxValueChanged)
-        self.pushButton_previewVTKFiles.connect('clicked()', self.onPreviewVTKFiles)
-        self.pushButton_exportUpdatedClassification.connect('clicked()', self.onExportUpdatedClassificationGroups)
+        self.ui.collapsibleButton_previewClassificationGroups.connect('clicked()',
+                                                                    lambda: self.onSelectedCollapsibleButtonOpen(self.ui.collapsibleButton_previewClassificationGroups))
+        self.ui.pathLineEdit_previewGroups.connect('currentPathChanged(const QString)', self.onSelectPreviewGroups)
+        self.ui.checkableComboBox_ChoiceOfGroup.connect('checkedIndexesChanged()', self.onCheckableComboBoxValueChanged)
+        self.ui.pushButton_previewVTKFiles.connect('clicked()', self.onPreviewVTKFiles)
+        self.ui.pushButton_exportUpdatedClassification.connect('clicked()', self.onExportUpdatedClassificationGroups)
         
 
         #          Tab: Select Input Data
-        self.collapsibleButton_PCA.connect('clicked()',
-                                            lambda: self.onSelectedCollapsibleButtonOpen(self.collapsibleButton_PCA))
+        self.ui.collapsibleButton_PCA.connect('clicked()',
+                                            lambda: self.onSelectedCollapsibleButtonOpen(self.ui.collapsibleButton_PCA))
         slicer.mrmlScene.AddObserver(slicer.mrmlScene.EndCloseEvent, self.onCloseScene)
         self.stateCSVMeansShape = False
         self.stateCSVDataset = False
 
 
         #       Tab : PCA
-        self.pathLineEdit_CSVFilePCA.connect('currentPathChanged(const QString)', self.onCSV_PCA)
-        self.pathLineEdit_exploration.connect('currentPathChanged(const QString)', self.onLoadExploration)
-        self.pushButton_PCA.connect('clicked()', self.onExportForExploration)
-        self.pushButton_resetSliders.connect('clicked()', self.onResetSliders)
-        self.pushButton_saveExploration.connect('clicked()',self.onSaveExploration)
-        self.pushButton_toggleMean.connect('clicked()',self.onToggleMeanShape)
-        self.pushButton_evaluateModels.connect('clicked()',self.onEvaluateModels)
-        self.comboBox_groupPCA.connect('activated(QString)',self.explorePCA)
-        self.comboBox_colorMode.connect('activated(QString)',self.onColorModeChange)
-        self.spinBox_maxSlider.connect('valueChanged(int)',self.onUpdateSliderList)
-        self.spinBox_minVariance.connect('valueChanged(int)',self.onUpdateSliderList)
-        self.spinBox_colorModeParam1.connect('valueChanged(int)',self.onUpdateColorModeParam)
-        self.spinBox_colorModeParam2.connect('valueChanged(int)',self.onUpdateColorModeParam)
-        self.ctkColorPickerButton_groupColor.connect('colorChanged(QColor)',self.onGroupColorChanged)
-        self.checkBox_useHiddenEigenmodes.connect('stateChanged(int)',self.onEigenCheckBoxChanged)
-        self.pushButton_updateProjectionPlot.connect('clicked()',self.onUpdateProjectionPlot)
+        self.ui.pathLineEdit_CSVFilePCA.connect('currentPathChanged(const QString)', self.onCSV_PCA)
+        self.ui.pathLineEdit_exploration.connect('currentPathChanged(const QString)', self.onLoadExploration)
+        self.ui.pushButton_PCA.connect('clicked()', self.onExportForExploration)
+        self.ui.pushButton_resetSliders.connect('clicked()', self.onResetSliders)
+        self.ui.pushButton_saveExploration.connect('clicked()',self.onSaveExploration)
+        self.ui.pushButton_toggleMean.connect('clicked()',self.onToggleMeanShape)
+        self.ui.pushButton_evaluateModels.connect('clicked()',self.onEvaluateModels)
+        self.ui.comboBox_groupPCA.connect('activated(QString)',self.explorePCA)
+        self.ui.comboBox_colorMode.connect('activated(QString)',self.onColorModeChange)
+        self.ui.spinBox_maxSlider.connect('valueChanged(int)',self.onUpdateSliderList)
+        self.ui.spinBox_minVariance.connect('valueChanged(int)',self.onUpdateSliderList)
+        self.ui.spinBox_colorModeParam_1.connect('valueChanged(int)',self.onUpdateColorModeParam)
+        self.ui.spinBox_colorModeParam_2.connect('valueChanged(int)',self.onUpdateColorModeParam)
+        self.ui.ctkColorPickerButton_groupColor.connect('colorChanged(QColor)',self.onGroupColorChanged)
+        self.ui.checkBox_useHiddenEigenmodes.connect('stateChanged(int)',self.onEigenCheckBoxChanged)
+        self.ui.pushButton_updateProjectionPlot.connect('clicked()',self.onUpdateProjectionPlot)
         self.evaluationFlag="DONE"
 
         #       Tab : PCA Export
-        self.pushButton_PCAExport.connect('clicked()', self.onExportForPCAExport)
-        self.pushButton_PCACurrentExport.connect('clicked()', self.onExportForPCACurrentExport)
-        self.checkBox_stdMaxMin.connect('clicked()', self.onMinMaxstdCheckBoxChanged)
-        self.checkBox_stdRegular.connect('clicked()', self.onRegularstdCheckBoxChanged)
-
-
-    def getUI(self, objectName):
-        """ Functions to recovery the widget in the .ui file
-        """
-        return slicer.util.findChild(self.widget, objectName)
+        self.ui.pushButton_PCAExport.connect('clicked()', self.onExportForPCAExport)
+        self.ui.pushButton_PCACurrentExport.connect('clicked()', self.onExportForPCACurrentExport)
+        self.ui.checkBox_stdMaxMin.connect('clicked()', self.onMinMaxstdCheckBoxChanged)
+        self.ui.checkBox_stdRegular.connect('clicked()', self.onRegularstdCheckBoxChanged)
 
     # function called each time that the user "enter" in Diagnostic Index interface
     def enter(self):
@@ -410,114 +300,114 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.dictFeatData = dict()
 
         # Tab: New Classification Groups
-        self.pathLineEdit_previewGroups.setCurrentPath(" ")
-        self.checkableComboBox_ChoiceOfGroup.setDisabled(True)
-        self.tableWidget_VTKFiles.clear()
-        self.tableWidget_VTKFiles.setColumnCount(4)
-        self.tableWidget_VTKFiles.setHorizontalHeaderLabels([' VTK files ', ' Group ', ' Visualization ', 'Color'])
-        self.tableWidget_VTKFiles.setColumnWidth(0, 200)
-        horizontalHeader = self.tableWidget_VTKFiles.horizontalHeader()
+        self.ui.pathLineEdit_previewGroups.setCurrentPath(" ")
+        self.ui.checkableComboBox_ChoiceOfGroup.setDisabled(True)
+        self.ui.tableWidget_VTKFiles.clear()
+        self.ui.tableWidget_VTKFiles.setColumnCount(4)
+        self.ui.tableWidget_VTKFiles.setHorizontalHeaderLabels([' VTK files ', ' Group ', ' Visualization ', 'Color'])
+        self.ui.tableWidget_VTKFiles.setColumnWidth(0, 200)
+        horizontalHeader = self.ui.tableWidget_VTKFiles.horizontalHeader()
         horizontalHeader.setStretchLastSection(False)
         '''horizontalHeader.setResizeMode(0,qt.QHeaderView.Stretch)
         horizontalHeader.setResizeMode(1,qt.QHeaderView.ResizeToContents)
         horizontalHeader.setResizeMode(2,qt.QHeaderView.ResizeToContents)
         horizontalHeader.setResizeMode(3,qt.QHeaderView.ResizeToContents)'''
-        self.tableWidget_VTKFiles.verticalHeader().setVisible(False)
-        self.tableWidget_VTKFiles.setDisabled(True)
-        self.pushButton_previewVTKFiles.setDisabled(True)
-        self.pushButton_exportUpdatedClassification.setDisabled(True)
+        self.ui.tableWidget_VTKFiles.verticalHeader().setVisible(False)
+        self.ui.tableWidget_VTKFiles.setDisabled(True)
+        self.ui.pushButton_previewVTKFiles.setDisabled(True)
+        self.ui.pushButton_exportUpdatedClassification.setDisabled(True)
 
         #PCA
-        self.label_normalLabel_1.hide()
-        self.label_normalLabel_2.hide()
-        self.label_normalLabel_3.hide()
-        self.label_normalLabel_4.hide()
-        self.label_normalLabel_5.hide()
-        self.label_normalLabel_6.hide()
-        self.label_normalLabel_7.hide()
+        self.ui.label_normalLabel_1.hide()
+        self.ui.label_normalLabel_2.hide()
+        self.ui.label_normalLabel_3.hide()
+        self.ui.label_normalLabel_4.hide()
+        self.ui.label_normalLabel_5.hide()
+        self.ui.label_normalLabel_6.hide()
+        self.ui.label_normalLabel_7.hide()
         self.deletePCASliders()
-        self.comboBox_groupPCA.hide()
-        self.comboBox_colorMode.hide()
-        self.ctkColorPickerButton_groupColor.hide()
-        self.pushButton_resetSliders.hide()
-        self.label_valueExploration.hide()
-        self.label_groupExploration.hide()
-        self.label_varianceExploration.hide()
-        self.pushButton_saveExploration.hide()
-        self.pushButton_toggleMean.hide()
-        self.pushButton_evaluateModels.hide()
-        self.spinBox_minVariance.hide()
-        self.spinBox_maxSlider.hide()
-        self.label_minVariance.hide()
-        self.label_maxSlider.hide()
-        self.spinBox_colorModeParam1.hide()
-        self.spinBox_colorModeParam2.hide()
-        self.label_colorMode.hide()
-        self.label_colorModeParam1.hide()
-        self.label_colorModeParam2.hide()
-        self.label_numberShape.hide()
-        self.spinBox_numberShape.hide()
-        self.spinBox_decimals.hide()
-        self.label_decimals.hide()
-        self.pushButton_updateProjectionPlot.hide()
-        self.label_pc1.hide()
-        self.label_pc2.hide()
-        self.RangeWidget_pc1.hide()
-        self.RangeWidget_pc2.hide()
-        self.checkBox_insidePc1.hide()
-        self.checkBox_insidePc2.hide()
-        self.label_pcLogic.hide()
-        self.comboBox_pcLogic.hide()
-        self.checkBox_useHiddenEigenmodes.hide()
-        self.checkBox_useHiddenEigenmodes.setChecked(True)
-        self.pushButton_PCA.setEnabled(False) 
-        self.pathLineEdit_CSVFilePCA.disconnect('currentPathChanged(const QString)', self.onCSV_PCA)
-        self.pathLineEdit_CSVFilePCA.setCurrentPath(" ")
-        self.pathLineEdit_CSVFilePCA.connect('currentPathChanged(const QString)', self.onCSV_PCA)
-        self.pathLineEdit_exploration.setCurrentPath(" ")
+        self.ui.comboBox_groupPCA.hide()
+        self.ui.comboBox_colorMode.hide()
+        self.ui.ctkColorPickerButton_groupColor.hide()
+        self.ui.pushButton_resetSliders.hide()
+        self.ui.label_valueExploration.hide()
+        self.ui.label_groupExploration.hide()
+        self.ui.label_varianceExploration.hide()
+        self.ui.pushButton_saveExploration.hide()
+        self.ui.pushButton_toggleMean.hide()
+        self.ui.pushButton_evaluateModels.hide()
+        self.ui.spinBox_minVariance.hide()
+        self.ui.spinBox_maxSlider.hide()
+        self.ui.label_minVariance.hide()
+        self.ui.label_maxSlider.hide()
+        self.ui.spinBox_colorModeParam_1.hide()
+        self.ui.spinBox_colorModeParam_2.hide()
+        self.ui.label_colorMode.hide()
+        self.ui.label_colorModeParam1.hide()
+        self.ui.label_colorModeParam2.hide()
+        self.ui.label_numberShape.hide()
+        self.ui.spinBox_numberShape.hide()
+        self.ui.spinBox_decimals.hide()
+        self.ui.label_decimals.hide()
+        self.ui.pushButton_updateProjectionPlot.hide()
+        self.ui.label_pc1.hide()
+        self.ui.label_pc2.hide()
+        self.ui.RangeWidget_pc1.hide()
+        self.ui.RangeWidget_pc2.hide()
+        self.ui.checkBox_insidePc1.hide()
+        self.ui.checkBox_insidePc2.hide()
+        self.ui.label_pcLogic.hide()
+        self.ui.comboBox_pcLogic.hide()
+        self.ui.checkBox_useHiddenEigenmodes.hide()
+        self.ui.checkBox_useHiddenEigenmodes.setChecked(True)
+        self.ui.pushButton_PCA.setEnabled(False) 
+        self.ui.pathLineEdit_CSVFilePCA.disconnect('currentPathChanged(const QString)', self.onCSV_PCA)
+        self.ui.pathLineEdit_CSVFilePCA.setCurrentPath(" ")
+        self.ui.pathLineEdit_CSVFilePCA.connect('currentPathChanged(const QString)', self.onCSV_PCA)
+        self.ui.pathLineEdit_exploration.setCurrentPath(" ")
 
         if self.evaluationFlag!="DONE":
             self.onKillEvaluation()
         try:
-            self.pushButton_evaluateModels.clicked.disconnect()
+            self.ui.pushButton_evaluateModels.clicked.disconnect()
         except:
             pass
-        self.pushButton_evaluateModels.setText("Evaluate models (It may take a long time)")
-        self.pushButton_evaluateModels.connect('clicked()',self.onEvaluateModels)
+        self.ui.pushButton_evaluateModels.setText("Evaluate models (It may take a long time)")
+        self.ui.pushButton_evaluateModels.connect('clicked()',self.onEvaluateModels)
 
-        self.spinBox_minVariance.setValue(2)
+        self.ui.spinBox_minVariance.setValue(2)
 
 
         # Enable/disable
-        self.pushButton_exportUpdatedClassification.setDisabled(True)
-        self.checkableComboBox_ChoiceOfGroup.setDisabled(True)
-        self.tableWidget_VTKFiles.setDisabled(True)
-        self.pushButton_previewVTKFiles.setDisabled(True)
+        self.ui.pushButton_exportUpdatedClassification.setDisabled(True)
+        self.ui.checkableComboBox_ChoiceOfGroup.setDisabled(True)
+        self.ui.tableWidget_VTKFiles.setDisabled(True)
+        self.ui.pushButton_previewVTKFiles.setDisabled(True)
 
-        self.label_statePCA.hide()
+        self.ui.label_statePCA.hide()
         self.stateCSVMeansShape = False
         self.stateCSVDataset = False
 
-        self.collapsibleButton_PCA.setChecked(True)
-        self.collapsibleButton_creationCSVFile.setChecked(False)
-        self.collapsibleButton_previewClassificationGroups.setChecked(False)
+        self.ui.collapsibleButton_PCA.setChecked(True)
+        self.ui.collapsibleButton_creationCSVFile.setChecked(False)
+        self.ui.collapsibleButton_previewClassificationGroups.setChecked(False)
 
         #     initialisation of the stackedWidget to display the button "add group"
-        self.stackedWidget_manageGroup.setCurrentIndex(0)
+        self.ui.stackedWidget_manageGroup.setCurrentIndex(0)
 
         #     spinbox configuration in the tab "Creation of CSV File for Classification Groups"
-        self.spinBox_group.setMinimum(0)
-        self.spinBox_group.setMaximum(0)
-        self.spinBox_group.setValue(0)
+        self.ui.spinBox_group.setMinimum(0)
+        self.ui.spinBox_group.setMaximum(0)
+        self.ui.spinBox_group.setValue(0)
 
     def onSelectedCollapsibleButtonOpen(self, selectedCollapsibleButton):
         """  Only one tab can be display at the same time:
         When one tab is opened all the other tabs are closed 
         """
         if selectedCollapsibleButton.isChecked():
-            collapsibleButtonList = [self.collapsibleButton_creationCSVFile,
-                                     self.collapsibleButton_previewClassificationGroups,
-                                     self.collapsibleButton_PCA]
+            collapsibleButtonList = [self.ui.collapsibleButton_creationCSVFile,
+                                     self.ui.collapsibleButton_previewClassificationGroups,
+                                     self.ui.collapsibleButton_PCA]
             for collapsibleButton in collapsibleButtonList:
                 collapsibleButton.setChecked(False)
             selectedCollapsibleButton.setChecked(True)
@@ -533,17 +423,17 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
             - "Remove Group" for the last group added
             - "Modify Group" for all the groups added
         """
-        if self.spinBox_group.maximum == self.spinBox_group.value:
-            self.stackedWidget_manageGroup.setCurrentIndex(0)
+        if self.ui.spinBox_group.maximum == self.spinBox_group.value:
+            self.ui.stackedWidget_manageGroup.setCurrentIndex(0)
         else:
-            self.stackedWidget_manageGroup.setCurrentIndex(1)
-            if (self.spinBox_group.maximum - 1) == self.spinBox_group.value:
-                self.pushButton_removeGroup.show()
+            self.ui.stackedWidget_manageGroup.setCurrentIndex(1)
+            if (self.ui.spinBox_group.maximum - 1) == self.spinBox_group.value:
+                self.ui.pushButton_removeGroup.show()
             else:
-                self.pushButton_removeGroup.hide()
+                self.ui.pushButton_removeGroup.hide()
             # Update the path of the directory button
             if len(self.directoryList) > 0:
-                self.directoryButton_creationCSVFile.directory = self.directoryList[self.spinBox_group.value - 1]
+                self.directoryButton_creationCSVFile.directory = self.directoryList[self.ui.spinBox_group.value - 1]
 
     def onAddGroupForCreationCSVFile(self):
         """Function to add a group of the dictionary
@@ -558,19 +448,19 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
             return
 
         # Add the paths of vtk files of the dictionary
-        self.logic.addGroupToDictionary(self.dictCSVFile, directory, self.directoryList, self.spinBox_group.value)
+        self.logic.addGroupToDictionary(self.dictCSVFile, directory, self.directoryList, self.ui.spinBox_group.value)
         condition = self.logic.checkSeveralMeshInDict(self.dictCSVFile)
 
         if not condition:
             # Remove the paths of vtk files of the dictionary
-            self.logic.removeGroupToDictionary(self.dictCSVFile, self.directoryList, self.spinBox_group.value)
+            self.logic.removeGroupToDictionary(self.dictCSVFile, self.directoryList, self.ui.spinBox_group.value)
             return
 
         # Increment of the number of the group in the spinbox
-        self.spinBox_group.blockSignals(True)
-        self.spinBox_group.setMaximum(self.spinBox_group.value + 1)
-        self.spinBox_group.setValue(self.spinBox_group.value + 1)
-        self.spinBox_group.blockSignals(False)
+        self.ui.spinBox_group.blockSignals(True)
+        self.ui.spinBox_group.setMaximum(self.spinBox_group.value + 1)
+        self.ui.spinBox_group.setValue(self.spinBox_group.value + 1)
+        self.ui.spinBox_group.blockSignals(False)
 
         # Message for the user
         slicer.util.delayDisplay("Group Added")
@@ -581,15 +471,15 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
             of the dictionary which will be used to create the CSV file
         """
         # Remove the paths of the vtk files of the dictionary
-        self.logic.removeGroupToDictionary(self.dictCSVFile, self.directoryList, self.spinBox_group.value)
+        self.logic.removeGroupToDictionary(self.dictCSVFile, self.directoryList, self.ui.spinBox_group.value)
 
         # Decrement of the number of the group in the spinbox
-        self.spinBox_group.blockSignals(True)
-        self.spinBox_group.setMaximum(self.spinBox_group.maximum - 1)
-        self.spinBox_group.blockSignals(False)
+        self.ui.spinBox_group.blockSignals(True)
+        self.ui.spinBox_group.setMaximum(self.spinBox_group.maximum - 1)
+        self.ui.spinBox_group.blockSignals(False)
 
         # Change the buttons "remove group" and "modify group" in "add group"
-        self.stackedWidget_manageGroup.setCurrentIndex(0)
+        self.ui.stackedWidget_manageGroup.setCurrentIndex(0)
 
         # Message for the user
         slicer.util.delayDisplay("Group removed")
@@ -607,10 +497,10 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
             return
 
         # Remove the paths of vtk files of the dictionary
-        self.logic.removeGroupToDictionary(self.dictCSVFile, self.directoryList, self.spinBox_group.value)
+        self.logic.removeGroupToDictionary(self.dictCSVFile, self.directoryList, self.ui.spinBox_group.value)
 
         # Add the paths of vtk files of the dictionary
-        self.logic.addGroupToDictionary(self.dictCSVFile, directory, self.directoryList, self.spinBox_group.value)
+        self.logic.addGroupToDictionary(self.dictCSVFile, directory, self.directoryList, self.ui.spinBox_group.value)
 
         # Message for the user
         slicer.util.delayDisplay("Group modified")
@@ -631,9 +521,9 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.logic.creationCSVFile(directory, basename, self.dictCSVFile, "Groups")
 
         # Re-Initialization of the first tab
-        self.spinBox_group.setMaximum(1)
-        self.spinBox_group.setValue(1)
-        self.stackedWidget_manageGroup.setCurrentIndex(0)
+        self.ui.spinBox_group.setMaximum(1)
+        self.ui.spinBox_group.setValue(1)
+        self.ui.stackedWidget_manageGroup.setCurrentIndex(0)
         self.directoryButton_creationCSVFile.directory = qt.QDir.homePath() + '/Desktop'
 
         # Re-Initialization of:
@@ -647,8 +537,8 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         sys.stdout.flush()
 
         # Load automatically the CSV file in the pathline in the next tab "Creation of New Classification Groups"
-        self.pathLineEdit_previewGroups.setCurrentPath(filepath)
-        self.pathLineEdit_CSVFilePCA.setCurrentPath(filepath)
+        self.ui.pathLineEdit_previewGroups.setCurrentPath(filepath)
+        self.ui.pathLineEdit_CSVFilePCA.setCurrentPath(filepath)
         #self.pathLineEdit_CSVFileDataset.setCurrentPath(filepath)
 
     # ---------------------------------------------------- #
@@ -667,17 +557,17 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.dictVTKFiles = dict()
 
         # Check if the path exists:
-        if not os.path.exists(self.pathLineEdit_previewGroups.currentPath):
+        if not os.path.exists(self.ui.pathLineEdit_previewGroups.currentPath):
             return
 
         # Check if it's a CSV file
-        condition1 = self.logic.checkExtension(self.pathLineEdit_previewGroups.currentPath, ".csv")
+        condition1 = self.logic.checkExtension(self.ui.pathLineEdit_previewGroups.currentPath, ".csv")
         if not condition1:
-            self.pathLineEdit_previewGroups.setCurrentPath(" ")
+            self.ui.pathLineEdit_previewGroups.setCurrentPath(" ")
             return
 
         # Download the CSV file
-        self.logic.table = self.logic.readCSVFile(self.pathLineEdit_previewGroups.currentPath)
+        self.logic.table = self.logic.readCSVFile(self.ui.pathLineEdit_previewGroups.currentPath)
         condition2 = self.logic.creationDictVTKFiles(self.dictVTKFiles)
         condition3 = self.logic.checkSeveralMeshInDict(self.dictVTKFiles)
 
@@ -686,18 +576,18 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         #    which will be used to create a new Classification Groups
         if not (condition2 and condition3):
             self.dictVTKFiles = dict()
-            self.pathLineEdit_previewGroups.setCurrentPath(" ")
+            self.ui.pathLineEdit_previewGroups.setCurrentPath(" ")
             return
 
         # Fill the table for the preview of the vtk files in Shape Population Viewer
         self.fillTableForPreviewVTKFilesInSPV(self.dictVTKFiles,
-                                               self.checkableComboBox_ChoiceOfGroup,
-                                               self.tableWidget_VTKFiles)
+                                               self.ui.checkableComboBox_ChoiceOfGroup,
+                                               self.ui.tableWidget_VTKFiles)
 
         # Enable/disable buttons
-        self.checkableComboBox_ChoiceOfGroup.setEnabled(True)
-        self.tableWidget_VTKFiles.setEnabled(True)
-        self.pushButton_previewVTKFiles.setEnabled(True)
+        self.ui.checkableComboBox_ChoiceOfGroup.setEnabled(True)
+        self.ui.tableWidget_VTKFiles.setEnabled(True)
+        self.ui.pushButton_previewVTKFiles.setEnabled(True)
         # self.pushButton_compute.setEnabled(True)
 
 
@@ -757,21 +647,21 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         the user to choose the group that he wants to preview in SPV
         """
         # Update the checkboxes in the qtableWidget of each vtk file
-        index = self.checkableComboBox_ChoiceOfGroup.currentIndex
-        for row in range(0,self.tableWidget_VTKFiles.rowCount):
+        index = self.ui.checkableComboBox_ChoiceOfGroup.currentIndex
+        for row in range(0,self.ui.tableWidget_VTKFiles.rowCount):
             # Recovery of the group of the vtk file contained in the combobox (column 2)
-            widget = self.tableWidget_VTKFiles.cellWidget(row, 1)
+            widget = self.ui.tableWidget_VTKFiles.cellWidget(row, 1)
             tuple = widget.children()
             comboBox = qt.QComboBox()
             comboBox = tuple[1]
             group = comboBox.currentIndex + 1
             if group == (index + 1):
                 # check the checkBox
-                widget = self.tableWidget_VTKFiles.cellWidget(row, 2)
+                widget = self.ui.tableWidget_VTKFiles.cellWidget(row, 2)
                 tuple = widget.children()
                 checkBox = tuple[1]
                 checkBox.blockSignals(True)
-                item = self.checkableComboBox_ChoiceOfGroup.model().item(index, 0)
+                item = self.ui.checkableComboBox_ChoiceOfGroup.model().item(index, 0)
                 if item.checkState():
                     checkBox.setChecked(True)
                     self.groupSelected.add(index + 1)
@@ -789,15 +679,15 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         allow the user to change the group of a vtk file 
         """
         # Updade the dictionary which containing the VTK files sorted by groups
-        self.logic.onComboBoxTableValueChanged(self.dictVTKFiles, self.tableWidget_VTKFiles)
+        self.logic.onComboBoxTableValueChanged(self.dictVTKFiles, self.ui.tableWidget_VTKFiles)
 
         # Update the checkable combobox which display the groups selected to preview them in SPV
         self.onCheckBoxTableValueChanged()
 
         # Enable exportation of the last updated csv file
-        self.pushButton_exportUpdatedClassification.setEnabled(True)
+        self.ui.pushButton_exportUpdatedClassification.setEnabled(True)
         # Default path to override the previous one
-        # self.directoryButton_exportUpdatedClassification.directory = os.path.dirname(self.pathLineEdit_previewGroups.currentPath)
+        # self.directoryButton_exportUpdatedClassification.directory = os.path.dirname(self.ui.pathLineEdit_previewGroups.currentPath)
 
     def onCheckBoxTableValueChanged(self):
         """ Function to manage the checkbox in 
@@ -805,17 +695,17 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         """
         self.groupSelected = set()
         # Update the checkable comboBox which allow to select what groups the user wants to display in SPV
-        self.checkableComboBox_ChoiceOfGroup.blockSignals(True)
+        self.ui.checkableComboBox_ChoiceOfGroup.blockSignals(True)
         allcheck = True
         for key, value in self.dictVTKFiles.items():
-            item = self.checkableComboBox_ChoiceOfGroup.model().item(key, 0)
+            item = self.ui.checkableComboBox_ChoiceOfGroup.model().item(key, 0)
             if not value == []:
                 for vtkFile in value:
                     filename = os.path.basename(vtkFile)
-                    for row in range(0,self.tableWidget_VTKFiles.rowCount):
-                        qlabel = self.tableWidget_VTKFiles.cellWidget(row, 0)
+                    for row in range(0,self.ui.tableWidget_VTKFiles.rowCount):
+                        qlabel = self.ui.tableWidget_VTKFiles.cellWidget(row, 0)
                         if qlabel.text == filename:
-                            widget = self.tableWidget_VTKFiles.cellWidget(row, 2)
+                            widget = self.ui.tableWidget_VTKFiles.cellWidget(row, 2)
                             tuple = widget.children()
                             checkBox = tuple[1]
                             if not checkBox.checkState():
@@ -828,7 +718,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
             else:
                 item.setCheckState(0)
             allcheck = True
-        self.checkableComboBox_ChoiceOfGroup.blockSignals(False)
+        self.ui.checkableComboBox_ChoiceOfGroup.blockSignals(False)
 
         # Update the color in the qtableWidget which will display in SPV
         colorTransferFunction = self.logic.creationColorTransfer(self.groupSelected)
@@ -838,16 +728,16 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         """ Function to update the colors that the selected 
         vtk files will have in Shape Population Viewer
         """
-        for row in range(0,self.tableWidget_VTKFiles.rowCount):
+        for row in range(0,self.ui.tableWidget_VTKFiles.rowCount):
             # Recovery of the group display in the table for each vtk file
-            widget = self.tableWidget_VTKFiles.cellWidget(row, 1)
+            widget = self.ui.tableWidget_VTKFiles.cellWidget(row, 1)
             tuple = widget.children()
             comboBox = qt.QComboBox()
             comboBox = tuple[1]
             group = comboBox.currentIndex + 1
 
             # Recovery of the checkbox for each vtk file
-            widget = self.tableWidget_VTKFiles.cellWidget(row, 2)
+            widget = self.ui.tableWidget_VTKFiles.cellWidget(row, 2)
             tuple = widget.children()
             checkBox = qt.QCheckBox()
             checkBox = tuple[1]
@@ -856,23 +746,23 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
             # Else the color is put at white
             if checkBox.isChecked():
                 rgb = colorTransferFunction.GetColor(group)
-                widget = self.tableWidget_VTKFiles.cellWidget(row, 3)
-                self.tableWidget_VTKFiles.item(row,3).setBackground(qt.QColor(rgb[0]*255,rgb[1]*255,rgb[2]*255))
+                widget = self.ui.tableWidget_VTKFiles.cellWidget(row, 3)
+                self.ui.tableWidget_VTKFiles.item(row,3).setBackground(qt.QColor(rgb[0]*255,rgb[1]*255,rgb[2]*255))
             else:
-                self.tableWidget_VTKFiles.item(row,3).setBackground(qt.QColor(255,255,255))
+                self.ui.tableWidget_VTKFiles.item(row,3).setBackground(qt.QColor(255,255,255))
 
     def onPreviewVTKFiles(self):
         """ Function to display the selected vtk files in Shape Population Viewer
             - Add a color map "DisplayClassificationGroup"
             - Launch the CLI ShapePopulationViewer
         """
-        if os.path.exists(self.pathLineEdit_previewGroups.currentPath):
+        if os.path.exists(self.ui.pathLineEdit_previewGroups.currentPath):
             # Creation of a color map to visualize each group with a different color in ShapePopulationViewer
-            self.logic.addColorMap(self.tableWidget_VTKFiles, self.dictVTKFiles)
+            self.logic.addColorMap(self.ui.tableWidget_VTKFiles, self.dictVTKFiles)
 
             # Creation of a CSV file to load the vtk files in ShapePopulationViewer
             filePathCSV = slicer.app.temporaryPath + '/' + 'VTKFilesPreview_OAIndex.csv'
-            self.logic.creationCSVFileForSPV(filePathCSV, self.tableWidget_VTKFiles, self.dictVTKFiles)
+            self.logic.creationCSVFileForSPV(filePathCSV, self.ui.tableWidget_VTKFiles, self.dictVTKFiles)
 
             slicer.modules.shapepopulationviewer.widgetRepresentation().loadCSVFile(filePathCSV)
             slicer.util.selectModule(slicer.modules.shapepopulationviewer)
@@ -904,7 +794,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         slicer.util.delayDisplay("Files Saved")
 
         # Disable the option to export the new data
-        self.pushButton_exportUpdatedClassification.setDisabled(True)
+        self.ui.pushButton_exportUpdatedClassification.setDisabled(True)
 
         # Load automatically the CSV file in the pathline in the next tab "Selection of Classification Groups"
         if self.pathLineEdit_selectionClassificationGroups.currentPath == filepath:
@@ -921,59 +811,59 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
     def onCSV_PCA(self):
 
         try:
-            self.logic.pca_exploration.loadCSVFile(self.pathLineEdit_CSVFilePCA.currentPath)
-            self.pathLineEdit_exploration.setCurrentPath(" ")
+            self.logic.pca_exploration.loadCSVFile(self.ui.pathLineEdit_CSVFilePCA.currentPath)
+            self.ui.pathLineEdit_exploration.setCurrentPath(" ")
         except shapca.CSVFileError as e:
             print('CSVFileError:'+e.value)
             slicer.util.errorDisplay('Invalid CSV file')
             return
 
-        self.pushButton_PCA.setEnabled(True) 
+        self.ui.pushButton_PCA.setEnabled(True) 
 
     def onExportForExploration(self):
         self.logic.pca_exploration.process()
-        self.comboBox_groupPCA.setEnabled(True)
-        self.comboBox_groupPCA.clear()       
+        self.ui.comboBox_groupPCA.setEnabled(True)
+        self.ui.comboBox_groupPCA.clear()       
 
         # Activate the PCA Single Export Widgets 
-        self.comboBox_SingleExportGroup.setEnabled(True)
-        self.comboBox_SingleExportGroup.clear()
-        self.comboBox_SingleExportPC.setEnabled(True)
-        self.comboBox_SingleExportPC.clear()
+        self.ui.comboBox_SingleExportGroup.setEnabled(True)
+        self.ui.comboBox_SingleExportGroup.clear()
+        self.ui.comboBox_SingleExportPC.setEnabled(True)
+        self.ui.comboBox_SingleExportPC.clear()
 
         # Add personalized groups to comboboxes with the CSV
         dictPCA=self.logic.pca_exploration.getDictPCA()
         for key, value in dictPCA.items():
             group_name = value["group_name"]
             if key != "All":
-                self.comboBox_groupPCA.addItem(str(key)+': '+group_name)
-                self.comboBox_SingleExportGroup.addItem(str(key)+': '+group_name)
+                self.ui.comboBox_groupPCA.addItem(str(key)+': '+group_name)
+                self.ui.comboBox_SingleExportGroup.addItem(str(key)+': '+group_name)
             else: 
-                self.comboBox_groupPCA.addItem(key)
-                self.comboBox_SingleExportGroup.addItem(key)
+                self.ui.comboBox_groupPCA.addItem(key)
+                self.ui.comboBox_SingleExportGroup.addItem(key)
 
         self.setColorModeSpinBox()
 
         self.showmean=False
-        self.generate3DVisualisationNodes(LPS=self.checkBox_transformToLPS.isChecked())
+        self.generate3DVisualisationNodes(LPS=self.ui.checkBox_transformToLPS.isChecked())
         self.generate2DVisualisationNodes()
 
-        index = self.comboBox_colorMode.findText('Group color', qt.Qt.MatchFixedString)
+        index = self.ui.comboBox_colorMode.findText('Group color', qt.Qt.MatchFixedString)
         if index >= 0:
-             self.comboBox_colorMode.setCurrentIndex(index)
+             self.ui.comboBox_colorMode.setCurrentIndex(index)
 
-        self.pathLineEdit_exploration.disconnect('currentPathChanged(const QString)', self.onLoadExploration)
-        self.pathLineEdit_exploration.setCurrentPath(' ')
-        self.pathLineEdit_exploration.connect('currentPathChanged(const QString)', self.onLoadExploration)
+        self.ui.pathLineEdit_exploration.disconnect('currentPathChanged(const QString)', self.onLoadExploration)
+        self.ui.pathLineEdit_exploration.setCurrentPath(' ')
+        self.ui.pathLineEdit_exploration.connect('currentPathChanged(const QString)', self.onLoadExploration)
 
 
         if self.evaluationFlag=="DONE":
             try:
-                self.pushButton_evaluateModels.clicked.disconnect()
+                self.ui.pushButton_evaluateModels.clicked.disconnect()
             except:
                 pass
-            self.pushButton_evaluateModels.setText("Evaluate models (It may take a long time)")
-            self.pushButton_evaluateModels.connect('clicked()',self.onEvaluateModels)
+            self.ui.pushButton_evaluateModels.setText("Evaluate models (It may take a long time)")
+            self.ui.pushButton_evaluateModels.connect('clicked()',self.onEvaluateModels)
         
         self.explorePCA()
 
@@ -994,16 +884,16 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
 
     def onLoadExploration(self):
 
-        JSONfile=self.pathLineEdit_exploration.currentPath
+        JSONfile=self.ui.pathLineEdit_exploration.currentPath
 
         # Check if the path exists:
         if not os.path.exists(JSONfile):
             return
         try:
             self.logic.pca_exploration.load(JSONfile)
-            self.pathLineEdit_CSVFilePCA.disconnect('currentPathChanged(const QString)', self.onCSV_PCA)
-            self.pathLineEdit_CSVFilePCA.setCurrentPath(" ")
-            self.pathLineEdit_CSVFilePCA.connect('currentPathChanged(const QString)', self.onCSV_PCA)
+            self.ui.pathLineEdit_CSVFilePCA.disconnect('currentPathChanged(const QString)', self.onCSV_PCA)
+            self.ui.pathLineEdit_CSVFilePCA.setCurrentPath(" ")
+            self.ui.pathLineEdit_CSVFilePCA.connect('currentPathChanged(const QString)', self.onCSV_PCA)
         except shapca.JSONFileError as e:
             print('JSONFileError:'+e.value)
             slicer.util.errorDisplay('Invalid JSON file')
@@ -1011,35 +901,35 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
 
 
 
-        self.comboBox_groupPCA.setEnabled(True)
-        self.comboBox_groupPCA.clear()
+        self.ui.comboBox_groupPCA.setEnabled(True)
+        self.ui.comboBox_groupPCA.clear()
         dictPCA=self.logic.pca_exploration.getDictPCA()
         for key, value in dictPCA.items():
 
             group_name = value["group_name"]
             if key != "All":
-                self.comboBox_groupPCA.addItem(str(key)+': '+group_name)
+                self.ui.comboBox_groupPCA.addItem(str(key)+': '+group_name)
             else: 
-                self.comboBox_groupPCA.addItem(key)
+                self.ui.comboBox_groupPCA.addItem(key)
 
 
         self.setColorModeSpinBox()    
         self.showmean=False
 
-        self.generate3DVisualisationNodes(LPS=self.checkBox_transformToLPS.isChecked())
+        self.generate3DVisualisationNodes(LPS=self.ui.checkBox_transformToLPS.isChecked())
         self.generate2DVisualisationNodes()
 
-        index = self.comboBox_colorMode.findText('Group color', qt.Qt.MatchFixedString)
+        index = self.ui.comboBox_colorMode.findText('Group color', qt.Qt.MatchFixedString)
         if index >= 0:
-             self.comboBox_colorMode.setCurrentIndex(index)
+             self.ui.comboBox_colorMode.setCurrentIndex(index)
         #slicer.mrmlScene.RemoveAllDefaultNodes()
         if self.evaluationFlag=="DONE":
             try:
-                self.pushButton_evaluateModels.clicked.disconnect()
+                self.ui.pushButton_evaluateModels.clicked.disconnect()
             except:
                 pass
-            self.pushButton_evaluateModels.setText("Evaluate models (It may take a long time)")
-            self.pushButton_evaluateModels.connect('clicked()',self.onEvaluateModels)
+            self.ui.pushButton_evaluateModels.setText("Evaluate models (It may take a long time)")
+            self.ui.pushButton_evaluateModels.connect('clicked()',self.onEvaluateModels)
         self.explorePCA()
 
     def onGroupColorChanged(self,newcolor):
@@ -1065,9 +955,9 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
             return
         self.logic.pca_exploration.save(JSONpath)
 
-        self.pathLineEdit_exploration.disconnect('currentPathChanged(const QString)', self.onLoadExploration)
-        self.pathLineEdit_exploration.setCurrentPath(JSONpath)
-        self.pathLineEdit_exploration.connect('currentPathChanged(const QString)', self.onLoadExploration)
+        self.ui.pathLineEdit_exploration.disconnect('currentPathChanged(const QString)', self.onLoadExploration)
+        self.ui.pathLineEdit_exploration.setCurrentPath(JSONpath)
+        self.ui.pathLineEdit_exploration.connect('currentPathChanged(const QString)', self.onLoadExploration)
     
         slicer.util.delayDisplay("Exploration saved")
 
@@ -1085,18 +975,18 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         Update the sliders and the 3D Visualization when the user 
         changes the Minimum Explained Variance
         """
-        self.spinBox_maxSlider.value
+        self.ui.spinBox_maxSlider.value
         self.PCA_sliders
         self.PCA_sliders_label
         self.PCA_sliders_value_label
 
         # Extract the new number of sliders
-        min_explained=self.spinBox_minVariance.value/100.0
+        min_explained=self.ui.spinBox_minVariance.value/100.0
         num_components=self.logic.pca_exploration.getRelativeNumComponent(min_explained)
 
         # Verify if the number of slider is not bigger than the displayable number
-        if num_components>self.spinBox_maxSlider.value:
-            num_components=self.spinBox_maxSlider.value
+        if num_components>self.ui.spinBox_maxSlider.value:
+            num_components=self.ui.spinBox_maxSlider.value
 
         # Change the number of sliders according to num_components
         if num_components < len(self.PCA_sliders):
@@ -1111,14 +1001,14 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
             self.updateVariancePlot(num_components)
             # Delete indexes in the Single Export PC combobox
             for i in range(component_to_delete,0,-1):
-                self.comboBox_SingleExportPC.removeItem(i+num_components-1)
+                self.ui.comboBox_SingleExportPC.removeItem(i+num_components-1)
 
         if num_components > len(self.PCA_sliders):
             old_num_components=len(self.PCA_sliders)
             component_to_add=num_components-len(self.PCA_sliders)
             for i in range(component_to_add):
-                self.createAndAddSlider(old_num_components+i, self.spinBox_decimals)
-                self.comboBox_SingleExportPC.addItem(old_num_components+i+1)
+                self.createAndAddSlider(old_num_components+i, self.ui.spinBox_decimals)
+                self.ui.comboBox_SingleExportPC.addItem(old_num_components+i+1)
             self.updateVariancePlot(num_components)
 
         self.logic.pca_exploration.setNumberOfVisibleEigenmodes(num_components)
@@ -1127,26 +1017,26 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
   
     def onColorModeChange(self):
 
-        if self.comboBox_colorMode.currentText == 'Group color':
+        if self.ui.comboBox_colorMode.currentText == 'Group color':
 
 
             self.logic.pca_exploration.setColorMode(0)
-            self.spinBox_colorModeParam1.hide()
-            self.spinBox_colorModeParam2.hide()
-            self.label_colorModeParam1.hide()
-            self.label_colorModeParam2.hide()
+            self.ui.spinBox_colorModeParam_1.hide()
+            self.ui.spinBox_colorModeParam_2.hide()
+            self.ui.label_colorModeParam1.hide()
+            self.ui.label_colorModeParam2.hide()
 
             self.logic.disableExplorationScalarView()
 
-        elif self.comboBox_colorMode.currentText == 'Unsigned distance to mean shape':
-            self.logic.pca_exploration.setColorModeParam(self.spinBox_colorModeParam1.value,self.spinBox_colorModeParam2.value)
+        elif self.ui.comboBox_colorMode.currentText == 'Unsigned distance to mean shape':
+            self.logic.pca_exploration.setColorModeParam(self.ui.spinBox_colorModeParam_1.value,self.ui.spinBox_colorModeParam_2.value)
 
-            self.label_colorModeParam1.setText('Maximum Distance')
+            self.ui.label_colorModeParam1.setText('Maximum Distance')
             
-            self.spinBox_colorModeParam1.show()
-            self.spinBox_colorModeParam2.hide()
-            self.label_colorModeParam1.show()
-            self.label_colorModeParam2.hide()
+            self.ui.spinBox_colorModeParam_1.show()
+            self.ui.spinBox_colorModeParam_2.hide()
+            self.ui.label_colorModeParam1.show()
+            self.ui.label_colorModeParam2.hide()
 
             self.logic.pca_exploration.setColorMode(1)
 
@@ -1168,16 +1058,16 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
 
             self.logic.enableExplorationScalarView()
 
-        elif self.comboBox_colorMode.currentText == 'Signed distance to mean shape':
-            self.logic.pca_exploration.setColorModeParam(self.spinBox_colorModeParam1.value,self.spinBox_colorModeParam2.value)
+        elif self.ui.comboBox_colorMode.currentText == 'Signed distance to mean shape':
+            self.logic.pca_exploration.setColorModeParam(self.ui.spinBox_colorModeParam_1.value,self.ui.spinBox_colorModeParam_2.value)
 
-            self.label_colorModeParam1.setText('Maximum Distance Outside')
-            self.label_colorModeParam2.setText('Maximum Distance Inside')
+            self.ui.label_colorModeParam1.setText('Maximum Distance Outside')
+            self.ui.label_colorModeParam2.setText('Maximum Distance Inside')
             
-            self.spinBox_colorModeParam1.show()
-            self.spinBox_colorModeParam2.show()
-            self.label_colorModeParam1.show()
-            self.label_colorModeParam2.show()
+            self.ui.spinBox_colorModeParam_1.show()
+            self.ui.spinBox_colorModeParam_2.show()
+            self.ui.label_colorModeParam1.show()
+            self.ui.label_colorModeParam2.show()
 
             self.logic.pca_exploration.setColorMode(2)
 
@@ -1202,7 +1092,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
 
     def onUpdateColorModeParam(self):
 
-        self.logic.pca_exploration.setColorModeParam(self.spinBox_colorModeParam1.value,self.spinBox_colorModeParam2.value) 
+        self.logic.pca_exploration.setColorModeParam(self.ui.spinBox_colorModeParam_1.value,self.ui.spinBox_colorModeParam_2.value) 
         self.onColorModeChange()
         #self.logic.pca_exploration.generateDistanceColor()
 
@@ -1247,14 +1137,14 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
                 t = "%d:%02d:%02d" % (h, m, s)
             if int(s) ==0:
                 print("Model evaluation "+self.evaluationThread.GetStatusString()+"  "+t)
-            self.pushButton_evaluateModels.setText("Abort evaluation ("+t+")")
+            self.ui.pushButton_evaluateModels.setText("Abort evaluation ("+t+")")
         else:
             if self.evaluationFlag=="DONE":
                 return
             print('Evaluation done')
             self.checkThreadTimer.stop()
 
-            if self.evaluationFlag=="JSON" and self.pathLineEdit_exploration.currentPath==self.eval_param["inputJson"]:
+            if self.evaluationFlag=="JSON" and self.ui.pathLineEdit_exploration.currentPath==self.eval_param["inputJson"]:
                 self.logic.pca_exploration.reloadJSONFile(self.eval_param["inputJson"])
                 compactnessPCN,specificityPCN,generalizationPCN=self.generateEvaluationPlots()
                 self.plotViewNode.SetPlotChartNodeID(compactnessPCN.GetID())
@@ -1262,7 +1152,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
                 self.plotViewNode.SetPlotChartNodeID(generalizationPCN.GetID())
                 self.updateEvaluationPlots()
 
-            if self.evaluationFlag=="CSV" and self.pathLineEdit_CSVFilePCA.currentPath==self.originalCSV:
+            if self.evaluationFlag=="CSV" and self.ui.pathLineEdit_CSVFilePCA.currentPath==self.originalCSV:
                 self.logic.pca_exploration.reloadJSONFile(self.eval_param["inputJson"])
                 compactnessPCN,specificityPCN,generalizationPCN=self.generateEvaluationPlots()
                 self.plotViewNode.SetPlotChartNodeID(compactnessPCN.GetID())
@@ -1272,17 +1162,17 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
 
             self.evaluationFlag="DONE"
 
-            self.pushButton_evaluateModels.disconnect('clicked()',self.onKillEvaluation)
-            self.pushButton_evaluateModels.connect('clicked()',self.onEvaluateModels)
-            self.pushButton_evaluateModels.setText("Evaluate models (It may take a long time)")
+            self.ui.pushButton_evaluateModels.disconnect('clicked()',self.onKillEvaluation)
+            self.ui.pushButton_evaluateModels.connect('clicked()',self.onEvaluateModels)
+            self.ui.pushButton_evaluateModels.setText("Evaluate models (It may take a long time)")
 
             slicer.util.infoDisplay("Evaluation done.")
 
     def onKillEvaluation(self):
         
-        self.pushButton_evaluateModels.clicked.disconnect()
-        self.pushButton_evaluateModels.connect('clicked()',self.onEvaluateModels)
-        self.pushButton_evaluateModels.setText("Evaluate models (It may take a long time)")
+        self.ui.pushButton_evaluateModels.clicked.disconnect()
+        self.ui.pushButton_evaluateModels.connect('clicked()',self.onEvaluateModels)
+        self.ui.pushButton_evaluateModels.setText("Evaluate models (It may take a long time)")
 
         self.checkThreadTimer.stop()
 
@@ -1294,9 +1184,9 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.evaluationFlag="DONE"
 
     def onEvaluateModels(self):
-        jsonpath = self.pathLineEdit_exploration.currentPath
-        csvpath = self.pathLineEdit_CSVFilePCA.currentPath
-        shapeNumber=self.spinBox_numberShape.value
+        jsonpath = self.ui.pathLineEdit_exploration.currentPath
+        csvpath = self.ui.pathLineEdit_CSVFilePCA.currentPath
+        shapeNumber=self.ui.spinBox_numberShape.value
 
 
         if os.path.isfile(jsonpath):
@@ -1337,9 +1227,9 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.evaluationThread=slicer.cli.run(moduleSPCA, None, self.eval_param, wait_for_completion=False)
 
 
-        self.pushButton_evaluateModels.clicked.disconnect()
-        self.pushButton_evaluateModels.connect('clicked()',self.onKillEvaluation)
-        self.pushButton_evaluateModels.setText("Abort evaluation (00:00)")
+        self.ui.pushButton_evaluateModels.clicked.disconnect()
+        self.ui.pushButton_evaluateModels.connect('clicked()',self.onKillEvaluation)
+        self.ui.pushButton_evaluateModels.setText("Abort evaluation (00:00)")
 
         self.checkThreadTimer=qt.QTimer()
         self.checkThreadTimer.connect('timeout()', self.onCheckEvaluationState)
@@ -1347,7 +1237,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         return
 
     def onEigenCheckBoxChanged(self):
-        if self.checkBox_useHiddenEigenmodes.isChecked()==True:
+        if self.ui.checkBox_useHiddenEigenmodes.isChecked()==True:
             self.logic.pca_exploration.useHiddenModes(True)
         else:
             self.logic.pca_exploration.useHiddenModes(False)
@@ -1356,19 +1246,19 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.logic.pca_exploration.updatePolyDataExploration(0,ratio/1000.0)
 
     def onUpdateProjectionPlot(self):
-        min_pc1 = self.RangeWidget_pc1.minimumValue
-        max_pc1 = self.RangeWidget_pc1.maximumValue
-        min_pc2 = self.RangeWidget_pc2.minimumValue
-        max_pc2 = self.RangeWidget_pc2.maximumValue
-        self.updateProjectionPlot([min_pc1, max_pc1], self.checkBox_insidePc1.checked, [min_pc2, max_pc2],
-                                  self.checkBox_insidePc2.checked, self.comboBox_pcLogic.currentText)
+        min_pc1 = self.ui.RangeWidget_pc1.minimumValue
+        max_pc1 = self.ui.RangeWidget_pc1.maximumValue
+        min_pc2 = self.ui.RangeWidget_pc2.minimumValue
+        max_pc2 = self.ui.RangeWidget_pc2.maximumValue
+        self.updateProjectionPlot([min_pc1, max_pc1], self.ui.checkBox_insidePc1.checked, [min_pc2, max_pc2],
+                                  self.ui.checkBox_insidePc2.checked, self.ui.comboBox_pcLogic.currentText)
 
     def explorePCA(self):
         # Detection of the selected group Id 
-        if self.comboBox_groupPCA.currentText == "All":
+        if self.ui.comboBox_groupPCA.currentText == "All":
             keygroup = "All"
         else:
-            keygroup = int(self.comboBox_groupPCA.currentText[0])
+            keygroup = int(self.ui.comboBox_groupPCA.currentText[0])
 
 
         # Setting PCA model to use
@@ -1376,34 +1266,34 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
 
         # Get color of the group and set the color picker with this color
         r,g,b=self.logic.pca_exploration.getColor()
-        self.ctkColorPickerButton_groupColor.color=qt.QColor(int(r*255),int(g*255),int(b*255))
+        self.ui.ctkColorPickerButton_groupColor.color=qt.QColor(int(r*255),int(g*255),int(b*255))
 
         # Setting the maximum number of sliders
         num_components=self.logic.pca_exploration.getNumComponent()
 
-        if self.spinBox_maxSlider.value> num_components:
-            self.spinBox_maxSlider.setMaximum(num_components)
-            self.spinBox_maxSlider.setValue(num_components)
+        if self.ui.spinBox_maxSlider.value> num_components:
+            self.ui.spinBox_maxSlider.setMaximum(num_components)
+            self.ui.spinBox_maxSlider.setValue(num_components)
         else:
-            self.spinBox_maxSlider.setMaximum(num_components)
+            self.ui.spinBox_maxSlider.setMaximum(num_components)
 
         # Delete all the previous sliders
         self.deletePCASliders()
 
         # Computing the number of sliders to show
-        min_explained=self.spinBox_minVariance.value/100.0
+        min_explained=self.ui.spinBox_minVariance.value/100.0
         sliders_number=self.logic.pca_exploration.getRelativeNumComponent(min_explained)
-        if sliders_number>self.spinBox_maxSlider.value:
-            sliders_number=self.spinBox_maxSlider.value
+        if sliders_number>self.ui.spinBox_maxSlider.value:
+            sliders_number=self.ui.spinBox_maxSlider.value
 
         # Activate the Export Buttons
-        self.pushButton_PCAExport.setEnabled(True)
-        self.pushButton_PCACurrentExport.setEnabled(True)
+        self.ui.pushButton_PCAExport.setEnabled(True)
+        self.ui.pushButton_PCACurrentExport.setEnabled(True)
 
         # Create sliders and add the PC to the combobox for Single Export
         for i in range(sliders_number):
-            self.createAndAddSlider(i, self.spinBox_decimals)
-            self.comboBox_SingleExportPC.addItem(i+1)
+            self.createAndAddSlider(i, self.ui.spinBox_decimals)
+            self.ui.comboBox_SingleExportPC.addItem(i+1)
        
 
         #Update the plot view
@@ -1413,60 +1303,60 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         X_std = self.logic.pca_exploration.current_pca_model["data_projection_std"]
         pc1 = X_pca[:, 0].flatten() / X_std[0]
         pc2 = X_pca[:, 1].flatten() / X_std[1]
-        self.RangeWidget_pc1.minimum = np.round(np.min(pc1) - 0.005, 2)
-        self.RangeWidget_pc1.maximum = np.round(np.max(pc1) + 0.005, 2)
-        self.RangeWidget_pc2.minimum = np.round(np.min(pc2) - 0.005, 2)
-        self.RangeWidget_pc2.maximum = np.round(np.max(pc2) + 0.005, 2)
-        min_pc1 = self.RangeWidget_pc1.minimumValue
-        max_pc1 = self.RangeWidget_pc1.maximumValue
-        min_pc2 = self.RangeWidget_pc2.minimumValue
-        max_pc2 = self.RangeWidget_pc2.maximumValue
-        self.updateProjectionPlot([min_pc1, max_pc1], self.checkBox_insidePc1.checked, [min_pc2, max_pc2], self.checkBox_insidePc2.checked, self.comboBox_pcLogic.currentText)
+        self.ui.RangeWidget_pc1.minimum = np.round(np.min(pc1) - 0.005, 2)
+        self.ui.RangeWidget_pc1.maximum = np.round(np.max(pc1) + 0.005, 2)
+        self.ui.RangeWidget_pc2.minimum = np.round(np.min(pc2) - 0.005, 2)
+        self.ui.RangeWidget_pc2.maximum = np.round(np.max(pc2) + 0.005, 2)
+        min_pc1 = self.ui.RangeWidget_pc1.minimumValue
+        max_pc1 = self.ui.RangeWidget_pc1.maximumValue
+        min_pc2 = self.ui.RangeWidget_pc2.minimumValue
+        max_pc2 = self.ui.RangeWidget_pc2.maximumValue
+        self.updateProjectionPlot([min_pc1, max_pc1], self.ui.checkBox_insidePc1.checked, [min_pc2, max_pc2], self.ui.checkBox_insidePc2.checked, self.ui.comboBox_pcLogic.currentText)
         if self.logic.pca_exploration.evaluationExist():
             self.updateEvaluationPlots()
 
 
         #showing QtWidgets
-        self.label_normalLabel_1.show()
-        self.label_normalLabel_2.show()
-        self.label_normalLabel_3.show()
-        self.label_normalLabel_4.show()
-        self.label_normalLabel_5.show()
-        self.label_normalLabel_6.show()
-        self.label_normalLabel_7.show()
+        self.ui.label_normalLabel_1.show()
+        self.ui.label_normalLabel_2.show()
+        self.ui.label_normalLabel_3.show()
+        self.ui.label_normalLabel_4.show()
+        self.ui.label_normalLabel_5.show()
+        self.ui.label_normalLabel_6.show()
+        self.ui.label_normalLabel_7.show()
 
-        self.comboBox_groupPCA.show()
-        self.comboBox_colorMode.show()
-        self.ctkColorPickerButton_groupColor.show()
-        self.pushButton_resetSliders.show()
-        self.label_valueExploration.show()
-        self.label_groupExploration.show()
-        self.label_varianceExploration.show()
-        self.pushButton_saveExploration.show()
-        self.pushButton_toggleMean.show()
-        self.pushButton_evaluateModels.show()
-        self.spinBox_minVariance.show()
-        self.spinBox_maxSlider.show()
-        self.label_minVariance.show()
-        self.label_maxSlider.show()
+        self.ui.comboBox_groupPCA.show()
+        self.ui.comboBox_colorMode.show()
+        self.ui.ctkColorPickerButton_groupColor.show()
+        self.ui.pushButton_resetSliders.show()
+        self.ui.label_valueExploration.show()
+        self.ui.label_groupExploration.show()
+        self.ui.label_varianceExploration.show()
+        self.ui.pushButton_saveExploration.show()
+        self.ui.pushButton_toggleMean.show()
+        self.ui.pushButton_evaluateModels.show()
+        self.ui.spinBox_minVariance.show()
+        self.ui.spinBox_maxSlider.show()
+        self.ui.label_minVariance.show()
+        self.ui.label_maxSlider.show()
 
-        self.label_colorMode.show()
+        self.ui.label_colorMode.show()
 
-        self.label_numberShape.show()
-        self.spinBox_numberShape.show()
-        self.spinBox_decimals.show()
-        self.label_decimals.show()
-        self.pushButton_updateProjectionPlot.show()
-        self.label_pc1.show()
-        self.label_pc2.show()
-        self.RangeWidget_pc1.show()
-        self.RangeWidget_pc2.show()
-        self.checkBox_insidePc1.show()
-        self.checkBox_insidePc2.show()
-        self.label_pcLogic.show()
-        self.comboBox_pcLogic.show()
+        self.ui.label_numberShape.show()
+        self.ui.spinBox_numberShape.show()
+        self.ui.spinBox_decimals.show()
+        self.ui.label_decimals.show()
+        self.ui.pushButton_updateProjectionPlot.show()
+        self.ui.label_pc1.show()
+        self.ui.label_pc2.show()
+        self.ui.RangeWidget_pc1.show()
+        self.ui.RangeWidget_pc2.show()
+        self.ui.checkBox_insidePc1.show()
+        self.ui.checkBox_insidePc2.show()
+        self.ui.label_pcLogic.show()
+        self.ui.comboBox_pcLogic.show()
 
-        self.checkBox_useHiddenEigenmodes.show()
+        self.ui.checkBox_useHiddenEigenmodes.show()
 
 
 
@@ -1474,14 +1364,14 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         data_std=self.logic.pca_exploration.getDataStd()
         std=np.max(data_std)
 
-        self.spinBox_colorModeParam1.disconnect('valueChanged(int)',self.onUpdateColorModeParam)
-        self.spinBox_colorModeParam2.disconnect('valueChanged(int)',self.onUpdateColorModeParam)
+        self.ui.spinBox_colorModeParam_1.disconnect('valueChanged(int)',self.onUpdateColorModeParam)
+        self.ui.spinBox_colorModeParam_2.disconnect('valueChanged(int)',self.onUpdateColorModeParam)
 
-        self.spinBox_colorModeParam1.setValue(4*std)
-        self.spinBox_colorModeParam2.setValue(4*std)
+        self.ui.spinBox_colorModeParam_1.setValue(4*std)
+        self.ui.spinBox_colorModeParam_2.setValue(4*std)
 
-        self.spinBox_colorModeParam1.connect('valueChanged(int)',self.onUpdateColorModeParam)
-        self.spinBox_colorModeParam2.connect('valueChanged(int)',self.onUpdateColorModeParam)
+        self.ui.spinBox_colorModeParam_1.connect('valueChanged(int)',self.onUpdateColorModeParam)
+        self.ui.spinBox_colorModeParam_2.connect('valueChanged(int)',self.onUpdateColorModeParam)
 
 
     def deletePCASliders(self):
@@ -1504,7 +1394,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         position=self.logic.pca_exploration.getCurrentRatio(num_slider)
         #print(position)
         slider.setSliderPosition(position)
-        #slider.setLayout(self.gridLayout_PCAsliders)
+        #slider.setLayout(self.ui.gridLayout_PCAsliders)
        
         #create the variance ratio label
         label = qt.QLabel()
@@ -1528,9 +1418,9 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         self.PCA_sliders_value_label.append(valueLabel)
 
         #Slider and label added to the gridLayout
-        self.gridLayout_PCAsliders.addWidget(self.PCA_sliders_label[num_slider],num_slider+2,0)
-        self.gridLayout_PCAsliders.addWidget(self.PCA_sliders[num_slider],num_slider+2,1)
-        self.gridLayout_PCAsliders.addWidget(self.PCA_sliders_value_label[num_slider],num_slider+2,2)
+        self.ui.gridLayout_PCAsliders.addWidget(self.PCA_sliders_label[num_slider],num_slider+2,0)
+        self.ui.gridLayout_PCAsliders.addWidget(self.PCA_sliders[num_slider],num_slider+2,1)
+        self.ui.gridLayout_PCAsliders.addWidget(self.PCA_sliders_value_label[num_slider],num_slider+2,2)
         
         #Connect
         self.PCA_sliders[num_slider].valueChanged.connect(lambda state, x=num_slider: self.onChangePCAPolyData(x))
@@ -1987,23 +1877,23 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
     # ----------------------------------------------------  #
 
     def onMinMaxstdCheckBoxChanged(self):
-        if self.checkBox_stdMaxMin.isChecked()==True:
-            self.checkBox_stdRegular.setChecked(False)
-            self.doubleSpinBox_stdRegular.setDisabled(True)
-            self.doubleSpinBox_stdmin.setDisabled(False)
-            self.doubleSpinBox_stdmax.setDisabled(False)
+        if self.ui.checkBox_stdMaxMin.isChecked()==True:
+            self.ui.checkBox_stdRegular.setChecked(False)
+            self.ui.doubleSpinBox_stdRegular.setDisabled(True)
+            self.ui.doubleSpinBox_stdmin.setDisabled(False)
+            self.ui.doubleSpinBox_stdmax.setDisabled(False)
         else:
-            self.checkBox_stdMaxMin.setChecked(True)
+            self.ui.checkBox_stdMaxMin.setChecked(True)
 
 
     def onRegularstdCheckBoxChanged(self):
-        if self.checkBox_stdRegular.isChecked()==True:
-            self.checkBox_stdMaxMin.setChecked(False)
-            self.doubleSpinBox_stdRegular.setDisabled(False)
-            self.doubleSpinBox_stdmin.setDisabled(True)
-            self.doubleSpinBox_stdmax.setDisabled(True)
+        if self.ui.checkBox_stdRegular.isChecked()==True:
+            self.ui.checkBox_stdMaxMin.setChecked(False)
+            self.ui.doubleSpinBox_stdRegular.setDisabled(False)
+            self.ui.doubleSpinBox_stdmin.setDisabled(True)
+            self.ui.doubleSpinBox_stdmax.setDisabled(True)
         else:
-            self.checkBox_stdRegular.setChecked(True)
+            self.ui.checkBox_stdRegular.setChecked(True)
 
     def onExportForPCAExport(self):
         """ Function to export the CSV file in the directory chosen by the user
@@ -2016,10 +1906,10 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         #filepath = dlg.getSaveFileName(None, "Export CSV file for Classification groups", os.path.join(qt.QDir.homePath(), "Desktop"), "CSV File (*.csv)")
         
         # Variables for the file's name
-        Group = self.comboBox_SingleExportGroup.itemText(self.comboBox_SingleExportGroup.currentIndex)
-        PC = self.comboBox_SingleExportPC.itemText(self.comboBox_SingleExportPC.currentIndex)
-        std_regular = self.doubleSpinBox_stdRegular.textFromValue(self.doubleSpinBox_stdRegular.value)
-        step = self.doubleSpinBox_step.value
+        Group = self.ui.comboBox_SingleExportGroup.itemText(self.comboBox_SingleExportGroup.currentIndex)
+        PC = self.ui.comboBox_SingleExportPC.itemText(self.comboBox_SingleExportPC.currentIndex)
+        std_regular = self.ui.doubleSpinBox_stdRegular.textFromValue(self.doubleSpinBox_stdRegular.value)
+        step = self.ui.doubleSpinBox_step.value
 
 
 
@@ -2035,12 +1925,12 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
 
         # Creation of a folder
         folder_int = 1
-        while (os.path.exists(self.DirectoryButton_PCASingleExport.directory + '/PCAMultipleAxisExport_' + str(folder_int) + '/')):
+        while (os.path.exists(self.ui.DirectoryButton_PCASingleExport.directory + '/PCAMultipleAxisExport_' + str(folder_int) + '/')):
             folder_int += 1
         Folder = '/PCAMultipleAxisExport_' + str(folder_int) + '/'
 
         # Begining of the filepath
-        dirpath = self.DirectoryButton_PCASingleExport.directory + Folder
+        dirpath = self.ui.DirectoryButton_PCASingleExport.directory + Folder
 
         # Creation of the folder for the different deviations
         try:
@@ -2051,12 +1941,12 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
             print ("Successfully created the directory %s " % dirpath)
 
         # CREATION OF THE VTK FILES
-        if (self.checkBox_stdRegular.isChecked()):    
+        if (self.ui.checkBox_stdRegular.isChecked()):
             std_max = float(std_regular)
             std_min = -float(std_regular)
         else:
-            std_max = self.doubleSpinBox_stdmax.value
-            std_min = self.doubleSpinBox_stdmin.value\
+            std_max = self.ui.doubleSpinBox_stdmax.value
+            std_min = self.ui.doubleSpinBox_stdmin.value\
         # From the mean, we go first to the max and then from the mean to the min (non-symetrical range)
         for std_count in np.arange(0.0,std_max,step):
             self.logic.exportAxis(dirpath,Group,PC,std_count)
@@ -2077,7 +1967,7 @@ class ShapeVariationAnalyzerWidget(ScriptedLoadableModuleWidget):
         std = "5.9"
         file_number = 1
 
-        dirpath = self.DirectoryButton_PCASingleExport.directory + "/PCACurrentExport/"
+        dirpath = self.ui.DirectoryButton_PCASingleExport.directory + "/PCACurrentExport/"
         if( os.path.exists(dirpath)==False ):
             # Creation of the folder for the current explorations if it's not existing
             try:
