@@ -8,6 +8,7 @@ from types import *
 import math
 import shutil
 
+import glob
 
 import pickle
 import numpy as np
@@ -2550,9 +2551,22 @@ class ShapeVariationAnalyzerTest(ScriptedLoadableModuleTest):
 
     def test_ShapeVariationAnalyzer(self):
 
+
+        sampleDataLogic = slicer.modules.sampledata.widgetRepresentation().self().logic
+        sampleDataLogic.downloadSample("ShapeVariationAnalyzerSampleData")
+
         logic = ShapeVariationAnalyzerLogic()
-        input_dir = os.path.join(logic.dataPath(), "Input")
-        filepath_in = os.path.join(input_dir, "test.csv")
+
+        base_dir = slicer.mrmlScene.GetCacheManager().GetRemoteCacheDirectory() + '/ShapeVariationAnalyzerSampleData/'
+
+        # The csv file requires paths to the vtk files so let's create the csv since the path wouldn't be known beforehand
+        vtk_files = glob.glob(base_dir + '*.vtk')
+
+        filepath_in = f"{base_dir}test.csv"
+        with open(filepath_in, "w") as csv_file:
+            csv_file.write("VTK Files,Group\n")
+	    for vtk_file in vtk_files:
+	        csv_file.write(f"{vtk_file},0\n")
 
         # Test of all the groups
         keygroup = "All"
