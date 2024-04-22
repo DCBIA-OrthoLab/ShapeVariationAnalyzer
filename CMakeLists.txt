@@ -35,9 +35,9 @@ endif()
 if(ShapeVariationAnalyzer_BUILD_SLICER_EXTENSION)
   #-----------------------------------------------------------------------------
   # Extension meta-information
-  set(EXTENSION_HOMEPAGE "http://slicer.org/slicerWiki/index.php/Documentation/Nightly/Extensions/ShapeVariationAnalyzer")
+  set(EXTENSION_HOMEPAGE "https://slicer.org/slicerWiki/index.php/Documentation/Nightly/Extensions/ShapeVariationAnalyzer")
   set(EXTENSION_CATEGORY "Quantification")
-  set(EXTENSION_CONTRIBUTORS "Priscille de Dumast (University of Michigan), Laura Pascal (University of Michigan), Nina Tubau (University of Michigan), Juan Carlos Prieto (University of North Carolina) ")
+  set(EXTENSION_CONTRIBUTORS "Priscille de Dumast (University of Michigan), Laura Pascal (University of Michigan), Nina Tubau (University of Michigan), Juan Carlos Prieto (University of North Carolina)")
   set(EXTENSION_DESCRIPTION "ShapeVariationAnalyzer allows the classification of 3D models, according to their morphological variations. This tool is based on a deep learning neural network.")
   set(EXTENSION_ICONURL "https://raw.githubusercontent.com/DCBIA-OrthoLab/ShapeVariationAnalyzer/master/ShapeVariationAnalyzer.png")
   set(EXTENSION_SCREENSHOTURLS "https://raw.githubusercontent.com/DCBIA-OrthoLab/ShapeVariationAnalyzer/master/doc/images/FullView_ShapeVariationAnalyzer.png https://raw.githubusercontent.com/DCBIA-OrthoLab/ShapeVariationAnalyzer/master/doc/images/ShapeVariationAnalyzer-GUI.png")
