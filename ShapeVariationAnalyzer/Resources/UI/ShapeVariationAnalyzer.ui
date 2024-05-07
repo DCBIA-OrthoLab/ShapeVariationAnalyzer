@@ -15,7 +15,7 @@
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_2">
    <item>
-    <widget class="ctkCollapsibleButton" name="CollapsibleButton_creationCSVFile">
+    <widget class="ctkCollapsibleButton" name="collapsibleButton_creationCSVFile">
      <property name="text">
       <string>Creation of CSV File for Classification Groups</string>
      </property>
@@ -102,7 +102,7 @@
     </widget>
    </item>
    <item>
-    <widget class="ctkCollapsibleButton" name="CollapsibleButton_previewClassificationGroups">
+    <widget class="ctkCollapsibleButton" name="collapsibleButton_previewClassificationGroups">
      <property name="text">
       <string>Preview/Update Groups</string>
      </property>
@@ -130,7 +130,7 @@
        </widget>
       </item>
       <item>
-       <widget class="ctkCollapsibleGroupBox" name="CollapsibleGroupBox_previewVTKFiles">
+       <widget class="ctkCollapsibleGroupBox" name="collapsibleGroupBox_previewVTKFiles">
         <property name="title">
          <string>Preview of the VTK files in ShapePopulationViewer</string>
         </property>
@@ -142,7 +142,7 @@
         </property>
         <layout class="QVBoxLayout" name="verticalLayout_3">
          <item>
-          <widget class="ctkCheckableComboBox" name="CheckableComboBox_ChoiceOfGroup"/>
+          <widget class="ctkCheckableComboBox" name="checkableComboBox_ChoiceOfGroup"/>
          </item>
          <item>
           <widget class="QTableWidget" name="tableWidget_VTKFiles">
