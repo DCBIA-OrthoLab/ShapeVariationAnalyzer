@@ -1,6 +1,7 @@
 #include "surfacefeaturesextractor.h"
 #include <vtkDoubleArray.h>
 #include <sstream>
+#include <iostream>
 #include <vtkObjectFactory.h>
 
 #if !defined(M_PI)
@@ -329,7 +330,7 @@ void SurfaceFeaturesExtractor::store_landmarks_vtk()
 		}
 	}
 	else
-		std::cout<<"Error !";
+		std::cout<<"Error !"<<std::endl;
 
 
 	// ---------- Encode landmarks in  FCSV file ----------

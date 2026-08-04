@@ -4,6 +4,7 @@
 #include <vtkPolyDataReader.h>
 #include <vtkPolyDataWriter.h>
 
+#include <iostream>
 #include <iterator>
 
 
@@ -12,7 +13,7 @@ int main (int argc, char *argv[])
 	PARSE_ARGS;
     
     if(inputMesh.compare("") == 0){
-        std::cout<<"type --help to learn how to use this program."<<endl;
+        std::cout<<"type --help to learn how to use this program."<<std::endl;
         return 1;
     }
 
