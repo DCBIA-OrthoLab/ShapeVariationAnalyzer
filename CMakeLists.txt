@@ -77,6 +77,7 @@ endif()
 
 #add_subdirectory(CLI/ComputeMeanShapes)
 add_subdirectory(CLI/SurfaceFeaturesExtractor)
+add_subdirectory(ShapeVariationAnalyzerSampleData)
 ## NEXT_MODULE
 
 
